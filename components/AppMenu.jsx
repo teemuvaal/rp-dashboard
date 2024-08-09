@@ -7,7 +7,7 @@ export default function AppMenu() {
             >Feed</h1>
             <h1 className="hover:bg-gray-700 px-10 rounded-md">Session</h1>
             <h1 className="hover:bg-gray-700 px-10 rounded-md">Notes</h1>
-            <h1 className="hover:bg-gray-700 px-10 rounded-md">Characters</h1>
+            <h1 className="hover:bg-gray-700 px-10 rounded-md">Campaign</h1>
             </div>
         </div>
     )

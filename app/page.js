@@ -8,7 +8,7 @@ import AppMenu from "@/components/AppMenu";
 export default function Home() {
   return (
     <div
-    className="mx-[140px] flex flex-col h-screen shadow-sm"
+    className="mx-[140px] flex flex-col h-screen shadow-lg bg-gray-50"
     >
     <TopNav />
     <Hero />
