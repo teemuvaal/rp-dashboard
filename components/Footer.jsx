@@ -6,10 +6,10 @@ export default function Footer() {
                 <div className="basis-1/3 flex flex-row gap-2">
                     <Image src="/dice.png" alt="Logo" width={100} height={100} />
                     <p className="text-sm font-light">
-                        RP Campaign is the tool to manage your roleplay campaign.
+                        <strong>Adventurehub.ai</strong> Plan, manage and run your adventures with help from AI
                     </p>
                 </div>
-                <div className="basis-1/3">
+                <div className="basis-2/3">
                     <p>Links</p>
                     <p>About</p>
                     <p>Contact</p>

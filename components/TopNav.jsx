@@ -1,11 +1,13 @@
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuTrigger, NavigationMenuContent, NavigationMenuLink } from "@/components/ui/navigation-menu"
 import CampaignTile from "@/components/CampaignTile"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
   
 
 export default function TopNav() {
     return (
-        <div className="w-full py-2 px-4">
-            <NavigationMenu className="">
+        <div className="w-full py-2 px-2">
+            <NavigationMenu className="w-full">
                 <NavigationMenuList className="">
                     <NavigationMenuItem className="">
                         <NavigationMenuTrigger>My Campaigns</NavigationMenuTrigger>
@@ -24,7 +26,11 @@ export default function TopNav() {
                         <NavigationMenuTrigger>My Profile</NavigationMenuTrigger>
                     </NavigationMenuItem>
                 </NavigationMenuList>
-            </NavigationMenu>
-        </div>
+                <div className="flex justify-end">                
+                <Link href="/login"><Button>Login</Button></Link>
+                </div>
+            </NavigationMenu>´
+            </div>
+
     )
 }

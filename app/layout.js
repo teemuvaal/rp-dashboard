@@ -8,8 +8,8 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: "RP Campaign Dashboard",
-  description: "RP Campaign Dashboard to manage your role playing campaigns",
+  title: "Adventurehub.ai",
+  description: "Plan, manage and run your adventures with help from AI",
 };
 
 export default function RootLayout({ children }) {
