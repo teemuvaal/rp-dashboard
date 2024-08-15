@@ -7,16 +7,16 @@ import {
 
 const FAQ = [
     {
-        question: "What is this?",
-        answer: "This is a question and answer."
+        question: "What is AdventureHub.ai?",
+        answer: "AdventureHub.ai is a platform for creating and sharing adventures for any roleplaying game."
     },
     {
-        question: "What is this?",
-        answer: "This is a question and answer."
+        question: "How do I get started?",
+        answer: "Simply create an account and start creating your own adventures. Invite your friends to play your adventure with you."
     },
     {
-        question: "What is this?",
-        answer: "You won't believe me. This is a question and answer."
+        question: "How much does it cost?",
+        answer: "It's free!"
     }
 ]
 
