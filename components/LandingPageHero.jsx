@@ -15,7 +15,7 @@ export default function LandingPageHero() {
                         Your next adventure starts here!
                     </p>
                 </div>
-                <div className="cover-image w-full h-[600px] overflow-hidden">
+                <div className="cover-image w-full lg:h-[600px] h-[200px] overflow-hidden">
                     <img src="/LandingPageHero.png" alt="adventure map" />
                 </div>
             </div>

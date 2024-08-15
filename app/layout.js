@@ -2,6 +2,7 @@ import "./globals.css";
 import { Inter } from "next/font/google"
 import { cn } from "@/lib/utils" 
 import { Libre_Baskerville } from "next/font/google"
+import config from "@/config"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -15,8 +16,8 @@ const baskerville = Libre_Baskerville({
 });
 
 export const metadata = {
-  title: "Adventurehub.ai",
-  description: "Plan, manage and run your adventures with help from AI",
+  title: config.siteName,
+  description: config.siteDescription,
 };
 
 export default function RootLayout({ children }) {

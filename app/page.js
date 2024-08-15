@@ -3,6 +3,7 @@ import LandingPageNav from "@/components/LandingPageNav";
 import LandingPageHero from "@/components/LandingPageHero";
 import LandingPageCTA from "@/components/LandingPageCTA";
 import LandingPageFeatures from "@/components/LandingPageFeatures";
+import LandingPageFAQ from "@/components/LandingPageFAQ";
 
 export default function HomePage() {
   return (
@@ -18,6 +19,7 @@ export default function HomePage() {
         <LandingPageHero />
         <LandingPageCTA />
         <LandingPageFeatures />
+        <LandingPageFAQ />
       </div>
       <Footer />
     </div>
