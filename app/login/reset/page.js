@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from "framer-motion";
-import { login, signup } from './actions';
+import { updatePassword } from './actions';
 import {
   Card,
   CardContent,
@@ -17,9 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSignup, setIsSignup] = useState(false);
 
   return (
     <div className="flex h-screen w-full">
@@ -34,19 +32,11 @@ export default function LoginPage() {
       <div className="flex md:justify-end h-full w-full md:absolute md:right-0 md:w-1/2 items-center bg-black bg-opacity-20">
         <Card className="w-[400px] items-center mr-10 bg-opacity-50 h-80 border-gray-300 border-2 shadow-md">
           <CardHeader>
-            <CardTitle>{isSignup ? "Sign Up" : "Login"}</CardTitle>
-            <CardDescription>{isSignup ? "Create a new account" : "Login to your account"}</CardDescription>
+            <CardTitle>Update Password</CardTitle>
+            <CardDescription>Enter your new password</CardDescription>
           </CardHeader>
           <CardContent className="">
-            <form action={isSignup ? signup : login} className="flex flex-col gap-2">
-              <Input 
-                type="email" 
-                name="email"
-                placeholder="Email" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+            <form action={updatePassword} className="flex flex-col gap-2">
               <Input 
                 type="password" 
                 name="password"
@@ -56,11 +46,10 @@ export default function LoginPage() {
                 required
               />
               <Separator />
-              <Button type="submit">{isSignup ? "Sign Up" : "Login"}</Button>
+              <Button type="submit">Update Password</Button>
             </form>
           </CardContent>
           <CardFooter>
-            <p>{isSignup ? "Already have an account? " : "Don't have an account? "} <strong><Button variant="link" onClick={() => setIsSignup(!isSignup)}>{isSignup ? "Login" : "Sign Up"}</Button></strong></p>
           </CardFooter>
         </Card>
       </div>
