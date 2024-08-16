@@ -1,14 +1,6 @@
 import CampaignTile from "./CampaignTile"
-import { fetchUserCampaigns } from "@/app/dashboard/actions"
 
-
-export default async function CampaignList() {
-    const { campaigns, error: campaignsError } = await fetchUserCampaigns()
-    
-    if (campaignsError) {
-        return <div>Error loading campaigns: {campaignsError}</div>
-    }
-
+export default async function CampaignList({ campaigns }) {
     if (!campaigns || campaigns.length === 0) {
         return <div>No campaigns found. Are you ready to create one or join your friends?</div>
     }

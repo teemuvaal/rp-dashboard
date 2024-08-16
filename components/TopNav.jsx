@@ -2,7 +2,7 @@ import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuT
 import CampaignTile from "@/components/CampaignTile"
 import Logout from "@/components/ui/Logout"
 
-export default function TopNav() {
+export default function TopNav({ campaigns }) {
     return (
         <div className="w-full py-2 px-2">
             <NavigationMenu className="w-full">
@@ -12,10 +12,10 @@ export default function TopNav() {
                         <NavigationMenuContent>
                             <div className="w-[400px] p-2 flex flex-col gap-2">
                             <NavigationMenuLink>
-                                <CampaignTile />
+                                <CampaignTile campaign={campaigns[0]} />
                             </NavigationMenuLink>
                             <NavigationMenuLink>
-                                <CampaignTile />
+                                <CampaignTile campaign={campaigns[1]} />
                             </NavigationMenuLink>
                             </div>
                         </NavigationMenuContent>
