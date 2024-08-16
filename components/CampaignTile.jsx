@@ -7,19 +7,21 @@ import {
     CardTitle,
   } from "@/components/ui/card"
 
-export default function CampaignTile() {
+import { Button } from "@/components/ui/button"
+
+export default function CampaignTile({name, description, role}) {
     return (
         <>
             <Card className="border border-black rounded-md p-1 w-70">
                 <CardHeader>
-                    <CardTitle>The Isles Of Ascension</CardTitle>
-                    <CardDescription>Active</CardDescription>
+                    <CardTitle>{name}</CardTitle>
+                    <CardDescription>{role}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p>Card Content</p>
+                    <p>{description}</p>
                 </CardContent>
                 <CardFooter>
-                    <p>Card Footer</p>
+                    <Button>Open</Button>
                 </CardFooter>
             </Card>
         </>
