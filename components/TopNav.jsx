@@ -1,10 +1,17 @@
+'use client'
+
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuTrigger, NavigationMenuContent, NavigationMenuLink } from "@/components/ui/navigation-menu"
 import CampaignTile from "@/components/CampaignTile"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-  
+import { createClient } from "@/utils/supabase/client"
+
 
 export default function TopNav() {
+    const supabase = createClient()
+    const Logout = async () => {
+        const { data, error } = await supabase.auth.signOut()
+    }
     return (
         <div className="w-full py-2 px-2">
             <NavigationMenu className="w-full">
@@ -26,11 +33,11 @@ export default function TopNav() {
                         <NavigationMenuTrigger>My Profile</NavigationMenuTrigger>
                     </NavigationMenuItem>
                 </NavigationMenuList>
-                <div className="flex justify-end">                
-                <Link href="/login"><Button>Login</Button></Link>
+                <div className="flex justify-end">
+                    <Button onClick={Logout}>Logout</Button>
                 </div>
-            </NavigationMenu>´
-            </div>
+            </NavigationMenu>
+        </div>
 
     )
 }
