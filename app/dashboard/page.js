@@ -7,6 +7,7 @@ import UserActions from "@/components/UserActions"
 import { fetchUserCampaigns } from './actions'
 import CampaignList from "@/components/CampaignList"
 import CreateCampaignForm from "@/components/CreateCampaignForm";
+import JoinCampaignForm from "@/components/JoinCampaignForm";
 
 export default async function Home() {
     const supabase = createClient()
@@ -29,13 +30,17 @@ export default async function Home() {
             className="p-4 h-screen"
             >
             <UserActions user={data.user} />
+            <div className="flex flex-row gap-4">
+            <CreateCampaignForm />
+            <JoinCampaignForm />
+            </div>
             {campaignsError ? (
                 <p>Error loading campaigns: {campaignsError}</p>
             ) : (
                 <CampaignList campaigns={campaigns} />
             )}
             </section>
-            <CreateCampaignForm />
+
             <Footer />
         </div>
     );
