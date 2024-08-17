@@ -8,8 +8,9 @@ import {
   } from "@/components/ui/card"
 
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
-export default function CampaignTile({name, description, role}) {
+export default function CampaignTile({name, description, role, id}) {
     return (
         <>
             <Card className="border border-black rounded-md p-1 w-70">
@@ -21,7 +22,7 @@ export default function CampaignTile({name, description, role}) {
                     <p>{description}</p>
                 </CardContent>
                 <CardFooter>
-                    <Button>Open</Button>
+                    <Link href={`/dashboard/${id}`}><Button>Open</Button></Link>
                 </CardFooter>
             </Card>
         </>
