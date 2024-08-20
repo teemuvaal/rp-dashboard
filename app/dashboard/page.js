@@ -23,7 +23,7 @@ export default async function Home() {
         style={{
             background: "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(185,164,121,1) 100%)"
           }}
-        className="mx-[140px] flex flex-col h-screen shadow-lg bg-gray-50">
+        className="lg:mx-[140px] flex flex-col h-screen shadow-lg bg-gray-50">
             <TopNav campaigns={campaigns}/>
             <Hero name={"Welcome to your Adventure Hub!"} description={"Here you can see and manage all your campaigns."} image={"/LandingPageHero.png"} />
             <section

@@ -39,7 +39,11 @@ export default async function CampaignPage({ params }) {
     }
 
     return (
-        <div className="mx-[140px] flex flex-col h-screen shadow-lg bg-gray-50">
+        <div 
+        style={{
+          background: "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(185,164,121,1) 100%)"
+        }}
+        className="lg:mx-[140px] flex flex-col h-screen shadow-lg bg-gray-50">
             <TopNav campaigns={campaign}/>
             <Hero name={campaign.name} description={campaign.description} />
             <AppMenu />

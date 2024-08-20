@@ -24,15 +24,15 @@ const FAQ = [
 export default function LandingPageFAQ() {
     return (
         <div id="faq" className="p-4 bg-gray-100 rounded-md shadow-md border border-gray-200">
-            <h2 className="text-3xl font-bold font-serif">FAQ</h2>           
-                {FAQ.map((faq, index) => (
-                    <Accordion key={index} type="single" collapsible>
-                    <AccordionItem key={index} value={faq.question}>
-                        <AccordionTrigger key={index}>{faq.question}</AccordionTrigger>
-                        <AccordionContent key={index}>{faq.answer}</AccordionContent>
-                    </AccordionItem>
-                    </Accordion>
-                ))}            
+            <h2 className="text-2xl sm:text-3xl font-bold font-serif mb-4">FAQ</h2>           
+            {FAQ.map((faq, index) => (
+                <Accordion key={index} type="single" collapsible className="mb-2">
+                <AccordionItem value={faq.question}>
+                    <AccordionTrigger className="text-sm sm:text-base">{faq.question}</AccordionTrigger>
+                    <AccordionContent className="text-sm sm:text-base">{faq.answer}</AccordionContent>
+                </AccordionItem>
+                </Accordion>
+            ))}            
         </div>
     )
 }
