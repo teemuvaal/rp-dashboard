@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import TopNav from "@/components/TopNav";
 import Hero from "@/components/DashboardHero";
-import Footer from "@/components/Footer";
+import Footer from "@/components/LandingPage/Footer";
 import AppMenu from "@/components/AppMenu";
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
@@ -53,7 +53,6 @@ export default async function CampaignLayout({ children, params }) {
                 <Hero name={campaign.name} description={campaign.description} image="/LandingPageHero.png" />
                 <AppMenu items={menuItems} />
                 <main>{children}</main>
-                <Footer />
             </div>
         </div>
     );

@@ -1,6 +1,7 @@
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuTrigger, NavigationMenuContent, NavigationMenuLink } from "@/components/ui/navigation-menu"
 import CampaignTile from "@/components/CampaignTile"
 import Logout from "@/components/ui/Logout"
+import Link from "next/link"
 
 export default function TopNav({ campaigns }) {
     return (
@@ -11,12 +12,20 @@ export default function TopNav({ campaigns }) {
                         <NavigationMenuTrigger>My Campaigns</NavigationMenuTrigger>
                         <NavigationMenuContent>
                             <div className="w-[400px] p-2 flex flex-col gap-2">
-                            <NavigationMenuLink>
-                                <CampaignTile campaign={campaigns[0]} />
-                            </NavigationMenuLink>
-                            <NavigationMenuLink>
-                                <CampaignTile campaign={campaigns[1]} />
-                            </NavigationMenuLink>
+                                {campaigns.map((campaign) => (
+                                    <NavigationMenuLink key={campaign.id} asChild>
+                                        <Link href={`/dashboard/${campaign.id}`} passHref legacyBehavior>
+                                            <a>
+                                                <CampaignTile
+                                                    name={campaign.name}
+                                                    description={campaign.description}
+                                                    role={campaign.role}
+                                                    id={campaign.id}
+                                                />
+                                            </a>
+                                        </Link>
+                                    </NavigationMenuLink>
+                                ))}
                             </div>
                         </NavigationMenuContent>
                     </NavigationMenuItem>
@@ -29,6 +38,5 @@ export default function TopNav({ campaigns }) {
                 </div>
             </NavigationMenu>
         </div>
-
     )
 }

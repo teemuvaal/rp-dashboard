@@ -1,4 +1,4 @@
-import FeatureCard from "./FeatureCard";
+import FeatureCard from "../FeatureCard";
 import { NotebookPen, User, Map } from 'lucide-react';
 
 

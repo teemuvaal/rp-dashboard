@@ -1,9 +1,9 @@
-import Footer from "@/components/Footer";
-import LandingPageNav from "@/components/LandingPageNav";
-import LandingPageHero from "@/components/LandingPageHero";
-import LandingPageCTA from "@/components/LandingPageCTA";
-import LandingPageFeatures from "@/components/LandingPageFeatures";
-import LandingPageFAQ from "@/components/LandingPageFAQ";
+import Footer from "@/components/LandingPage/Footer";
+import LandingPageNav from "@/components/LandingPage/LandingPageNav";
+import LandingPageHero from "@/components/LandingPage/LandingPageHero";
+import LandingPageCTA from "@/components/LandingPage/LandingPageCTA";
+import LandingPageFeatures from "@/components/LandingPage/LandingPageFeatures";
+import LandingPageFAQ from "@/components/LandingPage/LandingPageFAQ";
 
 export default function HomePage() {
   return (

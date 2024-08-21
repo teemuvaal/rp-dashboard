@@ -34,6 +34,76 @@ export async function createCampaign(formData) {
   return { success: true, campaignId: data }
 }
 
+export async function createSession(formData) {
+  const supabase = createClient()
+
+  // Get the current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError) {
+    return { error: 'Authentication error' }
+  }
+
+  const campaignId = formData.get('campaignId')
+  const name = formData.get('name')
+  const description = formData.get('description')
+  const duration = formData.get('duration')
+  const scheduled_date = formData.get('date')
+
+  console.log('Received form data:', { campaignId, name, description, duration, scheduled_date });
+
+  if (!campaignId) {
+    return { error: 'Campaign ID is missing' }
+  }
+
+  // Check if the user is the campaign owner
+  const { data: campaign, error: campaignError } = await supabase
+    .from('campaigns')
+    .select('owner_id')
+    .eq('id', campaignId)
+    .single()
+
+  if (campaignError) {
+    return { error: 'Error fetching campaign details' }
+  }
+
+  if (campaign.owner_id !== user.id) {
+    return { error: 'Only the campaign owner can create sessions' }
+  }
+
+  // Convert the datetime-local string to ISO 8601 format
+  const scheduledDateISO = new Date(scheduled_date).toISOString();
+
+  // Insert the new session
+  const { data, error } = await supabase
+    .from('sessions')
+    .insert({
+      campaign_id: campaignId,
+      name,
+      description,
+      duration_minutes: parseInt(duration),
+      scheduled_date: scheduledDateISO,
+      status: 'scheduled',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .select()
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  // Revalidate the sessions page to reflect the new session
+  revalidatePath(`/dashboard/${campaignId}/sessions`)
+
+  // Check if data exists and has at least one item before accessing its id
+  const sessionId = data && data.length > 0 ? data[0].id : null;
+
+  return { success: true, sessionId }
+  
+}
+
+
 export async function fetchUserCampaigns() {
     const supabase = createClient()
   

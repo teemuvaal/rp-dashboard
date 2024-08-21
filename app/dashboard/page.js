@@ -1,6 +1,6 @@
 import TopNav from "@/components/TopNav";
 import Hero from "@/components/DashboardHero";
-import Footer from "@/components/Footer";
+import Footer from "@/components/LandingPage/Footer";
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import UserActions from "@/components/UserActions"
@@ -40,8 +40,6 @@ export default async function Home() {
                 <CampaignList campaigns={campaigns} />
             )}
             </section>
-
-            <Footer />
         </div>
     );
 }
