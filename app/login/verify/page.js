@@ -10,30 +10,39 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-
-
 export default function LoginPage() {
-
   return (
-    <div className="flex h-screen w-full">
-      <motion.img
-        src="/login.png"
-        alt="Login"
-        className="h-full object-cover"
-        initial={{ scale: 1.3 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 30, ease: "linear" }}
-      />
-      <div className="flex md:justify-end h-full w-full md:absolute md:right-0 md:w-1/2 items-center bg-black bg-opacity-20">
-        <Card className="w-[400px] items-center mr-10 bg-opacity-50 h-80 border-gray-300 border-2 shadow-md">
+    <div className="flex flex-col md:flex-row h-screen w-full">
+      <motion.div
+        className="hidden md:block md:w-1/2 h-full relative overflow-hidden"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <motion.img
+          src="/login.png"
+          alt="Login"
+          className="absolute h-full w-full object-cover"
+          initial={{ scale: 1.2 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 20, ease: "linear" }}
+        />
+      </motion.div>
+      <div className="w-full md:w-1/2 flex items-center justify-center p-4 md:p-8 bg-gradient-to-br from-white to-gray-200">
+        <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Almost there!</CardTitle>
             <CardDescription>Check your email for verification to enable your account.</CardDescription>
           </CardHeader>
-          <CardContent className="">
+          <CardContent>
+            <p className="text-sm text-gray-600">
+              We've sent a verification email to your inbox. Please click the link in the email to complete your registration.
+            </p>
           </CardContent>
           <CardFooter>
-            <p>Didn't receive an email? Well, I don't know what to tell you. Check your spam folder I guess.</p>
+            <p className="text-xs text-gray-500">
+              Didn't receive an email? Check your spam folder or contact support if the issue persists.
+            </p>
           </CardFooter>
         </Card>
       </div>

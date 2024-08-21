@@ -38,18 +38,57 @@ export default async function CampaignPage({ params }) {
         redirect('/dashboard')  // User is not a member, redirect to main dashboard
     }
 
+    // Fetch feed items (you'll need to implement this)
+    const feedItems = await fetchFeedItems(params.id)
+
+    // Fetch calendar events (you'll need to implement this)
+    const calendarEvents = await fetchCalendarEvents(params.id)
+
+    const menuItems = [
+        { label: 'Feed', href: '#feed' },
+        { label: 'Session', href: '#session' },
+        { label: 'Notes', href: '#notes' },
+        { label: 'Campaign', href: '#campaign' },
+    ]
+
+    const actions = [
+        { label: 'Add Note', variant: 'default', onClick: () => {} },
+        { label: 'View Notes', variant: 'outline', onClick: () => {} },
+        { label: 'Edit', variant: 'outline', onClick: () => {} },
+    ]
+
     return (
-        <div 
+        <div
         style={{
-          background: "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(185,164,121,1) 100%)"
-        }}
-        className="lg:mx-[140px] flex flex-col h-screen shadow-lg bg-gray-50">
-            <TopNav campaigns={campaign}/>
-            <Hero name={campaign.name} description={campaign.description} />
-            <AppMenu />
-            <Actions />
-            <Feed />
+            background: "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(185,164,121,1) 100%)"
+          }}>
+        <div 
+        className="flex flex-col min-h-screen w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-white">
+            <TopNav campaigns={[campaign]}/>
+            <Hero name={campaign.name} description={campaign.description} image="/LandingPageHero.png" />
+            <AppMenu items={menuItems} />
+            <Actions actions={actions} />
+            <Feed feedItems={feedItems} calendarEvents={calendarEvents} />
             <Footer />
         </div>
+        </div>
     );
+}
+
+// Implement these functions to fetch actual data
+async function fetchFeedItems(campaignId) {
+    // Fetch feed items from your database
+    return [
+        { title: "Thanks for the session!", content: "Looking forward to the next session!" },
+        { title: "New Post", content: "What a great game we had last session!" },
+        // ... more feed items
+    ]
+}
+
+async function fetchCalendarEvents(campaignId) {
+    // Fetch calendar events from your database
+    return [
+        { date: new Date(), title: "Next Session" },
+        // ... more calendar events
+    ]
 }

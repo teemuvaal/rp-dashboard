@@ -12,22 +12,24 @@ import {
 
 export default function JoinCampaignForm() {
     return (
-        <div>
-            <Dialog>
-                <DialogTrigger>
-                    <Button>Join Campaign</Button>
-                </DialogTrigger>
-                <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Join Campaign</DialogTitle>
-                            <DialogDescription>
-                                Use the invitation code received from the campaign owner to join the campaign.
-                            </DialogDescription>
-                            <Input name="invitationCode" type="text" placeholder="Invitation Code" required />
-                            <Button type="submit">Join Campaign</Button>
-                        </DialogHeader>
-                    </DialogContent>
-                </Dialog>
-        </div>
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button className="bg-red-950 hover:bg-red-700 text-white font-bold">
+                    Join Campaign
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Join Campaign</DialogTitle>
+                    <DialogDescription>
+                        Use the invitation code received from the campaign owner to join the campaign.
+                    </DialogDescription>
+                </DialogHeader>
+                <form className="space-y-4">
+                    <Input name="invitationCode" type="text" placeholder="Invitation Code" required />
+                    <Button type="submit">Join Campaign</Button>
+                </form>
+            </DialogContent>
+        </Dialog>
     )
 }

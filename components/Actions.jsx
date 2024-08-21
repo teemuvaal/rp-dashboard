@@ -1,18 +1,13 @@
 import { Button } from "@/components/ui/button"
 
-
-export default function Actions() {
+export default function Actions({ actions }) {
     return (
-        <div className="w-full flex flex-row p-4 gap-2">
-            <span>
-                <Button>Add Note</Button>
-            </span>
-            <span>
-                <Button variant="outline">View Notes</Button>
-            </span>
-            <span>
-                <Button variant="outline">Edit</Button>
-            </span>
+        <div className="w-full flex flex-wrap justify-start items-center p-2 sm:p-4 gap-2">
+            {actions.map((action, index) => (
+                <Button key={index} variant={action.variant} className="text-sm sm:text-base">
+                    {action.label}
+                </Button>
+            ))}
         </div>
     )
 }
