@@ -1,7 +1,7 @@
 import FeedTile from "./FeedTile";
 import CalendarTile from "./CalendarTile";
 
-export default function Feed({ feedItems, calendarEvents }) {
+export default function Feed({ feedItems, sessions }) {
     return (
         <div className="w-full flex flex-col lg:flex-row p-2 sm:p-4 mb-auto gap-2 h-full">
             <div className="w-full lg:w-2/3 border border-gray-200 rounded-md p-2 sm:p-4 shadow-md">
@@ -21,7 +21,7 @@ export default function Feed({ feedItems, calendarEvents }) {
             </div>
             <div className="w-full lg:w-1/3 border border-gray-200 rounded-md p-2 sm:p-4 shadow-md">
                 <h2 className="text-xl sm:text-2xl font-bold mb-4">Calendar</h2>
-                <CalendarTile events={calendarEvents} />
+                <CalendarTile sessions={sessions} />
             </div>
         </div>  
     )

@@ -23,7 +23,7 @@ const FAQ = [
 
 export default function LandingPageFAQ() {
     return (
-        <div id="faq" className="p-4 bg-gray-100 rounded-md shadow-md border border-gray-200">
+        <div id="faq" className="p-4 bg-[#e8dcc9] rounded-md shadow-md border border-gray-200">
             <h2 className="text-2xl sm:text-3xl font-bold font-serif mb-4">FAQ</h2>           
             {FAQ.map((faq, index) => (
                 <Accordion key={index} type="single" collapsible className="mb-2">

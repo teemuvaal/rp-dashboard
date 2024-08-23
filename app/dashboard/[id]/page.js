@@ -1,6 +1,7 @@
 import Feed from "@/components/DashboardFeed";
 import { createClient } from '@/utils/supabase/server'
 
+
 export default async function CampaignFeed({ params }) {
     const supabase = createClient()
     
@@ -8,10 +9,10 @@ export default async function CampaignFeed({ params }) {
     const feedItems = await fetchFeedItems(params.id)
 
     // Fetch calendar events
-    const calendarEvents = await fetchCalendarEvents(params.id)
+    const sessions = await fetchSessions(params.id)
 
     return (
-        <Feed feedItems={feedItems} calendarEvents={calendarEvents} />
+        <Feed feedItems={feedItems} sessions={sessions} />
     );
 }
 
@@ -27,10 +28,20 @@ async function fetchFeedItems(campaignId) {
     ]
 }
 
-async function fetchCalendarEvents(campaignId) {
-    // Fetch calendar events from your database
-    return [
-        { date: new Date(), title: "Next Session" },
-        // ... more calendar events
-    ]
+async function fetchSessions(campaignId) {
+    const supabase = createClient()
+    
+    // Fetch sessions for the campaign
+    const { data: sessions, error } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('campaign_id', campaignId)
+        .order('scheduled_date', { ascending: true })
+
+    if (error) {
+        console.error('Error fetching sessions:', error)
+        return <div>Error loading sessions</div>
+    }
+
+    return sessions
 }
