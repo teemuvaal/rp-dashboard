@@ -4,6 +4,7 @@ import LandingPageHero from "@/components/LandingPage/LandingPageHero";
 import LandingPageCTA from "@/components/LandingPage/LandingPageCTA";
 import LandingPageFeatures from "@/components/LandingPage/LandingPageFeatures";
 import LandingPageFAQ from "@/components/LandingPage/LandingPageFAQ";
+import LandingPageProblem from "@/components/LandingPage/LandingPageProblem";
 
 export default function HomePage() {
   return (
@@ -18,6 +19,7 @@ export default function HomePage() {
 
         <LandingPageHero />
         <LandingPageCTA />
+        <LandingPageProblem />
         <LandingPageFeatures />
         <LandingPageFAQ />
       </div>

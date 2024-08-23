@@ -29,7 +29,7 @@ export default function LandingPageFeatures() {
     return (
         <div className="px-4 sm:px-0 bg-[#e8dcc9]">
             <div className="flex flex-col items-center justify-center w-full my-6 sm:my-10 gap-2">
-                <h2 className="text-2xl sm:text-3xl font-bold font-serif">Features</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold font-serif text-[#3c2a1e]">Features</h2>
             </div>
             <div className="flex flex-col items-center justify-center w-full my-6 sm:my-10 gap-4 sm:gap-2">
                 {features.map((feature, index) => (
