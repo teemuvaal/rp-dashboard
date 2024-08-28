@@ -184,3 +184,77 @@ export async function fetchUserCampaigns() {
   
     return { campaigns: formattedCampaigns }
   }
+
+export async function createPost(formData) {
+  const supabase = createClient()
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError) {
+    return { error: 'Authentication error' }
+  }
+
+  const campaignId = formData.get('campaignId')
+  const title = formData.get('title')
+  const content = formData.get('content')
+  const sessionId = formData.get('sessionId') || null
+  const noteId = formData.get('noteId') || null
+
+  const { data, error } = await supabase
+    .from('posts')
+    .insert({
+      campaign_id: campaignId,
+      user_id: user.id,
+      title,
+      content,
+      session_id: sessionId,
+      note_id: noteId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .select()
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath(`/dashboard/${campaignId}`)
+  return { success: true, post: data[0] }
+}
+
+export async function fetchFeedItems(campaignId) {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('posts')
+    .select(`
+      id,
+      title,
+      content,
+      created_at,
+      user_id
+    `)
+    .eq('campaign_id', campaignId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching feed items:', error)
+    return []
+  }
+
+  // Fetch user information for the current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError) {
+    console.error('Error fetching user information:', userError)
+    return data.map(post => ({
+      ...post,
+      author: 'Unknown'
+    }))
+  }
+
+  return data.map(post => ({
+    ...post,
+    author: post.user_id === user.id ? user.email : 'Unknown'
+  }))
+}

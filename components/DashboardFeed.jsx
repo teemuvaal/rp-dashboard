@@ -8,15 +8,19 @@ export default function Feed({ feedItems, sessions }) {
                 <h1 className="text-xl sm:text-2xl font-bold">Feed</h1>
                 <p className="text-xs sm:text-sm font-light text-gray-500 mb-4">Latest events, posts, etc. from the campaign</p>
                 <section className="space-y-4">
-                    {feedItems.map((item, index) => (
-                        <FeedTile 
-                            key={index} 
-                            title={item.title} 
-                            content={item.content}
-                            author={item.author}
-                            createdAt={item.createdAt}
-                        />
-                    ))}
+                    {feedItems.length > 0 ? (
+                        feedItems.map((item) => (
+                            <FeedTile 
+                                key={item.id}
+                                title={item.title} 
+                                content={item.content}
+                                author={item.author}
+                                createdAt={item.created_at}
+                            />
+                        ))
+                    ) : (
+                        <p>No feed items available.</p>
+                    )}
                 </section>
             </div>
             <div className="w-full lg:w-1/3 border border-gray-200 rounded-md p-2 sm:p-4 shadow-md">

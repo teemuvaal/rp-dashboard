@@ -2,8 +2,28 @@ import { formatDistanceToNow, parseISO } from 'date-fns';
 
 export default function FeedTile({ title, content, author, createdAt }) {
     const formatDate = (dateString) => {
+        if (!dateString) return 'Unknown date';
+        
         try {
-            const date = typeof dateString === 'string' ? parseISO(dateString) : new Date(dateString);
+            let date;
+            if (typeof dateString === 'string') {
+                // Try parsing as ISO string
+                date = parseISO(dateString);
+                if (isNaN(date.getTime())) {
+                    // If parsing fails, try creating a new Date object
+                    date = new Date(dateString);
+                }
+            } else if (dateString instanceof Date) {
+                date = dateString;
+            } else {
+                // If it's neither a string nor a Date object, create a new Date
+                date = new Date(dateString);
+            }
+
+            if (isNaN(date.getTime())) {
+                throw new Error('Invalid date');
+            }
+
             return formatDistanceToNow(date, { addSuffix: true });
         } catch (error) {
             console.error('Error parsing date:', error);
@@ -19,15 +39,15 @@ export default function FeedTile({ title, content, author, createdAt }) {
                 </div>
                 <div className="flex-grow">
                     <div className="flex justify-between items-start mb-1">
-                        <h3 className="font-bold text-sm sm:text-base">{title}</h3>
+                        <h3 className="font-bold text-sm sm:text-base">{title || 'Untitled'}</h3>
                         <span className="text-xs text-gray-500">
                             {formatDate(createdAt)}
                         </span>
                     </div>
-                    <p className="text-sm font-light text-gray-700 mb-1">{content}</p>
-                    <p className="text-xs text-gray-500">Posted by: {author}</p>
+                    <p className="text-sm font-light text-gray-700 mb-1">{content || 'No content'}</p>
+                    <p className="text-xs text-gray-500">Posted by: {author || 'Unknown'}</p>
                 </div>
             </div>
         </div>
     )
-}
+} 

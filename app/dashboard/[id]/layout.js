@@ -25,7 +25,7 @@ export default async function CampaignLayout({ children, params }) {
         notFound()
     }
 
-    // Check if user is a member or owner of the campaign
+    // Check if user is a member of the campaign
     const { data: membership, error: membershipError } = await supabase
         .from('campaign_members')
         .select('role')
@@ -52,7 +52,7 @@ export default async function CampaignLayout({ children, params }) {
                 <TopNav campaigns={[campaign]}/>
                 <Hero name={campaign.name} description={campaign.description} image="/LandingPageHero.png" />
                 <AppMenu items={menuItems} />
-                <main>{children}</main>
+                {children}
             </div>
         </div>
     );
