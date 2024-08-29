@@ -38,4 +38,4 @@ export default async function CampaignSessions({ params }) {
             <SessionList sessions={sessions} campaignId={campaignId} />
         </div>
     );
-}
+}   
