@@ -29,11 +29,8 @@ export default function TopNav({ campaigns }) {
                             </div>
                         </NavigationMenuContent>
                     </NavigationMenuItem>
-                    <NavigationMenuItem>
-                        <NavigationMenuTrigger>My Profile</NavigationMenuTrigger>
-                    </NavigationMenuItem>
                 </NavigationMenuList>
-                <div className="flex justify-end">
+                <div className="flex justify-end w-full">
                     <Logout />
                 </div>
             </NavigationMenu>

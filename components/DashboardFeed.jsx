@@ -24,7 +24,6 @@ export default function Feed({ feedItems, sessions }) {
                 </section>
             </div>
             <div className="w-full lg:w-1/3 border border-gray-200 rounded-md p-2 sm:p-4 shadow-md">
-                <h2 className="text-xl sm:text-2xl font-bold mb-4">Calendar</h2>
                 <CalendarTile sessions={sessions} />
             </div>
         </div>  

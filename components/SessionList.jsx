@@ -68,10 +68,6 @@ export default function SessionList({ sessions, campaignId }) {
 
     return (
         <div className="space-y-8 mt-4">
-            <h2 className="text-2xl font-bold">Sessions</h2>
-            <div>
-                <CreateSessionForm campaignId={campaignId} />
-            </div>
             <Separator />
             <div>
                 <h3 className="text-xl font-semibold mb-4">Upcoming Sessions</h3>
