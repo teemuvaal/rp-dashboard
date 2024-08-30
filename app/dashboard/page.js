@@ -1,13 +1,13 @@
-import TopNav from "@/components/TopNav";
-import Hero from "@/components/DashboardHero";
+import TopNav from "@/components/Dashboard/TopNav";
+import Hero from "@/components/Dashboard/DashboardHero";
 import Footer from "@/components/LandingPage/Footer";
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
-import UserActions from "@/components/UserActions"
+import UserActions from "@/components/Dashboard/UserActions"
 import { fetchUserCampaigns } from './actions'
-import CampaignList from "@/components/CampaignList"
-import CreateCampaignForm from "@/components/CreateCampaignForm";
-import JoinCampaignForm from "@/components/JoinCampaignForm";
+import CampaignList from "@/components/Dashboard/CampaignList"
+import CreateCampaignForm from "@/components/Dashboard/CreateCampaignForm";
+import JoinCampaignForm from "@/components/Dashboard/JoinCampaignForm";
 
 export default async function Home() {
     const supabase = createClient()

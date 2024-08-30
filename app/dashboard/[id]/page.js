@@ -1,4 +1,4 @@
-import Feed from "@/components/DashboardFeed";
+import Feed from "@/components/Dashboard/DashboardFeed";
 import { createClient } from '@/utils/supabase/server'
 import { Button } from "@/components/ui/button";
 import {

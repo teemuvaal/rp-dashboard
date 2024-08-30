@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import CreateNote from '@/components/CreateNote'
+import CreateNote from '@/components/Dashboard/CreateNote'
 
 
 

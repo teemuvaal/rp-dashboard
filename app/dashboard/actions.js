@@ -258,3 +258,60 @@ export async function fetchFeedItems(campaignId) {
     author: post.user_id === user.id ? user.email : 'Unknown'
   }))
 }
+
+export async function fetchCampaignDetails(campaignId) {
+  const supabase = createClient()
+
+  const { data: campaign, error } = await supabase
+    .from('campaigns')
+    .select('*')
+    .eq('id', campaignId)
+    .single()
+
+  if (error) {
+    console.error(error)
+    return { error: 'Error loading campaign details' }
+  }
+
+  return { campaign }
+}
+
+export async function updateCampaignDetails(campaignId, updates) {
+  const supabase = createClient()
+
+  // Get the current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError) {
+    return { error: 'Authentication error' }
+  }
+
+  // Check if the user is the campaign owner
+  const { data: campaign, error: campaignError } = await supabase
+    .from('campaigns')
+    .select('owner_id')
+    .eq('id', campaignId)
+    .single()
+
+  if (campaignError) {
+    return { error: 'Error fetching campaign details' }
+  }
+
+  if (campaign.owner_id !== user.id) {
+    return { error: 'Only the campaign owner can update details' }
+  }
+
+  // Update the campaign
+  const { data, error } = await supabase
+    .from('campaigns')
+    .update(updates)
+    .eq('id', campaignId)
+    .select()
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath(`/dashboard/${campaignId}/details`)
+  return { success: true, campaign: data[0] }
+}

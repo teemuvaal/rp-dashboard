@@ -1,4 +1,4 @@
-import CampaignDetails from "@/components/CampaignDetails";
+import CampaignDetails from "@/components/Dashboard/CampaignDetails";
 
 export default async function CampaignDetailsPage({ params }) {
     // Fetch detailed campaign information

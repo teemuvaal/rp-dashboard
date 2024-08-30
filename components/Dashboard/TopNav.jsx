@@ -1,5 +1,5 @@
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuTrigger, NavigationMenuContent, NavigationMenuLink } from "@/components/ui/navigation-menu"
-import CampaignTile from "@/components/CampaignTile"
+import CampaignTile from "@/components/Dashboard/CampaignTile"
 import Logout from "@/components/ui/Logout"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"

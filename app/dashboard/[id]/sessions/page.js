@@ -1,6 +1,6 @@
-import SessionList from "@/components/SessionList";
+import SessionList from "@/components/Dashboard/SessionList";
 import { createClient } from '@/utils/supabase/server'
-import CreateSessionForm from "@/components/CreateSessionForm";
+import CreateSessionForm from "@/components/Dashboard/CreateSessionForm";
 
 export default async function CampaignSessions({ params }) {
     const supabase = createClient()

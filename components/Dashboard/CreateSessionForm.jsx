@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { createSession } from "@/app/dashboard/actions";
 import { useRouter } from "next/navigation";
 
-const CreateSessionForm = ({ campaignId }) => {
+const CreateSessionForm = ({ campaignId, buttonStyle }) => {
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
@@ -36,7 +36,7 @@ const CreateSessionForm = ({ campaignId }) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-red-950 hover:bg-red-700 text-white font-bold">
+        <Button variant={buttonStyle}>
           Add Session
         </Button>
       </DialogTrigger>

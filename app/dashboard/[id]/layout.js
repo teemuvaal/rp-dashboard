@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import TopNav from "@/components/TopNav";
-import Hero from "@/components/DashboardHero";
+import TopNav from "@/components/Dashboard/TopNav";
+import Hero from "@/components/Dashboard/DashboardHero";
 import Footer from "@/components/LandingPage/Footer";
-import AppMenu from "@/components/AppMenu";
+import AppMenu from "@/components/Dashboard/AppMenu";
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 
@@ -37,12 +37,7 @@ export default async function CampaignLayout({ children, params }) {
         redirect('/dashboard')
     }
 
-    const menuItems = [
-        { label: 'Feed', pathname: `/dashboard/${params.id}` },
-        { label: 'Sessions', pathname: `/dashboard/${params.id}/sessions` },
-        { label: 'Notes', pathname: `/dashboard/${params.id}/notes` },
-        { label: 'Campaign', pathname: `/dashboard/${params.id}/details` },
-    ]
+
 
     return (
         <div style={{
@@ -51,7 +46,7 @@ export default async function CampaignLayout({ children, params }) {
             <div className="flex flex-col min-h-screen w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-white">
                 <TopNav campaigns={[campaign]}/>
                 <Hero name={campaign.name} description={campaign.description} image="/LandingPageHero.png" />
-                <AppMenu items={menuItems} />
+                <AppMenu params={params}/>
                 {children}
             </div>
         </div>

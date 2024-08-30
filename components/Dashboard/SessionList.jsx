@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic'
 import { deleteSession } from '@/app/dashboard/actions'
 import { useState } from 'react'
 
-const CreateSessionForm = dynamic(() => import('@/components/CreateSessionForm'), { ssr: false })
+const CreateSessionForm = dynamic(() => import('@/components/Dashboard/CreateSessionForm'), { ssr: false })
 
 // Helper function to format date consistently
 function formatDate(dateString) {
