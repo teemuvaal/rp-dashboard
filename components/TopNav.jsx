@@ -2,10 +2,14 @@ import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuT
 import CampaignTile from "@/components/CampaignTile"
 import Logout from "@/components/ui/Logout"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 export default function TopNav({ campaigns }) {
     return (
-        <div className="w-full py-2 px-2">
+        <div className="w-full py-2 px-2 flex flex-row justify-between">
+            <Link href="/dashboard">
+                <Button variant="outline">Dashboard</Button>
+            </Link>
             <NavigationMenu className="w-full">
                 <NavigationMenuList className="">
                     <NavigationMenuItem className="">
