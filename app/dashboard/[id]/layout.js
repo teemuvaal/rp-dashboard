@@ -45,7 +45,7 @@ export default async function CampaignLayout({ children, params }) {
         }}>
             <div className="flex flex-col min-h-screen w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-white">
                 <TopNav campaigns={[campaign]}/>
-                <Hero name={campaign.name} description={campaign.description} image="/LandingPageHero.png" />
+                <Hero name={campaign.name} description={campaign.description} image={campaign.campaign_image} />
                 <AppMenu params={params}/>
                 {children}
             </div>

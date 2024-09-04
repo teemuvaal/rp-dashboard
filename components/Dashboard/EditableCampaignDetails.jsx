@@ -1,16 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { updateCampaignDetails } from '@/app/dashboard/actions'
+import { updateCampaignDetails, uploadCampaignImage } from '@/app/dashboard/actions'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Pen, Pencil, Save, Sparkles } from 'lucide-react'
+import { Pen, Pencil, Save, Sparkles, Upload } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 export default function EditableCampaignDetails({ campaign, campaignId }) {
     const [editedCampaign, setEditedCampaign] = useState(campaign)
     const [isEditingName, setIsEditingName] = useState(false)
     const [isEditingDescription, setIsEditingDescription] = useState(false)
+    const [isUploading, setIsUploading] = useState(false)
     const router = useRouter()
 
     const handleSave = async (field) => {
@@ -24,6 +26,27 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
         }
         if (field === 'name') setIsEditingName(false)
         if (field === 'description') setIsEditingDescription(false)
+    }
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0]
+        if (!file) return
+
+        setIsUploading(true)
+        
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('campaignId', campaignId)
+
+        const result = await uploadCampaignImage(formData)
+        setIsUploading(false)
+
+        if (result.error) {
+            alert(result.error)
+        } else {
+            setEditedCampaign({ ...editedCampaign, campaign_image: result.imageUrl })
+            router.refresh()
+        }
     }
 
     return (
@@ -88,6 +111,25 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
                 <div>
                     <h1 className="font-bold">Campaign image</h1>
                     <p className="text-gray-500 text-sm">Upload an image for your campaign.</p>
+                </div>
+                <div className="flex flex-col gap-4">
+                    {editedCampaign.campaign_image && (
+                        <img
+                            src={editedCampaign.campaign_image}
+                            alt="Campaign image"
+                            className="rounded-md w-[200px] h-[200px] object-cover"
+                        />
+                    )}
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                        />
+                        <Upload className="w-5 h-5" />
+                        <span>{isUploading ? 'Uploading...' : 'Upload image'}</span>
+                    </label>
                 </div>
                 <div className="flex flex-row gap-2 items-center">
                     <h1 className="font-bold text-gray-400">Coming soon! Generate your campaign image</h1>

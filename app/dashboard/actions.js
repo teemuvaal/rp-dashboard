@@ -315,3 +315,69 @@ export async function updateCampaignDetails(campaignId, updates) {
   revalidatePath(`/dashboard/${campaignId}/details`)
   return { success: true, campaign: data[0] }
 }
+
+export async function uploadCampaignImage(formData) {
+  const supabase = createClient()
+
+  // Get the current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError) {
+    return { error: 'Authentication error' }
+  }
+
+  const file = formData.get('file')
+  const campaignId = formData.get('campaignId')
+
+  if (!file || !campaignId) {
+    return { error: 'Missing file or campaign ID' }
+  }
+
+  // Check if the user is the campaign owner
+  const { data: campaign, error: campaignError } = await supabase
+    .from('campaigns')
+    .select('owner_id')
+    .eq('id', campaignId)
+    .single()
+
+  if (campaignError) {
+    return { error: 'Error fetching campaign details' }
+  }
+
+  if (campaign.owner_id !== user.id) {
+    return { error: 'Only the campaign owner can upload images' }
+  }
+
+  // Upload the file
+  const fileExt = file.name.split('.').pop()
+  const fileName = `${campaignId}_${Math.random().toString(36).substring(2)}.${fileExt}`
+  const { data, error } = await supabase.storage
+    .from('campaign-images')
+    .upload(fileName, file)
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  // Get the public URL of the uploaded file
+  const { data: { publicUrl }, error: urlError } = supabase.storage
+    .from('campaign-images')
+    .getPublicUrl(fileName)
+
+  if (urlError) {
+    return { error: urlError.message }
+  }
+
+  // Update the campaign with the new image URL
+  const { error: updateError } = await supabase
+    .from('campaigns')
+    .update({ campaign_image: publicUrl })
+    .eq('id', campaignId)
+
+  if (updateError) {
+    return { error: updateError.message }
+  }
+
+  revalidatePath(`/dashboard/${campaignId}/details`)
+  return { success: true, imageUrl: publicUrl }
+}
