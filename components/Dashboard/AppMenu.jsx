@@ -10,8 +10,11 @@ import {
     NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu"
 import { navigationMenuTriggerStyle } from "@/components/ui/navigation-menu"
-import { Newspaper, NotebookPen, Notebook, Beer } from "lucide-react"
+import { Newspaper, NotebookPen, Notebook, Beer, Users } from "lucide-react"
 import CreateSessionForm from "@/components/Dashboard/CreateSessionForm"
+import { Separator } from "@/components/ui/separator"
+
+// TODO: REFACTOR EACH MENU ITEM TO BE A COMPONENT
 
 export default function AppMenu({params}) {
     return (
@@ -21,7 +24,7 @@ export default function AppMenu({params}) {
                     <NavigationMenuItem>
                         <NavigationMenuTrigger>Campaign</NavigationMenuTrigger>
                         <NavigationMenuContent>
-                            <div className="flex flex-col gap-2 w-[400px] h-[150px] p-4">
+                            <div className="flex flex-col gap-2 w-[400px] h-[600px] p-4">
                                 <span className="flex flex-row gap-2">
                                 <Link href={`/dashboard/${params.id}/`}>
                                 <NavigationMenuLink  className={navigationMenuTriggerStyle()}>
@@ -33,15 +36,28 @@ export default function AppMenu({params}) {
                                     Go to campaing feed page to view calendar and posts.
                                 </p>
                                 </span>
+                                <Separator className="my-4"/>
+                                <h3 className="text-sm font-semibold text-gray-500">Admin tools</h3>
                                 <span className="flex flex-row gap-2">
-                                <Link href={`/dashboard/${params.id}/details/`}>
-                                <NavigationMenuLink  className={navigationMenuTriggerStyle()}>
+                                <Link href={`/dashboard/${params.id}/details/`}>                                
+                                    <NavigationMenuLink  className={navigationMenuTriggerStyle()}>
                                     <Newspaper className="w-4 h-4 mr-2" />
                                     Details
                                 </NavigationMenuLink>
                                 </Link>
                                 <p className="text-sm text-gray-500">
                                     Go to campaign details page to view and edit campaign details.
+                                </p>
+                                </span>
+                                <span className="flex flex-row gap-2">
+                                <Link href={`/dashboard/${params.id}/details/`}>                                
+                                    <NavigationMenuLink  className={navigationMenuTriggerStyle()}>
+                                    <Users className="w-4 h-4 mr-2" />
+                                    Members
+                                </NavigationMenuLink>
+                                </Link>
+                                <p className="text-sm text-gray-500">
+                                    Manage campaign members and invite users.
                                 </p>
                                 </span>
                             </div>

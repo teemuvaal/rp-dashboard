@@ -96,9 +96,9 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
                 <div className="flex flex-col gap-2">
                     <span>
                         <h1 className="font-bold">Campaign description:</h1>
-                        <p className="text-gray-500 text-sm">Tell us about your epic adventure. What is your tagli</p>
+                        <p className="text-gray-500 text-sm">Tell us about your epic adventure. What is your tagline?</p>
                     </span>
-                    <span className="flex flex-row gap-2 items-center">
+                    <span className="flex flex-row gap-2 items-center text-sm">
                         <p>{editedCampaign.description}</p>
                     <Pencil 
                         className="w-4 h-4 cursor-pointer hover:scale-110" 
@@ -107,6 +107,10 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
                 </span>
                 </div>
             )}
+            <div>
+                <h1 className="font-bold">Tags:</h1>
+                <p className="text-gray-500 text-sm">Add tags to your campaign. These will help with AI features by providing context.</p>
+            </div>
             <div className="flex flex-col gap-6">
                 <div>
                     <h1 className="font-bold">Campaign image</h1>
@@ -131,9 +135,9 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
                         <span>{isUploading ? 'Uploading...' : 'Upload image'}</span>
                     </label>
                 </div>
-                <div className="flex flex-row gap-2 items-center">
-                    <h1 className="font-bold text-gray-400">Coming soon! Generate your campaign image</h1>
-                    <Sparkles className="text-gray-500 w-4 h-4 cursor-pointer hover:scale-110" />
+                <div className="flex flex-row gap-2 items-center border-2 shadow-sm border-gray-200 rounded-full w-[400px] p-4">
+                <Sparkles className="text-gray-500 w-8 h-8 cursor-pointer hover:scale-110" />
+                    <h1 className="font-bold text-gray-400">Coming soon! Generate your campaign image with AI</h1>                    
                 </div>
             </div>
         </div>
