@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { updateCampaignDetails } from '@/app/dashboard/actions'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Pen, Pencil, Save } from 'lucide-react'
+import { Pen, Pencil, Save, Sparkles } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export default function EditableCampaignDetails({ campaign, campaignId }) {
@@ -84,9 +84,15 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
                 </span>
                 </div>
             )}
-            <div>
-                <h1 className="font-bold">Campaign image</h1>
-                <p className="text-gray-500 text-sm">Upload an image for your campaign.</p>
+            <div className="flex flex-col gap-6">
+                <div>
+                    <h1 className="font-bold">Campaign image</h1>
+                    <p className="text-gray-500 text-sm">Upload an image for your campaign.</p>
+                </div>
+                <div className="flex flex-row gap-2 items-center">
+                    <h1 className="font-bold text-gray-400">Coming soon! Generate your campaign image</h1>
+                    <Sparkles className="text-gray-500 w-4 h-4 cursor-pointer hover:scale-110" />
+                </div>
             </div>
         </div>
     )
