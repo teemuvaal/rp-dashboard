@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Pen, Pencil, Save, Sparkles, Upload, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 
 export default function EditableCampaignDetails({ campaign, campaignId }) {
     const [editedCampaign, setEditedCampaign] = useState(campaign)

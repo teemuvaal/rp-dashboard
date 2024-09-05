@@ -17,6 +17,7 @@ const baskerville = Libre_Baskerville({
 
 export const metadata = {
   title: config.siteName,
+  name: config.siteName,
   description: config.siteDescription,
 };
 

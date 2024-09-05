@@ -16,7 +16,6 @@ export default function HomePage() {
     >
       <LandingPageNav />
       <div className="lg:mx-[140px] mx-4 flex-grow flex flex-col">
-
         <LandingPageHero />
         <LandingPageCTA />
         <LandingPageProblem />
