@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { updateCampaignDetails, uploadCampaignImage } from '@/app/dashboard/actions'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Pen, Pencil, Save, Sparkles, Upload } from 'lucide-react'
+import { Pen, Pencil, Save, Sparkles, Upload, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 
@@ -13,6 +13,7 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
     const [isEditingName, setIsEditingName] = useState(false)
     const [isEditingDescription, setIsEditingDescription] = useState(false)
     const [isUploading, setIsUploading] = useState(false)
+    const [newTag, setNewTag] = useState('')
     const router = useRouter()
 
     const handleSave = async (field) => {
@@ -45,6 +46,31 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
             alert(result.error)
         } else {
             setEditedCampaign({ ...editedCampaign, campaign_image: result.imageUrl })
+            router.refresh()
+        }
+    }
+
+    const handleAddTag = async () => {
+        if (newTag && !editedCampaign.tags.includes(newTag)) {
+            const updatedTags = [...editedCampaign.tags, newTag]
+            const result = await updateCampaignDetails(campaignId, { tags: updatedTags })
+            if (result.error) {
+                alert(result.error)
+            } else {
+                setEditedCampaign(result.campaign)
+                setNewTag('')
+                router.refresh()
+            }
+        }
+    }
+
+    const handleRemoveTag = async (tagToRemove) => {
+        const updatedTags = editedCampaign.tags.filter(tag => tag !== tagToRemove)
+        const result = await updateCampaignDetails(campaignId, { tags: updatedTags })
+        if (result.error) {
+            alert(result.error)
+        } else {
+            setEditedCampaign(result.campaign)
             router.refresh()
         }
     }
@@ -109,7 +135,37 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
             )}
             <div>
                 <h1 className="font-bold">Tags:</h1>
-                <p className="text-gray-500 text-sm">Add tags to your campaign. These will help with AI features by providing context.</p>
+                <p className="text-gray-500 text-sm">Add up to 5 tags to your campaign. These will help with AI features by providing context.</p>
+                <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap gap-2">
+                        {editedCampaign.tags.map((tag, index) => (
+                            <span key={index} className="bg-gray-200 rounded-full px-3 py-1 text-sm flex items-center">
+                                {tag}
+                                <X
+                                    className="ml-2 w-4 h-4 cursor-pointer"
+                                    onClick={() => handleRemoveTag(tag)}
+                                />
+                            </span>
+                        ))}
+                    </div>
+                    {editedCampaign.tags.length < 5 && (
+                        <div className="flex items-center gap-2">
+                            <Input
+                                className="w-[200px]"
+                                value={newTag}
+                                onChange={(e) => setNewTag(e.target.value)}
+                                placeholder="Add a new tag"
+                            />
+                            <button
+                                onClick={handleAddTag}
+                                className="bg-blue-500 text-white px-3 py-1 rounded-md"
+                                disabled={!newTag}
+                            >
+                                Add
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
             <div className="flex flex-col gap-6">
                 <div>

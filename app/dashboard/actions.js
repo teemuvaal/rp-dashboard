@@ -289,7 +289,7 @@ export async function updateCampaignDetails(campaignId, updates) {
   // Check if the user is the campaign owner
   const { data: campaign, error: campaignError } = await supabase
     .from('campaigns')
-    .select('owner_id')
+    .select('owner_id, tags')
     .eq('id', campaignId)
     .single()
 
@@ -299,6 +299,11 @@ export async function updateCampaignDetails(campaignId, updates) {
 
   if (campaign.owner_id !== user.id) {
     return { error: 'Only the campaign owner can update details' }
+  }
+
+  // If updating tags, ensure we don't exceed 5 tags
+  if (updates.tags && updates.tags.length > 5) {
+    return { error: 'Maximum of 5 tags allowed' }
   }
 
   // Update the campaign
