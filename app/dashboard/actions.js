@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 
 export async function createCampaign(formData) {
   const supabase = createClient()
@@ -242,20 +243,30 @@ export async function fetchFeedItems(campaignId) {
     return []
   }
 
-  // Fetch user information for the current user
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  // Extract unique user IDs from the posts
+  const userIds = [...new Set(data.map(post => post.user_id))]
 
-  if (userError) {
-    console.error('Error fetching user information:', userError)
+  // Fetch user emails from the public.users table
+  const { data: users, error: usersError } = await supabase
+    .from('users')
+    .select('id, email')
+    .in('id', userIds)
+
+  if (usersError) {
+    console.error('Error fetching user emails:', usersError)
     return data.map(post => ({
       ...post,
       author: 'Unknown'
     }))
   }
 
+  // Create a map of user IDs to emails
+  const userEmailMap = Object.fromEntries(users.map(user => [user.id, user.email]))
+
+  // Combine the post data with the user emails
   return data.map(post => ({
     ...post,
-    author: post.user_id === user.id ? user.email : 'Unknown'
+    author: userEmailMap[post.user_id] || 'Unknown'
   }))
 }
 
@@ -385,4 +396,218 @@ export async function uploadCampaignImage(formData) {
 
   revalidatePath(`/dashboard/${campaignId}/details`)
   return { success: true, imageUrl: publicUrl }
+}
+
+export async function fetchCampaignMembers(campaignId) {
+  const supabase = createClient()
+
+  const { data: members, error } = await supabase
+    .from('campaign_members')
+    .select(`
+      id,
+      user_id,
+      role
+    `)
+    .eq('campaign_id', campaignId)
+
+  if (error) {
+    console.error('Error fetching campaign members:', error)
+    return []
+  }
+
+  return members
+}
+
+export async function createInvitation(formData) {
+  const supabase = createClient()
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError) {
+    return { error: 'Authentication error' }
+  }
+
+  const campaignId = formData.get('campaignId')
+  const email = formData.get('email')
+  const role = formData.get('role')
+
+  const { data, error } = await supabase.rpc('create_invitation', {
+    p_campaign_id: campaignId,
+    p_invited_by: user.id,
+    p_email: email,
+    p_role: role
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  const invitationUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/invite/${data}`
+
+  // Here you would typically send an email with the invitationUrl
+  // For now, we'll just return it
+  return { success: true, invitationUrl }
+}
+
+export async function generateShareLink(campaignId) {
+  const supabase = createClient()
+
+  // Get the current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError) {
+    return { error: 'Authentication error' }
+  }
+
+  // Check if the user is the campaign owner
+  const { data: campaign, error: campaignError } = await supabase
+    .from('campaigns')
+    .select('owner_id, share_id')
+    .eq('id', campaignId)
+    .single()
+
+  if (campaignError) {
+    return { error: 'Error fetching campaign details' }
+  }
+
+  if (campaign.owner_id !== user.id) {
+    return { error: 'Only the campaign owner can generate share links' }
+  }
+
+  const shareUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/join/${campaign.share_id}`
+
+  return { success: true, shareUrl }
+}
+
+export async function joinCampaign(shareId, userId) {
+  const supabase = createClient()
+
+  // Find the campaign
+  const { data: campaign, error: campaignError } = await supabase
+    .from('campaigns')
+    .select('id')
+    .eq('share_id', shareId)
+    .single()
+
+  if (campaignError) {
+    return { error: 'Invalid or expired share link' }
+  }
+
+  // Check if the user is already a member
+  const { data: existingMember, error: memberError } = await supabase
+    .from('campaign_members')
+    .select('id')
+    .eq('campaign_id', campaign.id)
+    .eq('user_id', userId)
+    .single()
+
+  if (existingMember) {
+    return { error: 'You are already a member of this campaign' }
+  }
+
+  // Add user to campaign_members
+  const { error: insertError } = await supabase
+    .from('campaign_members')
+    .insert({
+      campaign_id: campaign.id,
+      user_id: userId,
+      role: 'member'
+    })
+
+  if (insertError) {
+    return { error: 'Error joining the campaign' }
+  }
+
+  return { success: true, campaignId: campaign.id }
+}
+
+export async function refreshShareLink(campaignId) {
+  const supabase = createClient()
+
+  // Get the current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError) {
+    return { error: 'Authentication error' }
+  }
+
+  // Check if the user is the campaign owner
+  const { data: campaign, error: campaignError } = await supabase
+    .from('campaigns')
+    .select('owner_id')
+    .eq('id', campaignId)
+    .single()
+
+  if (campaignError) {
+    return { error: 'Error fetching campaign details' }
+  }
+
+  if (campaign.owner_id !== user.id) {
+    return { error: 'Only the campaign owner can refresh share links' }
+  }
+
+  // Generate a new UUID for the share_id
+  const { data, error } = await supabase
+    .from('campaigns')
+    .update({ share_id: supabase.auth.uuid() })
+    .eq('id', campaignId)
+    .select('share_id')
+
+  if (error) {
+    return { error: 'Error refreshing share link' }
+  }
+
+  const newShareUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/join/${data[0].share_id}`
+
+  return { success: true, shareUrl: newShareUrl }
+}
+
+export async function updateProfile(formData) {
+  const supabase = createClient()
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError) {
+    return { error: 'Authentication error' }
+  }
+
+  const username = formData.get('username')
+  const profilePicture = formData.get('profilePicture')
+
+  let updates = { username }
+
+  if (profilePicture) {
+    const fileExt = profilePicture.name.split('.').pop()
+    const fileName = `${user.id}/${Math.random().toString(36).substring(2)}.${fileExt}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('profile-pictures')
+      .upload(fileName, profilePicture)
+
+    if (uploadError) {
+      return { error: 'Error uploading profile picture' }
+    }
+
+    const { data: { publicUrl }, error: urlError } = supabase.storage
+      .from('profile-pictures')
+      .getPublicUrl(fileName)
+
+    if (urlError) {
+      return { error: 'Error getting public URL for profile picture' }
+    }
+
+    updates.profile_picture = publicUrl
+  }
+
+  const { error: updateError } = await supabase
+    .from('users')
+    .update(updates)
+    .eq('id', user.id)
+
+  if (updateError) {
+    return { error: 'Error updating profile' }
+  }
+
+  revalidatePath('/dashboard/profile')
+  redirect('/dashboard')
 }

@@ -50,7 +50,7 @@ export default function AppMenu({params}) {
                                 </p>
                                 </span>
                                 <span className="flex flex-row gap-2">
-                                <Link href={`/dashboard/${params.id}/details/`}>                                
+                                <Link href={`/dashboard/${params.id}/members/`}>                                
                                     <NavigationMenuLink  className={navigationMenuTriggerStyle()}>
                                     <Users className="w-4 h-4 mr-2" />
                                     Members

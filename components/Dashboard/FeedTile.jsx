@@ -50,4 +50,4 @@ export default function FeedTile({ title, content, author, createdAt }) {
             </div>
         </div>
     )
-} 
+}

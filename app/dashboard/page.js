@@ -16,6 +16,20 @@ export default async function Home() {
       redirect('/login')
     }
 
+    // Check if the user has a username set
+    const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('username')
+        .eq('id', data.user.id)
+        .single()
+
+    if (userError) {
+        console.error('Error fetching user data:', userError)
+    } else if (!userData?.username) {
+        // Redirect to profile page if username is not set
+        redirect('/dashboard/profile')
+    }
+
     const { campaigns, error: campaignsError } = await fetchUserCampaigns()
 
     return (
