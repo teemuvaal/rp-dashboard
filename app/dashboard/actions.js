@@ -246,27 +246,31 @@ export async function fetchFeedItems(campaignId) {
   // Extract unique user IDs from the posts
   const userIds = [...new Set(data.map(post => post.user_id))]
 
-  // Fetch user emails from the public.users table
+  // Fetch user information from the public.users table
   const { data: users, error: usersError } = await supabase
     .from('users')
-    .select('id, email')
+    .select('id, email, username, profile_picture')
     .in('id', userIds)
 
   if (usersError) {
-    console.error('Error fetching user emails:', usersError)
+    console.error('Error fetching user information:', usersError)
     return data.map(post => ({
       ...post,
-      author: 'Unknown'
+      author: 'Unknown',
+      authorUsername: 'Unknown',
+      authorProfilePicture: null
     }))
   }
 
-  // Create a map of user IDs to emails
-  const userEmailMap = Object.fromEntries(users.map(user => [user.id, user.email]))
+  // Create a map of user IDs to user information
+  const userMap = Object.fromEntries(users.map(user => [user.id, user]))
 
-  // Combine the post data with the user emails
+  // Combine the post data with the user information
   return data.map(post => ({
     ...post,
-    author: userEmailMap[post.user_id] || 'Unknown'
+    author: userMap[post.user_id]?.email || 'Unknown',
+    authorUsername: userMap[post.user_id]?.username || 'Unknown',
+    authorProfilePicture: userMap[post.user_id]?.profile_picture || null
   }))
 }
 

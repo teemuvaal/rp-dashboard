@@ -1,7 +1,5 @@
-import Link from 'next/link';
 import TopNav from "@/components/Dashboard/TopNav";
 import Hero from "@/components/Dashboard/DashboardHero";
-import Footer from "@/components/LandingPage/Footer";
 import AppMenu from "@/components/Dashboard/AppMenu";
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'

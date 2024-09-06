@@ -62,6 +62,8 @@ export default function Feed({ feedItems, sessions, isOwner, campaignId, createP
                                 title={item.title} 
                                 content={item.content}
                                 author={item.author}
+                                authorUsername={item.authorUsername}
+                                authorProfilePicture={item.authorProfilePicture}
                                 createdAt={item.created_at}
                             />
                         ))

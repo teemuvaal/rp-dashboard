@@ -1,6 +1,7 @@
 import { formatDistanceToNow, parseISO } from 'date-fns';
+import Image from 'next/image';
 
-export default function FeedTile({ title, content, author, createdAt }) {
+export default function FeedTile({ title, content, author, authorUsername, authorProfilePicture, createdAt }) {
     const formatDate = (dateString) => {
         if (!dateString) return 'Unknown date';
         
@@ -34,8 +35,20 @@ export default function FeedTile({ title, content, author, createdAt }) {
     return (
         <div className="border border-gray-300 rounded-sm p-2 mb-2 hover:bg-gray-50 transition-colors">
             <div className="flex items-start space-x-3">
-                <div className="rounded-full bg-gray-300 w-8 h-8 flex-shrink-0">
-                    {/* You can replace this with an actual avatar image */}
+                <div className="rounded-full bg-gray-300 w-8 h-8 flex-shrink-0 overflow-hidden">
+                    {authorProfilePicture ? (
+                        <Image
+                            src={authorProfilePicture}
+                            alt={`${authorUsername}'s profile picture`}
+                            width={32}
+                            height={32}
+                            className="object-cover w-full h-full"
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-500">
+                            {authorUsername.charAt(0).toUpperCase()}
+                        </div>
+                    )}
                 </div>
                 <div className="flex-grow">
                     <div className="flex justify-between items-start mb-1">
@@ -45,7 +58,7 @@ export default function FeedTile({ title, content, author, createdAt }) {
                         </span>
                     </div>
                     <p className="text-sm font-light text-gray-700 mb-1">{content || 'No content'}</p>
-                    <p className="text-xs text-gray-500">Posted by: {author || 'Unknown'}</p>
+                    <p className="text-xs text-gray-500">Posted by: {authorUsername || author || 'Unknown'}</p>
                 </div>
             </div>
         </div>
