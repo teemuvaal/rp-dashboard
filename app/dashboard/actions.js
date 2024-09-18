@@ -617,3 +617,124 @@ export async function updateProfile(formData) {
   revalidatePath('/dashboard/profile')
   redirect('/dashboard')
 }
+
+export async function createNote(formData) {
+  const supabase = createClient()
+
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+    if (userError) {
+      console.error('Authentication error:', userError)
+      return { error: 'Authentication error' }
+    }
+
+    const campaignId = formData.get('campaignId')
+    const sessionId = formData.get('sessionId') || null
+    const title = formData.get('title')
+    const content = formData.get('content')
+    const isPublic = formData.get('isPublic') === 'true'
+
+    const { data, error } = await supabase
+      .from('notes')
+      .insert({
+        campaign_id: campaignId,
+        session_id: sessionId,
+        user_id: user.id,
+        title,
+        content,
+        is_public: isPublic,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+
+    if (error) {
+      console.error('Error creating note:', error)
+      return { error: error.message }
+    }
+
+    revalidatePath(`/dashboard/${campaignId}/notes`)
+    return { success: true, note: data[0] }
+  } catch (error) {
+    console.error('Unexpected error in createNote:', error)
+    return { error: 'An unexpected error occurred' }
+  }
+}
+
+export async function fetchNotes(campaignId) {
+  const supabase = createClient()
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError) {
+    return { error: 'Authentication error' }
+  }
+
+  const { data, error } = await supabase
+    .from('notes')
+    .select(`
+      id,
+      title,
+      content,
+      is_public,
+      created_at,
+      updated_at,
+      user_id,
+      session_id,
+      users:user_id (username)
+    `)
+    .eq('campaign_id', campaignId)
+    .or(`user_id.eq.${user.id},is_public.eq.true`)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching notes:', error)
+    return []
+  }
+
+  return data.map(note => ({
+    ...note,
+    author: note.users?.username || 'Unknown'
+  }))
+}
+
+export async function updateNote(formData) {
+  const supabase = createClient()
+
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+    if (userError) {
+      console.error('Authentication error:', userError)
+      return { error: 'Authentication error' }
+    }
+
+    const noteId = formData.get('noteId')
+    const title = formData.get('title')
+    const content = formData.get('content')
+    const isPublic = formData.get('isPublic') === 'true'
+
+    const { data, error } = await supabase
+      .from('notes')
+      .update({
+        title,
+        content,
+        is_public: isPublic,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', noteId)
+      .eq('user_id', user.id)
+      .select()
+
+    if (error) {
+      console.error('Error updating note:', error)
+      return { error: error.message }
+    }
+
+    return { success: true, note: data[0] }
+  } catch (error) {
+    console.error('Unexpected error in updateNote:', error)
+    return { error: 'An unexpected error occurred' }
+  }
+}
