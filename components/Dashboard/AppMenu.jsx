@@ -18,7 +18,9 @@ import { Separator } from "@/components/ui/separator"
 
 export default function AppMenu({params}) {
     return (
-        <nav>
+        <nav
+        className="my-4"
+        >
             <NavigationMenu>
                 <NavigationMenuList>
                     <NavigationMenuItem>

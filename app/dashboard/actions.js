@@ -233,7 +233,8 @@ export async function fetchFeedItems(campaignId) {
       title,
       content,
       created_at,
-      user_id
+      user_id,
+      users:user_id (username, profile_picture)
     `)
     .eq('campaign_id', campaignId)
     .order('created_at', { ascending: false })
@@ -243,34 +244,14 @@ export async function fetchFeedItems(campaignId) {
     return []
   }
 
-  // Extract unique user IDs from the posts
-  const userIds = [...new Set(data.map(post => post.user_id))]
-
-  // Fetch user information from the public.users table
-  const { data: users, error: usersError } = await supabase
-    .from('users')
-    .select('id, email, username, profile_picture')
-    .in('id', userIds)
-
-  if (usersError) {
-    console.error('Error fetching user information:', usersError)
-    return data.map(post => ({
-      ...post,
-      author: 'Unknown',
-      authorUsername: 'Unknown',
-      authorProfilePicture: null
-    }))
-  }
-
-  // Create a map of user IDs to user information
-  const userMap = Object.fromEntries(users.map(user => [user.id, user]))
-
-  // Combine the post data with the user information
   return data.map(post => ({
-    ...post,
-    author: userMap[post.user_id]?.email || 'Unknown',
-    authorUsername: userMap[post.user_id]?.username || 'Unknown',
-    authorProfilePicture: userMap[post.user_id]?.profile_picture || null
+    id: post.id,
+    title: post.title,
+    content: post.content,
+    created_at: post.created_at,
+    user_id: post.user_id,
+    author: post.users?.username || 'Unknown',
+    authorProfilePicture: post.users?.profile_picture || null
   }))
 }
 
@@ -405,21 +386,42 @@ export async function uploadCampaignImage(formData) {
 export async function fetchCampaignMembers(campaignId) {
   const supabase = createClient()
 
-  const { data: members, error } = await supabase
+  // First, fetch campaign members
+  const { data: members, error: membersError } = await supabase
     .from('campaign_members')
-    .select(`
-      id,
-      user_id,
-      role
-    `)
+    .select('id, user_id, role')
     .eq('campaign_id', campaignId)
 
-  if (error) {
-    console.error('Error fetching campaign members:', error)
+  if (membersError) {
+    console.error('Error fetching campaign members:', membersError)
     return []
   }
 
-  return members
+  // Extract user IDs
+  const userIds = members.map(member => member.user_id)
+
+  // Then, fetch user details
+  const { data: users, error: usersError } = await supabase
+    .from('users')
+    .select('id, username, profile_picture')
+    .in('id', userIds)
+
+  if (usersError) {
+    console.error('Error fetching user details:', usersError)
+    return []
+  }
+
+  // Create a map of user details
+  const userMap = Object.fromEntries(users.map(user => [user.id, user]))
+
+  // Combine member and user data
+  return members.map(member => ({
+    id: member.id,
+    user_id: member.user_id,
+    role: member.role,
+    username: userMap[member.user_id]?.username || 'Unknown User',
+    profile_picture: userMap[member.user_id]?.profile_picture || null
+  }))
 }
 
 export async function createInvitation(formData) {
