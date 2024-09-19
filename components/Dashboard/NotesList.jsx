@@ -10,6 +10,7 @@ import { format } from 'date-fns'
 export default function NotesList({ initialNotes, campaignId }) {
   const [notes, setNotes] = useState(initialNotes)
 
+  // useEffect to refresh notes every 30 seconds and keep records up to date
   useEffect(() => {
     const refreshNotes = async () => {
       const { notes: refreshedNotes, error } = await fetchNotes(campaignId)
@@ -27,7 +28,8 @@ export default function NotesList({ initialNotes, campaignId }) {
   return (
     <div className="space-y-4">
       {notes.map((note) => (
-        <div key={note.id} className="p-4">
+         <Link href={`/dashboard/${campaignId}/notes/${note.id}`} passHref>
+        <div key={note.id} className="p-4 cursor-pointer hover:bg-gray-50">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold">{note.title}</h3>
             {note.is_public ? <Globe className="h-4 w-4" /> : <LockKeyhole className="h-4 w-4" />}
@@ -35,14 +37,9 @@ export default function NotesList({ initialNotes, campaignId }) {
           <p className="text-sm text-gray-500">
             By {note.author} on {format(new Date(note.created_at), 'dd/MM/yyyy')}
           </p>
-          <Link href={`/dashboard/${campaignId}/notes/${note.id}`} passHref>
-              <span className="mr-2 flex flex-row items-center gap-2 group text-sm">
-                open
-                <MoveRight className="h-4 w-4 group-hover:ml-2 transition-all duration-300" />
-              </span>
-
+          </div>
           </Link>
-        </div>
+        
       ))}
     </div>
   )
