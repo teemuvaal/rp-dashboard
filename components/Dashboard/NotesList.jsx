@@ -1,12 +1,47 @@
-import CreateNote from '@/components/Dashboard/CreateNote'
+'use client'
 
-export default function NotesList({ notes, onNoteUpdated }) {
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { fetchNotes } from '@/app/dashboard/actions'
+import Link from 'next/link'
+import { LockKeyhole, Globe, MoveRight } from 'lucide-react'
+import { format } from 'date-fns'
+
+export default function NotesList({ initialNotes, campaignId }) {
+  const [notes, setNotes] = useState(initialNotes)
+
+  useEffect(() => {
+    const refreshNotes = async () => {
+      const { notes: refreshedNotes, error } = await fetchNotes(campaignId)
+      if (!error) {
+        setNotes(refreshedNotes)
+      }
+    }
+
+    // Refresh notes every 30 seconds
+    const intervalId = setInterval(refreshNotes, 30000)
+
+    return () => clearInterval(intervalId)
+  }, [campaignId])
+
   return (
     <div className="space-y-4">
       {notes.map((note) => (
-        <div key={note.id} className="border p-4 rounded">
-          <CreateNote note={note} onNoteUpdated={onNoteUpdated} />
-          <p className="text-sm text-gray-500">By {note.author} on {new Date(note.created_at).toLocaleDateString()}</p>
+        <div key={note.id} className="p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold">{note.title}</h3>
+            {note.is_public ? <Globe className="h-4 w-4" /> : <LockKeyhole className="h-4 w-4" />}
+          </div>
+          <p className="text-sm text-gray-500">
+            By {note.author} on {format(new Date(note.created_at), 'dd/MM/yyyy')}
+          </p>
+          <Link href={`/dashboard/${campaignId}/notes/${note.id}`} passHref>
+              <span className="mr-2 flex flex-row items-center gap-2 group text-sm">
+                open
+                <MoveRight className="h-4 w-4 group-hover:ml-2 transition-all duration-300" />
+              </span>
+
+          </Link>
         </div>
       ))}
     </div>

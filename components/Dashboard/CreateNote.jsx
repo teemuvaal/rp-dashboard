@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { createNote, updateNote } from '@/app/dashboard/actions'
+import { updateNote } from '@/app/dashboard/actions'
 import dynamic from 'next/dynamic'
 
 const ReactQuill = dynamic(() => import('react-quill'), { ssr: false })
@@ -12,14 +12,6 @@ export default function CreateNote({ note, onNoteUpdated }) {
   const [content, setContent] = useState(note.content)
   const [isPublic, setIsPublic] = useState(note.is_public)
   const [error, setError] = useState(null)
-
-  useEffect(() => {
-    const debounce = setTimeout(() => {
-      handleUpdate()
-    }, 1000)
-
-    return () => clearTimeout(debounce)
-  }, [title, content, isPublic])
 
   const handleUpdate = async () => {
     setError(null)
@@ -75,6 +67,7 @@ export default function CreateNote({ note, onNoteUpdated }) {
         />
         <label htmlFor="isPublic">Make this note public</label>
       </div>
+      <Button onClick={handleUpdate}>Save Changes</Button>
     </div>
   )
 }

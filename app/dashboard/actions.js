@@ -410,7 +410,6 @@ export async function fetchCampaignMembers(campaignId) {
     console.error('Error fetching user details:', usersError)
     return []
   }
-
   // Create a map of user details
   const userMap = Object.fromEntries(users.map(user => [user.id, user]))
 
@@ -682,7 +681,7 @@ export async function fetchNotes(campaignId) {
       updated_at,
       user_id,
       session_id,
-      users:user_id (username)
+      users:user_id (username, profile_picture)
     `)
     .eq('campaign_id', campaignId)
     .or(`user_id.eq.${user.id},is_public.eq.true`)
@@ -690,13 +689,15 @@ export async function fetchNotes(campaignId) {
 
   if (error) {
     console.error('Error fetching notes:', error)
-    return []
+    return { error: 'Error fetching notes' }
   }
 
-  return data.map(note => ({
+  const notes = data.map(note => ({
     ...note,
     author: note.users?.username || 'Unknown'
   }))
+
+  return { notes }
 }
 
 export async function updateNote(formData) {
@@ -735,6 +736,93 @@ export async function updateNote(formData) {
     return { success: true, note: data[0] }
   } catch (error) {
     console.error('Unexpected error in updateNote:', error)
+    return { error: 'An unexpected error occurred' }
+  }
+}
+
+// Add this new function
+export async function fetchNote(noteId) {
+  const supabase = createClient()
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError) {
+    return { error: 'Authentication error' }
+  }
+
+  const { data, error } = await supabase
+    .from('notes')
+    .select(`
+      id,
+      title,
+      content,
+      is_public,
+      created_at,
+      updated_at,
+      user_id,
+      users:user_id (username, profile_picture)
+    `)
+    .eq('id', noteId)
+    .single()
+
+  if (error) {
+    console.error('Error fetching note:', error)
+    return { error: 'Error fetching note' }
+  }
+
+  if (!data.is_public && data.user_id !== user.id) {
+    return { error: 'You do not have permission to view this note' }
+  }
+
+  return { note: {
+    ...data,
+    author: data.users?.username || 'Unknown'
+  }}
+}
+
+// Add this new function
+export async function deleteNote(noteId) {
+  const supabase = createClient()
+
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+    if (userError) {
+      console.error('Authentication error:', userError)
+      return { error: 'Authentication error' }
+    }
+
+    // First, fetch the note to check ownership
+    const { data: note, error: fetchError } = await supabase
+      .from('notes')
+      .select('user_id, campaign_id')
+      .eq('id', noteId)
+      .single()
+
+    if (fetchError) {
+      console.error('Error fetching note:', fetchError)
+      return { error: 'Error fetching note' }
+    }
+
+    if (note.user_id !== user.id) {
+      return { error: 'You do not have permission to delete this note' }
+    }
+
+    // If the user is the owner, proceed with deletion
+    const { error: deleteError } = await supabase
+      .from('notes')
+      .delete()
+      .eq('id', noteId)
+
+    if (deleteError) {
+      console.error('Error deleting note:', deleteError)
+      return { error: deleteError.message }
+    }
+
+    revalidatePath(`/dashboard/${note.campaign_id}/notes`)
+    return { success: true }
+  } catch (error) {
+    console.error('Unexpected error in deleteNote:', error)
     return { error: 'An unexpected error occurred' }
   }
 }
