@@ -32,6 +32,7 @@ export default async function Home() {
 
     const { campaigns, error: campaignsError } = await fetchUserCampaigns()
 
+    console.log(userData)
     return (
         <div 
         style={{
@@ -43,7 +44,7 @@ export default async function Home() {
             <section
             className="p-4 h-screen"
             >
-            <UserActions user={data.user} />
+            <UserActions user={userData} />
             <div className="flex flex-row gap-4">
             <CreateCampaignForm />
             <JoinCampaignForm />
