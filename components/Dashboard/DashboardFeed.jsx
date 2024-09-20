@@ -25,9 +25,8 @@ export default function Feed({ feedItems, sessions, isOwner, campaignId, createP
                         <Dialog>
                             <DialogTrigger asChild>
                                 <Button
-                                    variant="outline"
                                     size="sm"
-                                    className="rounded-full"
+                                    className="bg-stone-900 hover:bg-stone-800 rounded-full"
                                 >
                                     Add Post
                                 </Button>
@@ -72,7 +71,7 @@ export default function Feed({ feedItems, sessions, isOwner, campaignId, createP
                     )}
                 </section>
             </div>
-            <div className="w-full lg:w-1/3 border border-gray-200 rounded-md p-2 sm:p-4 shadow-md">
+            <div className="w-full lg:w-1/3 border rounded-md p-2 sm:p-4 shadow-md">
                 <CalendarTile sessions={sessions} />
             </div>
         </div>  

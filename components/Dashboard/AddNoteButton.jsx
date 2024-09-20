@@ -27,7 +27,9 @@ export default function AddNoteButton({ campaignId }) {
     }
 
     return (
-        <Button onClick={handleAddNote} disabled={isCreating}>
+        <Button onClick={handleAddNote} disabled={isCreating}
+        className="bg-stone-900 hover:bg-stone-800"
+        >
             {isCreating ? 'Creating...' : 'New Note'}
         </Button>
     )

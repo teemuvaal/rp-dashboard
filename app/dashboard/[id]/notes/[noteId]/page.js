@@ -6,6 +6,18 @@ import NoteDisplay from '@/components/Dashboard/NoteDisplay'
 import CreateNote from '@/components/Dashboard/CreateNote'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+  } from "@/components/ui/alert-dialog"
+  
 
 export default function NotePage({ params }) {
     const [note, setNote] = useState(null)
@@ -50,13 +62,11 @@ export default function NotePage({ params }) {
     }
 
     const handleDelete = async () => {
-        if (window.confirm('Are you sure you want to delete this note?')) {
-            const result = await deleteNote(note.id)
-            if (result.success) {
+        const result = await deleteNote(note.id)
+        if (result.success) {
                 router.push(`/dashboard/${params.id}/notes`)
             } else {
                 setError(result.error)
-            }
         }
     }
 
@@ -80,7 +90,21 @@ export default function NotePage({ params }) {
                         <Button onClick={handleTogglePublic}>
                             {note.is_public ? 'Make Private' : 'Make Public'}
                         </Button>
-                        <Button onClick={handleDelete} variant="destructive">Delete Note</Button>
+                        <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                        <Button variant="destructive">Delete Note</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Note</AlertDialogTitle>
+                                <AlertDialogDescription>Are you sure you want to delete this note?</AlertDialogDescription>
+                                </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                        </AlertDialog>
                     </div>
                 </>
             )}

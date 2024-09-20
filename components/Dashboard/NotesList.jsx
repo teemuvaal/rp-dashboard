@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { fetchNotes } from '@/app/dashboard/actions'
 import Link from 'next/link'
-import { LockKeyhole, Globe, MoveRight } from 'lucide-react'
+import { LockKeyhole, Globe, MoveRight, NotepadText } from 'lucide-react'
 import { format } from 'date-fns'
 
 export default function NotesList({ initialNotes, campaignId }) {
@@ -29,9 +29,12 @@ export default function NotesList({ initialNotes, campaignId }) {
     <div className="space-y-4">
       {notes.map((note) => (
          <Link href={`/dashboard/${campaignId}/notes/${note.id}`} passHref>
-        <div key={note.id} className="p-4 cursor-pointer hover:bg-gray-50">
+        <div key={note.id} className="p-4 cursor-pointer hover:bg-stone-100 rounded-md">
           <div className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+            <NotepadText className="h-4 w-4" />
             <h3 className="font-semibold">{note.title}</h3>
+            </span>
             {note.is_public ? <Globe className="h-4 w-4" /> : <LockKeyhole className="h-4 w-4" />}
           </div>
           <p className="text-sm text-gray-500">

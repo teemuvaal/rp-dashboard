@@ -4,6 +4,8 @@ import AppMenu from "@/components/Dashboard/AppMenu";
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 
+import { ThemeProvider } from "@/components/themeprovider"
+
 export default async function CampaignLayout({ children, params }) {
     const supabase = createClient()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -38,9 +40,15 @@ export default async function CampaignLayout({ children, params }) {
 
 
     return (
-        <div style={{
-            background: "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(185,164,121,1) 100%)"
-        }}>
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+        <div
+        className="bg-black"
+        >
             <div className="flex flex-col min-h-screen w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-white">
                 <TopNav campaigns={[campaign]}/>
                 <Hero name={campaign.name} description={campaign.description} image={campaign.campaign_image} />
@@ -48,5 +56,6 @@ export default async function CampaignLayout({ children, params }) {
                 {children}
             </div>
         </div>
+        </ThemeProvider>
     );
 }
