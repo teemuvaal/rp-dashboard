@@ -89,3 +89,9 @@ export async function updatePassword(formData) {
     return { error: 'An unexpected error occurred. Please try again.' }
   }
 }
+
+async function signInWithDiscord() {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'discord',
+  })
+}
