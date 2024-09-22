@@ -11,6 +11,15 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+  } from "@/components/ui/card"
+  
 
 export default function Feed({ feedItems, sessions, isOwner, campaignId, createPost }) {
     return (
@@ -71,7 +80,7 @@ export default function Feed({ feedItems, sessions, isOwner, campaignId, createP
                     )}
                 </section>
             </div>
-            <div className="w-full lg:w-1/3 border rounded-md p-2 sm:p-4 shadow-md">
+            <div className="w-full lg:w-1/3 p-2 sm:p-4">
                 <CalendarTile sessions={sessions} />
             </div>
         </div>  

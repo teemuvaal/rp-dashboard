@@ -12,7 +12,7 @@ import Link from "next/link"
 
 export default function CampaignTile({name, description, role, id}) {
     return (
-        <>
+        <div className="w-1/3">
             <Card className="border border-black rounded-md p-1 w-70">
                 <CardHeader>
                     <CardTitle>{name}</CardTitle>
@@ -25,6 +25,6 @@ export default function CampaignTile({name, description, role, id}) {
                     <Link href={`/dashboard/${id}`}><Button>Open</Button></Link>
                 </CardFooter>
             </Card>
-        </>
+        </div>
     )
 }

@@ -52,11 +52,15 @@ export default function CreateNote({ note, onNoteUpdated }) {
         className="w-full p-2 border rounded"
         required
       />
+      <div
+      className="h-full"
+      >
       <ReactQuill 
         theme="snow" 
         value={content} 
         onChange={setContent}
       />
+      </div>
       <div className="flex items-center">
         <input
           type="checkbox"

@@ -8,7 +8,7 @@ export default async function CampaignList({ campaigns }) {
     return (
         <div className="flex flex-col gap-4 p-4">
             <h2>Your Campaigns</h2>
-            <div className="flex flex-row flex-wrap gap-4">
+            <div className="flex flex-col gap-4">
                 {campaigns.map((campaign) => (
                     <CampaignTile key={campaign.id} {...campaign} />
                 ))}
