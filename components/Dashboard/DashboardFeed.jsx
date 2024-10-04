@@ -23,8 +23,9 @@ import {
 
 export default function Feed({ feedItems, sessions, isOwner, campaignId, createPost }) {
     return (
+        <Card>
         <div className="w-full flex flex-col lg:flex-row p-2 sm:p-4 mb-auto gap-2 h-full">
-            <div className="w-full lg:w-2/3 border border-gray-200 rounded-md p-2 sm:p-4 shadow-md">
+            <div className="w-full lg:w-2/3p-2 sm:p-4">
                 <div className="flex justify-between items-center mb-4">
                     <div>
                         <h1 className="text-xl sm:text-2xl font-bold">Feed</h1>
@@ -35,7 +36,7 @@ export default function Feed({ feedItems, sessions, isOwner, campaignId, createP
                             <DialogTrigger asChild>
                                 <Button
                                     size="sm"
-                                    className="bg-stone-900 hover:bg-stone-800 rounded-full"
+                                    className="rounded-full"
                                 >
                                     Add Post
                                 </Button>
@@ -83,6 +84,7 @@ export default function Feed({ feedItems, sessions, isOwner, campaignId, createP
             <div className="w-full lg:w-1/3 p-2 sm:p-4">
                 <CalendarTile sessions={sessions} />
             </div>
-        </div>  
+        </div>
+        </Card>  
     )
 }
