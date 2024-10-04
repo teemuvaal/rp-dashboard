@@ -6,6 +6,7 @@ import { fetchNotes } from '@/app/dashboard/actions'
 import Link from 'next/link'
 import { LockKeyhole, Globe, MoveRight, NotepadText } from 'lucide-react'
 import { format } from 'date-fns'
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 
 export default function NotesList({ initialNotes, campaignId }) {
   const [notes, setNotes] = useState(initialNotes)
@@ -26,21 +27,33 @@ export default function NotesList({ initialNotes, campaignId }) {
   }, [campaignId])
 
   return (
-    <div className="space-y-4">
-      {notes.map((note) => (
+    <div className="p-4">
+      {notes.map((note) => (       
         <Link key={note.id} href={`/dashboard/${campaignId}/notes/${note.id}`} passHref>
-          <div className="p-4 cursor-pointer hover:bg-stone-100 rounded-md">
+          <Card
+          className="my-2"
+          >
             <div className="flex items-center justify-between">
+              <CardHeader>
+              <CardTitle>
               <span className="flex items-center gap-2">
-                <NotepadText className="h-4 w-4" />
+              {note.is_public ? <Globe className="h-4 w-4" /> : <LockKeyhole className="h-4 w-4" />}
                 <h3 className="font-semibold">{note.title}</h3>
               </span>
-              {note.is_public ? <Globe className="h-4 w-4" /> : <LockKeyhole className="h-4 w-4" />}
+              </CardTitle>
+              </CardHeader>
             </div>
+            <CardContent>
+              <p>
+                Snipped of note content goes here...
+              </p>
+            </CardContent>
+            <CardFooter>
             <p className="text-sm text-gray-500">
               By {note.author} on {format(new Date(note.created_at), 'dd/MM/yyyy')}
             </p>
-          </div>
+            </CardFooter>
+          </Card>
         </Link>
       ))}
     </div>

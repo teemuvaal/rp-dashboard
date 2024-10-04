@@ -17,7 +17,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
   } from "@/components/ui/alert-dialog"
-  
+  import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 
 export default function NotePage({ params }) {
     const [note, setNote] = useState(null)
@@ -79,7 +79,8 @@ export default function NotePage({ params }) {
     }
 
     return (
-        <div className="space-y-4">
+        <Card>
+        <div className="space-y-4 p-4">
             {isEditing ? (
                 <CreateNote note={note} onNoteUpdated={handleNoteUpdated} />
             ) : (
@@ -109,5 +110,6 @@ export default function NotePage({ params }) {
                 </>
             )}
         </div>
+        </Card>
     )
 }
