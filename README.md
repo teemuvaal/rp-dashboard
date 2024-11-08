@@ -13,3 +13,14 @@ In reality, this is project to practice building a SaaS landing page and functio
 - Dice Roller (Supabase Realtime?)
 - Map Builder
 - DM Tools
+- Session Notes
+
+## To Do
+
+- [x] Create Campaign
+- [x] Create Session
+- [x] Create Note
+  - [ ] Collab editing
+- [ ] Characters
+  - [ ] DND Template
+  - [ ] Scrape from DND Beyond?

@@ -85,7 +85,8 @@ export default function SessionList({ sessions, campaignId }) {
                             key={session.id} 
                             session={session} 
                             onDelete={handleDeleteSession} 
-                            isDeleting={isDeleting} 
+                            isDeleting={isDeleting}
+                            campaignId={campaignId}
                         />
                     ))
                 )}
@@ -102,6 +103,7 @@ export default function SessionList({ sessions, campaignId }) {
                             session={session} 
                             onDelete={handleDeleteSession} 
                             isDeleting={isDeleting} 
+                            campaignId={campaignId}
                         />
                     ))
                 )}
