@@ -13,6 +13,7 @@ import { navigationMenuTriggerStyle } from "@/components/ui/navigation-menu"
 import { Newspaper, NotebookPen, Notebook, Beer, Users } from "lucide-react"
 import CreateSessionForm from "@/components/Dashboard/CreateSessionForm"
 import { Separator } from "@/components/ui/separator"
+import AddNoteButton from "@/components/Dashboard/AddNoteButton"
 
 // TODO: REFACTOR EACH MENU ITEM TO BE A COMPONENT
 
@@ -81,12 +82,7 @@ export default function AppMenu({params}) {
                                 </p>
                                 </span>
                                 <span className="flex flex-row gap-2">
-                                <Link href={`/dashboard/${params.id}/notes/create`}>
-                                <NavigationMenuLink  className={navigationMenuTriggerStyle()}>
-                                    <NotebookPen className="w-4 h-4 mr-2" />
-                                    Create Note
-                                </NavigationMenuLink>                                
-                                </Link>
+                                    <AddNoteButton campaignId={params.id} />                           
                                 <p className="text-sm text-gray-500">
                                     Create a new note to share with the team.
                                 </p>

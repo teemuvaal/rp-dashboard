@@ -3,16 +3,19 @@ import { Inter } from "next/font/google"
 import { cn } from "@/lib/utils" 
 import { Libre_Baskerville } from "next/font/google"
 import config from "@/config"
+import { ThemeProvider } from "@/components/themeprovider"
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
+  display: "swap",
 });
 
 const baskerville = Libre_Baskerville({
   subsets: ["latin"],
   variable: "--font-serif",
   weight: "400",
+  display: "swap",
 });
 
 export const metadata = {
@@ -23,13 +26,22 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={cn(inter.variable, baskerville.variable)}>
+    <html lang="en" suppressHydrationWarning className={cn("antialiased", inter.variable, baskerville.variable)}>
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased"
         )}
+        suppressHydrationWarning
       >
-        {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+          storageKey="theme-preference"
+        > 
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -4,8 +4,6 @@ import AppMenu from "@/components/Dashboard/AppMenu";
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 
-import { ThemeProvider } from "@/components/themeprovider"
-
 export default async function CampaignLayout({ children, params }) {
     const supabase = createClient()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -40,12 +38,6 @@ export default async function CampaignLayout({ children, params }) {
 
 
     return (
-        <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
         <div
         className="bg-black"
         >
@@ -56,6 +48,5 @@ export default async function CampaignLayout({ children, params }) {
                 {children}
             </div>
         </div>
-        </ThemeProvider>
     );
 }

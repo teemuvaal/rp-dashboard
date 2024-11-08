@@ -10,6 +10,7 @@ import {
   
 
 // logic for the calendar tile, show only next sessions and 1 previous session with proper headings
+// there is an error if no future sessions are found with filter
 export default function CalendarTile({ sessions }) {
 
     const now = new Date()
