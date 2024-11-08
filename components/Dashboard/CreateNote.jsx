@@ -55,11 +55,13 @@ export default function CreateNote({ note, onNoteUpdated }) {
       <div
       className="h-full"
       >
+        <div className="h-full">
       <ReactQuill 
         theme="snow" 
         value={content} 
         onChange={setContent}
       />
+      </div>
       </div>
       <div className="flex items-center">
         <input

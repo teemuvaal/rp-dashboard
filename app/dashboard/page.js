@@ -19,7 +19,7 @@ export default async function Home() {
     // Check if the user has a username set
     const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('username')
+        .select('username, profile_picture')
         .eq('id', data.user.id)
         .single()
 
@@ -39,7 +39,7 @@ export default async function Home() {
             background: "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(185,164,121,1) 100%)"
           }}
         className="lg:mx-[140px] flex flex-col h-screen shadow-lg bg-gray-50">
-            <TopNav campaigns={campaigns}/>
+            <TopNav campaigns={campaigns} user={userData}/>
             <Hero name={"Welcome to your Adventure Hub!"} description={"Here you can see and manage all your campaigns."} image={"/LandingPageHero.png"} />
             <section
             className="p-4 h-screen"
@@ -47,7 +47,6 @@ export default async function Home() {
             <UserActions user={userData} />
             <div className="flex flex-row gap-4">
             <CreateCampaignForm />
-            <JoinCampaignForm />
             </div>
             {campaignsError ? (
                 <p>Error loading campaigns: {campaignsError}</p>

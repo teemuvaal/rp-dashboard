@@ -183,7 +183,8 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
                             className="rounded-md w-[200px] h-[200px] object-cover"
                         />
                     )}
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <div>
+                    <label className="flex items-center gap-2 cursor-pointer border-2 border-gray-200 rounded-md p-2 w-[200px]">
                         <input
                             type="file"
                             accept="image/*"
@@ -193,6 +194,7 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
                         <Upload className="w-5 h-5" />
                         <span>{isUploading ? 'Uploading...' : 'Upload image'}</span>
                     </label>
+                    </div>
                 </div>
                 <div className="group flex flex-row gap-2 items-center border-2 shadow-sm border-gray-200 rounded-full w-[400px] p-4">
                 <Sparkles className="text-gray-200  w-8 h-8 cursor-pointer group-hover:scale-110" />

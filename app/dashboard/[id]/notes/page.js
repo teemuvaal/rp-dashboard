@@ -13,8 +13,13 @@ export default async function NotesPage({ params }) {
     return (
         <Card>
         <div className='flex flex-col'>
-            <span className='p-4'>
-            <AddNoteButton campaignId={params.id} />
+            <span className='p-4 flex flex-col gap-2'>
+                <span>
+                    <AddNoteButton campaignId={params.id} />
+                </span>
+                <p className='text-sm text-gray-500'>
+                    Here you can create notes. Notes can be private or shared with all campaign members.
+                </p>
             </span>
             <NotesList initialNotes={notes} campaignId={params.id} />
         </div>

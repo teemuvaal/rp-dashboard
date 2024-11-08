@@ -44,9 +44,7 @@ export default function NotesList({ initialNotes, campaignId }) {
               </CardHeader>
             </div>
             <CardContent>
-              <p>
-                Snipped of note content goes here...
-              </p>
+            <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: note.content }} />
             </CardContent>
             <CardFooter>
             <p className="text-sm text-gray-500">

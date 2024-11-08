@@ -66,6 +66,10 @@
   }
 }
 
+.quill  .ql-container{
+  max-height: calc(100% - 42px);
+}
+
 @layer base {
   * {
     @apply border-border;

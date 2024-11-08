@@ -74,7 +74,7 @@ export default function FeedTile({ title, content, author, authorUsername, autho
                         </CardTitle>
                         </CardHeader>
                         <CardContent>
-            <p className="text-sm font-light text-gray-700 mb-1">{content || 'No content'}</p>
+            <p className="text-sm font-light mb-1">{content || 'No content'}</p>
             </CardContent>  
             <CardFooter>
                 <p className="text-xs text-gray-500">Posted by: {authorUsername || author || 'Unknown'}</p>
