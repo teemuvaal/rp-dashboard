@@ -23,6 +23,12 @@ export default async function CampaignLayout({ children, params }) {
         notFound()
     }
 
+    const { data: userData, error: userDataError } = await supabase
+        .from('users')
+        .select('username, profile_picture')
+        .eq('id', user.id)
+        .single()
+
     // Check if user is a member of the campaign
     const { data: membership, error: membershipError } = await supabase
         .from('campaign_members')
@@ -38,11 +44,11 @@ export default async function CampaignLayout({ children, params }) {
 
 
     return (
-        <div style={{
-            background: "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(185,164,121,1) 100%)"
-        }}>
+        <div
+        className="bg-black"
+        >
             <div className="flex flex-col min-h-screen w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-white">
-                <TopNav campaigns={[campaign]}/>
+                <TopNav campaigns={[campaign]} user={userData}/>
                 <Hero name={campaign.name} description={campaign.description} image={campaign.campaign_image} />
                 <AppMenu params={params}/>
                 {children}

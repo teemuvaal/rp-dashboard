@@ -1,56 +1,33 @@
-'use client';
+import React, { Suspense } from 'react';
+import dynamic from 'next/dynamic';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-import React, { useState } from 'react';
-import { motion } from "framer-motion";
-import { resetPassword } from './actions';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+const DynamicResetPasswordForm = dynamic(() => import('./ResetPasswordForm'), {
+  ssr: false,
+  loading: () => <p>Loading...</p>
+});
 
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-
-export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  
+export default function ResetPasswordPage() {
   return (
-    <div className="flex h-screen w-full">
-      <motion.img
-        src="/login.png"
-        alt="Login"
-        className="h-full object-cover"
-        initial={{ scale: 1.3 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 30, ease: "linear" }}
-      />
-      <div className="flex md:justify-end h-full w-full md:absolute md:right-0 md:w-1/2 items-center bg-black bg-opacity-20">
-        <Card className="w-[400px] items-center mr-10 bg-opacity-50 h-80 border-gray-300 border-2 shadow-md">
+    <div className="flex flex-col md:flex-row h-screen w-full">
+      <div className="hidden md:block md:w-1/2 h-full relative overflow-hidden">
+        <img
+          src="/login.png"
+          alt="Reset Password"
+          className="absolute h-full w-full object-cover"
+        />
+      </div>
+      <div className="w-full md:w-1/2 flex items-center justify-center p-4 md:p-8 bg-gradient-to-br from-white to-gray-200">
+        <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Reset Password</CardTitle>
-            <CardDescription>Enter your email to reset your password</CardDescription>
+            <CardTitle>Update Password</CardTitle>
+            <CardDescription>Enter your new password</CardDescription>
           </CardHeader>
-          <CardContent className="">
-            <form action={resetPassword} className="flex flex-col gap-2">
-              <Input 
-                type="email" 
-                name="email"
-                placeholder="Email" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <Separator />
-              <Button type="submit">Reset Password</Button>
-            </form>
+          <CardContent>
+            <Suspense fallback={<p>Loading...</p>}>
+              <DynamicResetPasswordForm />
+            </Suspense>
           </CardContent>
-          <CardFooter>
-          </CardFooter>
         </Card>
       </div>
     </div>

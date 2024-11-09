@@ -1,33 +1,28 @@
-'use client'
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import CreateNote from '@/components/Dashboard/CreateNote'
+import { fetchNotes } from '@/app/dashboard/actions'
+import NotesList from '@/components/Dashboard/NotesList'
+import AddNoteButton from '@/components/Dashboard/AddNoteButton'
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 
+export default async function NotesPage({ params }) {
+    const { notes, error } = await fetchNotes(params.id)
 
-
-export default function NotesPage() {
-    const [tab, setTab] = useState('notes')
-    return (
-        <div
-        className='flex flex-col gap-4 mt-4'
-        >
-        <span
-        className='flex flex-row gap-4'
-        >
-        <Button onClick={() => setTab('notes')}>Notes</Button>
-        <Button onClick={() => setTab('addnote')}>Add Note</Button>
-        </span>
-        <div>
-        {tab === 'notes' ? (
-        <div>
-        <h1>Notes would be here</h1>
-        </div>
-        ) : (
-            <div>
-                <CreateNote />
-            </div>
-        )}
-        </div>
-        </div>
-    )
+    if (error) {
+        return <div>Error: {error}</div>
     }
+
+    return (
+        <Card>
+        <div className='flex flex-col'>
+            <span className='p-4 flex flex-col gap-2'>
+                <span>
+                    <AddNoteButton campaignId={params.id} />
+                </span>
+                <p className='text-sm text-gray-500'>
+                    Here you can create notes. Notes can be private or shared with all campaign members.
+                </p>
+            </span>
+            <NotesList initialNotes={notes} campaignId={params.id} />
+        </div>
+        </Card>
+    )
+}

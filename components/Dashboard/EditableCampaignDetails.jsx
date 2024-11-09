@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Pen, Pencil, Save, Sparkles, Upload, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 export default function EditableCampaignDetails({ campaign, campaignId }) {
     const [editedCampaign, setEditedCampaign] = useState(campaign)
@@ -138,13 +140,15 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
                 <div className="flex flex-col gap-4">
                     <div className="flex flex-wrap gap-2">
                         {editedCampaign.tags.map((tag, index) => (
-                            <span key={index} className="bg-gray-200 rounded-full px-3 py-1 text-sm flex items-center">
+                            <Badge>
+                            <span key={index} className="flex items-center">
                                 {tag}
                                 <X
                                     className="ml-2 w-4 h-4 cursor-pointer"
                                     onClick={() => handleRemoveTag(tag)}
                                 />
                             </span>
+                            </Badge>
                         ))}
                     </div>
                     {editedCampaign.tags.length < 5 && (
@@ -155,13 +159,13 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
                                 onChange={(e) => setNewTag(e.target.value)}
                                 placeholder="Add a new tag"
                             />
-                            <button
+                            <Button
                                 onClick={handleAddTag}
-                                className="bg-blue-500 text-white px-3 py-1 rounded-md"
+                                className=""
                                 disabled={!newTag}
                             >
                                 Add
-                            </button>
+                            </Button>
                         </div>
                     )}
                 </div>
@@ -179,7 +183,8 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
                             className="rounded-md w-[200px] h-[200px] object-cover"
                         />
                     )}
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <div>
+                    <label className="flex items-center gap-2 cursor-pointer border-2 border-gray-200 rounded-md p-2 w-[200px]">
                         <input
                             type="file"
                             accept="image/*"
@@ -189,10 +194,11 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
                         <Upload className="w-5 h-5" />
                         <span>{isUploading ? 'Uploading...' : 'Upload image'}</span>
                     </label>
+                    </div>
                 </div>
-                <div className="flex flex-row gap-2 items-center border-2 shadow-sm border-gray-200 rounded-full w-[400px] p-4">
-                <Sparkles className="text-gray-500 w-8 h-8 cursor-pointer hover:scale-110" />
-                    <h1 className="font-bold text-gray-400">Coming soon! Generate your campaign image with AI</h1>                    
+                <div className="group flex flex-row gap-2 items-center border-2 shadow-sm border-gray-200 rounded-full w-[400px] p-4">
+                <Sparkles className="text-gray-200  w-8 h-8 cursor-pointer group-hover:scale-110" />
+                <h1 className="font-bold text-gray-200">Coming soon! Generate your campaign image with AI</h1>                    
                 </div>
             </div>
         </div>

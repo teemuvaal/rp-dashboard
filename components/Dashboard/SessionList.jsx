@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator"
 import dynamic from 'next/dynamic'
 import { deleteSession } from '@/app/dashboard/actions'
 import { useState } from 'react'
+import Link from 'next/link'
 
 const CreateSessionForm = dynamic(() => import('@/components/Dashboard/CreateSessionForm'), { ssr: false })
 
@@ -22,7 +23,7 @@ function formatDate(dateString) {
     return new Date(dateString).toLocaleString('en-GB', options).replace(',', '');
 }
 
-function SessionCard({ session, onDelete, isDeleting }) {
+function SessionCard({ session, onDelete, isDeleting, campaignId }) {
     return (
         <Card key={session.id}>
             <CardHeader>
@@ -37,6 +38,11 @@ function SessionCard({ session, onDelete, isDeleting }) {
                 <p>Status: {session.status}</p>
             </CardContent>
             <CardFooter>
+                <Button variant="outline" asChild>
+                    <Link href={`/dashboard/${campaignId}/sessions/${session.id}`}>
+                        View Session
+                    </Link>
+                </Button>
                 <Button 
                     variant="destructive" 
                     onClick={() => onDelete(session.id)}
@@ -79,7 +85,8 @@ export default function SessionList({ sessions, campaignId }) {
                             key={session.id} 
                             session={session} 
                             onDelete={handleDeleteSession} 
-                            isDeleting={isDeleting} 
+                            isDeleting={isDeleting}
+                            campaignId={campaignId}
                         />
                     ))
                 )}
@@ -96,6 +103,7 @@ export default function SessionList({ sessions, campaignId }) {
                             session={session} 
                             onDelete={handleDeleteSession} 
                             isDeleting={isDeleting} 
+                            campaignId={campaignId}
                         />
                     ))
                 )}

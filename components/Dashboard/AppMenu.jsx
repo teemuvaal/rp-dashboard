@@ -13,6 +13,7 @@ import { navigationMenuTriggerStyle } from "@/components/ui/navigation-menu"
 import { Newspaper, NotebookPen, Notebook, Beer, Users } from "lucide-react"
 import CreateSessionForm from "@/components/Dashboard/CreateSessionForm"
 import { Separator } from "@/components/ui/separator"
+import AddNoteButton from "@/components/Dashboard/AddNoteButton"
 
 // TODO: REFACTOR EACH MENU ITEM TO BE A COMPONENT
 
@@ -26,8 +27,8 @@ export default function AppMenu({params}) {
                     <NavigationMenuItem>
                         <NavigationMenuTrigger>Campaign</NavigationMenuTrigger>
                         <NavigationMenuContent>
-                            <div className="flex flex-col gap-2 w-[400px] h-[600px] p-4">
-                                <span className="flex flex-row gap-2">
+                            <div className="flex flex-col gap-2 w-[500px] h-[600px] p-4">
+                                <span className="flex flex-row gap-2 justify-between">
                                 <Link href={`/dashboard/${params.id}/`}>
                                 <NavigationMenuLink  className={navigationMenuTriggerStyle()}>
                                     <Newspaper className="w-4 h-4 mr-2" />
@@ -40,7 +41,7 @@ export default function AppMenu({params}) {
                                 </span>
                                 <Separator className="my-4"/>
                                 <h3 className="text-sm font-semibold text-gray-500">Admin tools</h3>
-                                <span className="flex flex-row gap-2">
+                                <span className="flex flex-row gap-2 justify-between">
                                 <Link href={`/dashboard/${params.id}/details/`}>                                
                                     <NavigationMenuLink  className={navigationMenuTriggerStyle()}>
                                     <Newspaper className="w-4 h-4 mr-2" />
@@ -48,10 +49,10 @@ export default function AppMenu({params}) {
                                 </NavigationMenuLink>
                                 </Link>
                                 <p className="text-sm text-gray-500">
-                                    Go to campaign details page to view and edit campaign details.
+                                    View & manage campaign details.
                                 </p>
                                 </span>
-                                <span className="flex flex-row gap-2">
+                                <span className="flex flex-row gap-2 justify-between">
                                 <Link href={`/dashboard/${params.id}/members/`}>                                
                                     <NavigationMenuLink  className={navigationMenuTriggerStyle()}>
                                     <Users className="w-4 h-4 mr-2" />
@@ -68,25 +69,24 @@ export default function AppMenu({params}) {
                     <NavigationMenuItem>
                         <NavigationMenuTrigger>Notes</NavigationMenuTrigger>
                         <NavigationMenuContent>
-                            <div className="flex flex-col gap-2 w-[400px] h-[150px] p-4">
-                                <span className="flex flex-row gap-2">
+                            <div className="flex flex-col gap-2 w-[500px] h-[150px] p-4">
+                                <span className="flex flex-row gap-2 justify-between">
                                 <Link href={`/dashboard/${params.id}/notes/`}>
                                 <NavigationMenuLink  className={navigationMenuTriggerStyle()}>
-                                    <Notebook className="w-4 h-4 mr-2" />
-                                    View Notes
+                                    <span className="flex flex-row items-center">
+                                        <Notebook className="w-4 h-4 mr-2" />
+                                        View Notes
+                                    </span>
                                 </NavigationMenuLink>
                                 </Link>
                                 <p className="text-sm text-gray-500">
                                     View all your notes, and public notes.
                                 </p>
                                 </span>
-                                <span className="flex flex-row gap-2">
-                                <Link href={`/dashboard/${params.id}/notes/create`}>
+                                <span className="flex flex-row gap-2 justify-between">
                                 <NavigationMenuLink  className={navigationMenuTriggerStyle()}>
-                                    <NotebookPen className="w-4 h-4 mr-2" />
-                                    Create Note
-                                </NavigationMenuLink>                                
-                                </Link>
+                                    <AddNoteButton campaignId={params.id} type="ghost" asChild/>                           
+                                </NavigationMenuLink>
                                 <p className="text-sm text-gray-500">
                                     Create a new note to share with the team.
                                 </p>
@@ -97,8 +97,8 @@ export default function AppMenu({params}) {
                     <NavigationMenuItem>
                         <NavigationMenuTrigger>Sessions</NavigationMenuTrigger>
                         <NavigationMenuContent>
-                            <div className="flex flex-col gap-2 w-[400px] h-[150px] p-4">
-                                <span className="flex flex-row gap-2">
+                            <div className="flex flex-col gap-2 w-[500px] h-[150px] p-4">
+                                <span className="flex flex-row gap-2 justify-between">
                                 <Link href={`/dashboard/${params.id}/sessions/`}>
                                 <NavigationMenuLink  className={navigationMenuTriggerStyle()}>
                                     <Beer className="w-4 h-4 mr-2" />
@@ -109,7 +109,7 @@ export default function AppMenu({params}) {
                                     View all your upcoming and previous sessions.
                                 </p>
                                 </span>
-                                <span className="flex flex-row gap-2">
+                                <span className="flex flex-row gap-2 justify-between">
                                 <CreateSessionForm campaignId={params.id} buttonStyle="outline" />
                                 <p className="text-sm text-gray-500">
                                     Quickly schedule a new session.

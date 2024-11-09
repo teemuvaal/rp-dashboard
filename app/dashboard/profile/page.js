@@ -2,6 +2,9 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import ProfileForm from '@/components/Dashboard/ProfileForm'
 import { updateProfile } from '../actions'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 
 export default async function ProfilePage() {
     const supabase = createClient()
@@ -23,6 +26,13 @@ export default async function ProfilePage() {
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen gap-2 p-4">
+            <div className="flex flex-row gap-2">
+                <Link href="/dashboard">
+                    <Button variant="outline">
+                        <ArrowLeft className="w-4 h-4" />
+                    </Button>
+                </Link>
+            </div>
             <h1 className="text-2xl font-bold">Your Profile</h1>
             <ProfileForm 
                 initialUsername={profile?.username || ''}
