@@ -6,6 +6,15 @@ Adventure Hub is a web app for DMs and players to create and share their adventu
 
 This is about building a functioning product with a focus on AI tools and realtime collaboration.
 
+## Tech Stack
+
+- Next.js
+- Supabase (auth, db, storage)
+- TailwindCSS
+- ShadCN
+- Resend
+- OpenAI
+
 ## Features
 
 - Campaign Notes (Supabase Realtime)
@@ -37,3 +46,7 @@ Below is a list of features that are complete or in progress and should be compl
   - [ ] Scrape from DND Beyond?
 - [ ] Setup RLS
 - [ ] Session polling
+- [ ] Assets
+  - [ ] Asset types
+  - [ ] Asset management
+  - [ ] Asset library

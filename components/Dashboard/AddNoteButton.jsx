@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { createNote } from '@/app/dashboard/actions'
 import { useRouter } from 'next/navigation'
+import { UserPen } from 'lucide-react'
 
-export default function AddNoteButton({ campaignId }) {
+export default function AddNoteButton({ campaignId, type }) {
     const [isCreating, setIsCreating] = useState(false)
     const router = useRouter()
 
@@ -27,10 +28,12 @@ export default function AddNoteButton({ campaignId }) {
     }
 
     return (
-        <Button onClick={handleAddNote} disabled={isCreating}
-        className=""
+        <Button onClick={handleAddNote} disabled={isCreating} variant={type}
         >
-            {isCreating ? 'Creating...' : 'New Note'}
+            <span className="flex flex-row items-center">
+                <UserPen className="w-4 h-4 mr-2" />
+                {isCreating ? 'Creating...' : 'New Note'}
+            </span>
         </Button>
     )
 }
