@@ -52,16 +52,23 @@ export default function CreateNote({ note, onNoteUpdated }) {
         className="w-full p-2 border rounded"
         required
       />
-      <div
-      className="h-full"
-      >
-        <div className="h-full">
-      <ReactQuill 
-        theme="snow" 
-        value={content} 
-        onChange={setContent}
-      />
-      </div>
+      <div className="h-[60vh]">
+        <ReactQuill 
+          theme="snow" 
+          value={content} 
+          onChange={setContent}
+          className="h-[calc(100%-42px)]"
+          modules={{
+            toolbar: [
+              [{ 'header': [1, 2, 3, false] }],
+              ['bold', 'italic', 'underline', 'strike'],
+              ['blockquote', 'code-block'],
+              [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+              ['link', 'image'],
+              ['clean']
+            ]
+          }}
+        />
       </div>
       <div className="flex items-center">
         <input
