@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { updateNote } from '@/app/dashboard/actions'
 import dynamic from 'next/dynamic'
 import { createClient } from '@/utils/supabase/client'
+import Image from 'next/image'
 
 const ReactQuill = dynamic(() => import('react-quill'), { ssr: false })
 import 'react-quill/dist/quill.snow.css'
@@ -17,21 +18,27 @@ export default function CreateNote({ note, onNoteUpdated }) {
   const [currentUser, setCurrentUser] = useState(null)
   const supabase = createClient()
 
-  // Fetch current user
+  // Fetch current user with profile information
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserWithProfile = async () => {
       const { data: { user }, error } = await supabase.auth.getUser()
       if (!error && user) {
-        setCurrentUser(user)
+        // Fetch additional user info from users table
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('username, profile_picture')
+          .eq('id', user.id)
+          .single()
+        
+        setCurrentUser({ ...user, ...userProfile })
       }
     }
-    fetchUser()
+    fetchUserWithProfile()
   }, [])
 
   useEffect(() => {
-    if (!currentUser) return // Don't set up channel until we have the user
+    if (!currentUser) return
 
-    // Set up realtime presence channel
     const channel = supabase.channel(`note:${note.id}`, {
       config: {
         presence: {
@@ -47,18 +54,18 @@ export default function CreateNote({ note, onNoteUpdated }) {
       setPresentUsers(users)
     })
 
-    // Subscribe to the channel and track presence
+    // Subscribe to the channel and track presence with user profile info
     channel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
         await channel.track({
           user_id: currentUser.id,
-          email: currentUser.email,
+          username: currentUser.username,
+          profile_picture: currentUser.profile_picture,
           timestamp: new Date().toISOString(),
         })
       }
     })
 
-    // Cleanup subscription
     return () => {
       channel.unsubscribe()
     }
@@ -92,13 +99,24 @@ export default function CreateNote({ note, onNoteUpdated }) {
       <div className="flex items-center gap-2 text-sm text-gray-500">
         <span>{presentUsers.length} viewing</span>
         <div className="flex -space-x-2">
-          {presentUsers.map((user, i) => (
+          {presentUsers.map((user) => (
             <div
               key={user.user_id}
-              className="relative inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 ring-2 ring-white"
-              title={user.email}
+              className="relative inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 ring-2 ring-white overflow-hidden"
+              title={user.username || 'Anonymous'}
             >
-              {user.email?.charAt(0).toUpperCase()}
+              {user.profile_picture ? (
+                <Image
+                  src={user.profile_picture}
+                  alt={user.username || 'User avatar'}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <span className="text-sm font-medium">
+                  {(user.username || 'A')[0].toUpperCase()}
+                </span>
+              )}
             </div>
           ))}
         </div>
