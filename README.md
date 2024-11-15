@@ -39,6 +39,7 @@ Below is a list of features that are complete or in progress and should be compl
   - [ ] Session summary
   - [ ] Session recap
 - [x] Create Note
+  - [x] Show active participants
   - [ ] Collab editing
   - [ ] AI Cleanup
 - [ ] Characters

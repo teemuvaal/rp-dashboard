@@ -1,13 +1,20 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { updateNote } from '@/app/dashboard/actions'
 import dynamic from 'next/dynamic'
 import { createClient } from '@/utils/supabase/client'
 import Image from 'next/image'
+import QuillCursors from 'quill-cursors'
 
 const ReactQuill = dynamic(() => import('react-quill'), { ssr: false })
 import 'react-quill/dist/quill.snow.css'
+
+// Register the cursors module with Quill
+if (typeof window !== 'undefined') {
+  const Quill = require('quill')
+  Quill.register('modules/cursors', QuillCursors)
+}
 
 export default function CreateNote({ note, onNoteUpdated }) {
   const [title, setTitle] = useState(note.title)
@@ -16,6 +23,9 @@ export default function CreateNote({ note, onNoteUpdated }) {
   const [error, setError] = useState(null)
   const [presentUsers, setPresentUsers] = useState([])
   const [currentUser, setCurrentUser] = useState(null)
+  const [quillInstance, setQuillInstance] = useState(null)
+  const [isTyping, setIsTyping] = useState(false)
+  const [cursors, setCursors] = useState(null)
   const supabase = createClient()
 
   // Fetch current user with profile information
@@ -23,7 +33,6 @@ export default function CreateNote({ note, onNoteUpdated }) {
     const fetchUserWithProfile = async () => {
       const { data: { user }, error } = await supabase.auth.getUser()
       if (!error && user) {
-        // Fetch additional user info from users table
         const { data: userProfile } = await supabase
           .from('users')
           .select('username, profile_picture')
@@ -36,6 +45,7 @@ export default function CreateNote({ note, onNoteUpdated }) {
     fetchUserWithProfile()
   }, [])
 
+  // Separate presence effect
   useEffect(() => {
     if (!currentUser) return
 
@@ -54,7 +64,7 @@ export default function CreateNote({ note, onNoteUpdated }) {
       setPresentUsers(users)
     })
 
-    // Subscribe to the channel and track presence with user profile info
+    // Subscribe and track presence
     channel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
         await channel.track({
@@ -69,7 +79,133 @@ export default function CreateNote({ note, onNoteUpdated }) {
     return () => {
       channel.unsubscribe()
     }
-  }, [note.id, currentUser])
+  }, [currentUser, note.id])
+
+  // Separate cursor and collaboration effect
+  useEffect(() => {
+    if (!currentUser || !quillInstance) return
+
+    // Initialize cursors module
+    const cursorsModule = quillInstance.getModule('cursors')
+    setCursors(cursorsModule)
+
+    const collaborationChannel = supabase.channel(`note:${note.id}:cursors`, {
+      config: {
+        broadcast: { self: true },
+      },
+    })
+
+    // Enhanced cursor position handling
+    collaborationChannel.on('broadcast', { event: 'cursor-update' }, ({ payload }) => {
+      if (payload.sender !== currentUser.id && cursorsModule) {
+        const { sender, range, username, color } = payload
+        
+        if (range === null) {
+          cursorsModule.removeCursor(sender)
+        } else {
+          cursorsModule.createCursor(sender, username, color)
+          cursorsModule.moveCursor(sender, range)
+        }
+      }
+    })
+
+    // Subscribe to collaboration channel
+    collaborationChannel.subscribe()
+
+    // Enhanced selection change handler
+    const selectionHandler = (range, oldRange, source) => {
+      if (source === 'user') {
+        const cursorColor = `hsl(${Math.random() * 360}, 70%, 50%)`
+        collaborationChannel.send({
+          type: 'broadcast',
+          event: 'cursor-update',
+          payload: {
+            range,
+            sender: currentUser.id,
+            username: currentUser.username,
+            color: cursorColor
+          }
+        })
+      }
+    }
+
+    // Handle editor blur to remove cursor
+    const handleBlur = () => {
+      collaborationChannel.send({
+        type: 'broadcast',
+        event: 'cursor-update',
+        payload: {
+          range: null,
+          sender: currentUser.id
+        }
+      })
+    }
+
+    quillInstance.on('selection-change', selectionHandler)
+    quillInstance.on('blur', handleBlur)
+
+    return () => {
+      quillInstance.off('selection-change', selectionHandler)
+      quillInstance.off('blur', handleBlur)
+      collaborationChannel.unsubscribe()
+    }
+  }, [quillInstance, currentUser, note.id])
+
+  // Separate content synchronization effect
+  useEffect(() => {
+    if (!currentUser || !quillInstance) return
+
+    const contentChannel = supabase.channel(`note:${note.id}:content`, {
+      config: {
+        broadcast: { self: false }, // Don't receive own changes
+      },
+    })
+
+    // Handle incoming content changes
+    contentChannel.on('broadcast', { event: 'content-update' }, ({ payload }) => {
+      if (payload.sender !== currentUser.id) {
+        const currentSelection = quillInstance.getSelection()
+        
+        // Temporarily disable event listeners to prevent echo
+        quillInstance.off('text-change', handleTextChange)
+        
+        // Apply the changes
+        quillInstance.updateContents(payload.delta, 'api')
+        
+        // Restore selection if it existed
+        if (currentSelection) {
+          quillInstance.setSelection(currentSelection)
+        }
+        
+        // Re-enable event listeners
+        quillInstance.on('text-change', handleTextChange)
+      }
+    })
+
+    // Handle text changes
+    const handleTextChange = (delta, oldContents, source) => {
+      if (source === 'user') {
+        contentChannel.send({
+          type: 'broadcast',
+          event: 'content-update',
+          payload: {
+            delta,
+            sender: currentUser.id,
+            timestamp: new Date().toISOString()
+          }
+        })
+      }
+    }
+
+    // Subscribe to content channel and set up listeners
+    contentChannel.subscribe()
+    quillInstance.on('text-change', handleTextChange)
+
+    return () => {
+      quillInstance.off('text-change', handleTextChange)
+      contentChannel.unsubscribe()
+    }
+  }, [quillInstance, currentUser, note.id])
 
   const handleUpdate = async () => {
     setError(null)
@@ -139,7 +275,9 @@ export default function CreateNote({ note, onNoteUpdated }) {
         <ReactQuill 
           theme="snow" 
           value={content} 
-          onChange={setContent}
+          onChange={(value, delta, source, editor) => {
+            setContent(value)
+          }}
           className="h-[calc(100%-42px)]"
           modules={{
             toolbar: [
@@ -149,7 +287,37 @@ export default function CreateNote({ note, onNoteUpdated }) {
               [{ 'list': 'ordered'}, { 'list': 'bullet' }],
               ['link', 'image'],
               ['clean']
-            ]
+            ],
+            cursors: {
+              transformOnTextChange: true,
+              hideDelayMs: 5000,
+              hideSpeedMs: 300,
+              selectionChangeSource: null,
+              bound: true,
+              template: `
+                <span class="custom-cursor-container">
+                  <span class="custom-cursor-flag">
+                    <span class="custom-cursor-name"></span>
+                  </span>
+                  <span class="custom-cursor-caret"></span>
+                </span>
+              `
+            },
+            history: {
+              userOnly: true,
+              delay: 1000,
+              maxStack: 500,
+            },
+            keyboard: {
+              bindings: {
+                // Add custom key bindings if needed
+              }
+            }
+          }}
+          ref={(ref) => {
+            if (ref) {
+              setQuillInstance(ref.getEditor())
+            }
           }}
         />
       </div>
