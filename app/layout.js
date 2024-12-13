@@ -4,11 +4,17 @@ import { cn } from "@/lib/utils"
 import { Libre_Baskerville } from "next/font/google"
 import config from "@/config"
 import { ThemeProvider } from "@/components/themeprovider"
+import localFont from "next/font/local";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
+});
+
+const DepartureMono = localFont({
+  src: './fonts/DepartureMono-Regular.woff',
+  variable: '--font-departure-mono',
 });
 
 const baskerville = Libre_Baskerville({
@@ -26,7 +32,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning className={cn("antialiased", inter.variable, baskerville.variable)}>
+    <html lang="en" suppressHydrationWarning className={cn("antialiased", inter.variable, baskerville.variable, DepartureMono.variable)}>
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased"
