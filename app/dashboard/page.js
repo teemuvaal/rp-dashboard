@@ -30,7 +30,6 @@ export default async function Home() {
 
     const { campaigns, error: campaignsError } = await fetchUserCampaigns()
 
-    console.log(userData)
     return (
         <div 
         className="lg:mx-[140px] flex flex-col h-screen shadow-lg bg-background">
