@@ -4,25 +4,22 @@ Adventure Hub is a web app for DMs and players to create and share their adventu
 
 ## Notes
 
-This is about building a functioning product with a focus on AI tools and realtime collaboration.
+This is about building a functioning product with a focus on AI tools and realtime collaboration. Migration to Next.js 15 / React 19 is currently difficult due to the use of Supabase Auth Helpers ReactQuill no working with React 19.
 
 ## Tech Stack
 
 - Next.js
 - Supabase (auth, db, storage)
 - TailwindCSS
-- ShadCN
+- Shadcn UI
 - Resend
 - OpenAI
 
 ## Features
 
-- Campaign Notes (Supabase Realtime)
-- Character Sheets
-- Dice Roller (Supabase Realtime?)
-- Map Builder
-- DM Tools
-- Session Notes
+- Campaign Management (Sessions, Notes, Assets, etc.)
+- Collaboration (Realtime) for Notes
+- AI enhanced Session Summaries
 
 ## To Do
 
