@@ -10,7 +10,7 @@ import {
     NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu"
 import { navigationMenuTriggerStyle } from "@/components/ui/navigation-menu"
-import { Newspaper, NotebookPen, Notebook, Beer, Users } from "lucide-react"
+import { Newspaper, NotebookPen, Notebook, Beer, Users, ChartBar } from "lucide-react"
 import CreateSessionForm from "@/components/Dashboard/CreateSessionForm"
 import { Separator } from "@/components/ui/separator"
 import AddNoteButton from "@/components/Dashboard/AddNoteButton"
@@ -61,6 +61,17 @@ export default function AppMenu({params}) {
                                     </NavigationMenuLink>
                                     <p className="text-sm text-gray-500">
                                         Manage campaign members and invite users.
+                                    </p>
+                                </span>
+                                <span className="flex flex-row gap-2 justify-between">
+                                    <NavigationMenuLink asChild>
+                                        <Link href={`/dashboard/${params.id}/polls/`} className={navigationMenuTriggerStyle()}>
+                                            <ChartBar className="w-4 h-4 mr-2" />
+                                            Polls
+                                        </Link>
+                                    </NavigationMenuLink>
+                                    <p className="text-sm text-gray-500">
+                                        Create and manage campaign polls.
                                     </p>
                                 </span>
                             </div>
