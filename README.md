@@ -43,7 +43,7 @@ Below is a list of features that are complete or in progress and should be compl
   - [ ] DND Template
   - [ ] Scrape from DND Beyond?
 - [ ] Setup RLS
-- [ ] Session polling
+- [x] Create Polls
 - [ ] Assets
   - [ ] Asset types
   - [ ] Asset management
