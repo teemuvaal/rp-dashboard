@@ -33,6 +33,7 @@
     "react-day-picker": "^8.10.1",
     "react-dom": "^18",
     "react-quill": "^2.0.0",
+    "react-quill-new": "^3.3.3",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "ws": "^8.18.0",

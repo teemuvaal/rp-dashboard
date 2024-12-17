@@ -51,7 +51,6 @@ export async function createSession(formData) {
   const duration = formData.get('duration')
   const scheduled_date = formData.get('date')
 
-  console.log('Received form data:', { campaignId, name, description, duration, scheduled_date });
 
   if (!campaignId) {
     return { error: 'Campaign ID is missing' }
@@ -100,7 +99,6 @@ export async function createSession(formData) {
   // Check if data exists and has at least one item before accessing its id
   const sessionId = data && data.length > 0 ? data[0].id : null;
 
-  return { success: true, sessionId }
   
 }
 
