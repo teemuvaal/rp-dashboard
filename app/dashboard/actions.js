@@ -165,7 +165,8 @@ export async function fetchUserCampaigns() {
           description,
           created_at,
           updated_at,
-          owner_id
+          owner_id,
+          campaign_image
         )
       `)
       .eq('user_id', user.id)
