@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from "framer-motion";
-import { login, signup } from './actions';
+import { login, signup, signInWithDiscord } from './actions';
 import {
   Card,
   CardContent,
@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -22,20 +21,45 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isSignup, setIsSignup] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
+    setIsLoading(true);
 
-    const formData = new FormData(event.target);
-    const result = await (isSignup ? signup(formData) : login(formData));
+    try {
+      const formData = new FormData(event.target);
+      const result = await (isSignup ? signup(formData) : login(formData));
 
-    if (result.error) {
-      setError(result.error);
-    } else if (result.success) {
-      // Redirect to dashboard or home page
-      router.push('/dashboard');
+      if (result.error) {
+        setError(result.error);
+      } else if (result.success) {
+        router.push('/dashboard');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDiscordLogin = async () => {
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const result = await signInWithDiscord();
+      if (result.error) {
+        setError(result.error);
+      } else if (result.url) {
+        window.location.href = result.url;
+      }
+    } catch (err) {
+      setError('Failed to initialize Discord login');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -62,7 +86,28 @@ export default function LoginPage() {
             <CardTitle>{isSignup ? "Sign Up" : "Login"}</CardTitle>
             <CardDescription>{isSignup ? "Create a new account" : "Login to your account"}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleDiscordLogin}
+              disabled={isLoading}
+            >
+              Continue with Discord
+            </Button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input 
                 type="email" 
@@ -81,26 +126,38 @@ export default function LoginPage() {
                 required
               />
               {error && <p className="text-red-500 text-sm">{error}</p>}
-              <Button type="submit" className="w-full">{isSignup ? "Sign Up" : "Login"}</Button>
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? "Loading..." : (isSignup ? "Sign Up" : "Login")}
+              </Button>
             </form>
           </CardContent>
           <CardFooter>
-            <div className="flex flex-col gap-2 items-center justify-center">
-            <p className="text-sm w-full">
-              {isSignup ? "Already have an account? " : "Don't have an account? "}
-              <Button variant="link" onClick={() => setIsSignup(!isSignup)} className="p-0">
-                {isSignup ? "Login" : "Sign Up"}
-              </Button>
-            </p>
-            <p className="text-sm w-full">
-              <Link href="/login/reset/">
-                <Button
-                variant="link"
+            <div className="flex flex-col gap-2 items-center justify-center w-full">
+              <p className="text-sm w-full text-center">
+                {isSignup ? "Already have an account? " : "Don't have an account? "}
+                <Button 
+                  variant="link" 
+                  onClick={() => setIsSignup(!isSignup)} 
+                  className="p-0"
+                  disabled={isLoading}
                 >
-                  Reset Password
+                  {isSignup ? "Login" : "Sign Up"}
                 </Button>
-              </Link>
-            </p>
+              </p>
+              <p className="text-sm w-full text-center">
+                <Link href="/login/reset/">
+                  <Button
+                    variant="link"
+                    disabled={isLoading}
+                  >
+                    Reset Password
+                  </Button>
+                </Link>
+              </p>
             </div>
           </CardFooter>
         </Card>

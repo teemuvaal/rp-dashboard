@@ -12,6 +12,12 @@ import { Button } from "@/components/ui/button"
 import { CalendarDays, Clock, Users, NotebookPen } from "lucide-react"
 import Link from "next/link"
 import LinkNoteToSession from "@/components/Dashboard/LinkNoteToSession"
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion"
 
 export default async function SessionPage({ params }) {
     const sessionId = params.sessionId;
@@ -157,14 +163,18 @@ export default async function SessionPage({ params }) {
                 <CardContent className="space-y-6">
                     {/* Link Notes Dropdown */}
                     {availableNotes?.length > 0 && (
-                        <div>
-                            <h3 className="text-lg font-semibold mb-4">Link Existing Note</h3>
-                            <LinkNoteToSession
-                                availableNotes={availableNotes}
-                                sessionId={sessionId}
-                                campaignId={campaignId}
-                            />
-                        </div>
+                        <Accordion type="single" collapsible>
+                            <AccordionItem value="link-notes">
+                                <AccordionTrigger>Link Existing Note</AccordionTrigger>
+                                <AccordionContent>
+                                    <LinkNoteToSession
+                                        availableNotes={availableNotes}
+                                        sessionId={sessionId}
+                                        campaignId={campaignId}
+                                    />
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
                     )}
 
                     {/* Linked Notes */}

@@ -23,6 +23,31 @@ export async function login(formData) {
   return { success: true }
 }
 
+export async function signInWithDiscord() {
+  const supabase = createClient()
+  
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'discord',
+      options: {
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+      },
+    })
+
+    if (error) {
+      return { error: error.message }
+    }
+
+    if (!data?.url) {
+      return { error: 'Failed to get authentication URL' }
+    }
+
+    return { url: data.url }
+  } catch (error) {
+    return { error: 'Failed to initialize Discord login' }
+  }
+}
+
 export async function signup(formData) {
   const supabase = createClient()
 
@@ -55,9 +80,6 @@ export async function resetPassword(formData) {
   })
 }
 
-// Not using the way defined in Supabase docs, but it works
-// Should use 
-
 export async function updatePassword(formData) {
   const supabase = createClient()
   
@@ -88,10 +110,4 @@ export async function updatePassword(formData) {
   } catch (error) {
     return { error: 'An unexpected error occurred. Please try again.' }
   }
-}
-
-async function signInWithDiscord() {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'discord',
-  })
 }
