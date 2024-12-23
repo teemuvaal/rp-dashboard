@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { updateNote, createNote } from '@/app/dashboard/actions'
+import { updateNote, createNote, fetchSessions } from '@/app/dashboard/actions'
 import dynamic from 'next/dynamic'
 import { createClient } from '@/utils/supabase/client'
 import Image from 'next/image'
@@ -47,20 +47,27 @@ export default function CreateNote({ note, onNoteUpdated, campaignId }) {
         fetchUserWithProfile()
     }, [])
 
-    // Fetch available sessions
+    // Fetch sessions
     useEffect(() => {
-        const fetchSessions = async () => {
-            const { data, error } = await supabase
-                .from('sessions')
-                .select('id, name, scheduled_date')
-                .eq('campaign_id', campaignId)
-                .order('scheduled_date', { ascending: false });
+        const loadSessions = async () => {
+            if (!campaignId) return;
 
-            if (!error && data) {
-                setSessions(data);
+            try {
+                const result = await fetchSessions(campaignId);
+                if (result.error) {
+                    setError(result.error);
+                    return;
+                }
+                
+                if (result.sessions) {
+                    setSessions(result.sessions);
+                }
+            } catch (error) {
+                setError('Failed to load sessions');
             }
         };
-        fetchSessions();
+        
+        loadSessions();
     }, [campaignId]);
 
     // Presence effect for viewing users
@@ -75,14 +82,12 @@ export default function CreateNote({ note, onNoteUpdated, campaignId }) {
             },
         })
 
-        // Handle presence state changes
         channel.on('presence', { event: 'sync' }, () => {
             const state = channel.presenceState()
             const users = Object.values(state).map(presence => presence[0])
             setPresentUsers(users)
         })
 
-        // Subscribe and track presence
         channel.subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
                 await channel.track({
@@ -135,7 +140,6 @@ export default function CreateNote({ note, onNoteUpdated, campaignId }) {
 
                 const result = await createNote(formData)
                 if (result.success) {
-                    // Reset form
                     setTitle('')
                     setContent('')
                     setIsPublic(false)
@@ -146,7 +150,6 @@ export default function CreateNote({ note, onNoteUpdated, campaignId }) {
                 }
             }
         } catch (error) {
-            console.error('Unexpected error:', error)
             setError('An unexpected error occurred')
         } finally {
             setIsSubmitting(false)

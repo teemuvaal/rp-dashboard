@@ -1210,3 +1210,35 @@ export async function deletePoll(formData) {
 
     return { success: true };
 }
+
+export async function fetchSessions(campaignId) {
+  const supabase = createClient()
+  
+  try {
+    // First check if the campaign exists
+    const { data: campaign, error: campaignError } = await supabase
+      .from('campaigns')
+      .select('id')
+      .eq('id', campaignId)
+      .single();
+
+    if (campaignError) {
+      return { error: 'Campaign not found' };
+    }
+
+    // Fetch sessions
+    const { data: sessions, error } = await supabase
+      .from('sessions')
+      .select('id, name, scheduled_date, status')
+      .eq('campaign_id', campaignId)
+      .order('scheduled_date', { ascending: true });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    return { sessions: sessions || [] };
+  } catch (error) {
+    return { error: 'Failed to fetch sessions' };
+  }
+}

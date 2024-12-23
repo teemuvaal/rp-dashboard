@@ -24,6 +24,7 @@ export default function NotePage({ params }) {
     const [error, setError] = useState(null)
     const [isEditing, setIsEditing] = useState(false)
     const router = useRouter()
+    const campaignId = params.id
 
     useEffect(() => {
         const loadNote = async () => {
@@ -82,7 +83,11 @@ export default function NotePage({ params }) {
         <Card>
         <div className="space-y-4 p-4">
             {isEditing ? (
-                <CreateNote note={note} onNoteUpdated={handleNoteUpdated} />
+                <CreateNote 
+                    note={note} 
+                    onNoteUpdated={handleNoteUpdated} 
+                    campaignId={campaignId}
+                />
             ) : (
                 <>
                     <NoteDisplay note={note} />

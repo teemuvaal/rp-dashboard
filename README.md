@@ -8,6 +8,9 @@ This is about building a functioning product with a focus on AI tools and realti
 
 Need to do prover provider for user to avoid refetching user id on some pages.
 
+Need to fix the AI cleanup note function.
+
+
 ## Tech Stack
 
 - Next.js
@@ -49,6 +52,7 @@ Below is a list of features that are complete or in progress and should be compl
 - [ ] Characters
   - [ ] DND Template
   - [ ] Scrape from DND Beyond?
+  - [ ] Image-to-Text
 - [ ] Setup RLS
 - [x] Create Polls
 - [ ] Assets
