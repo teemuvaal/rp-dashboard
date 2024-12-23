@@ -6,6 +6,8 @@ Adventure Hub is a web app for DMs and players to create and share their adventu
 
 This is about building a functioning product with a focus on AI tools and realtime collaboration. Migration to Next.js 15 / React 19 is currently difficult due to the use of Supabase Auth Helpers ReactQuill no working with React 19.
 
+Need to do prover provider for user to avoid refetching user id on some pages.
+
 ## Tech Stack
 
 - Next.js

@@ -27,7 +27,7 @@ export default function CreateNote({ note, onNoteUpdated, campaignId }) {
     const [currentUser, setCurrentUser] = useState(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [sessions, setSessions] = useState([])
-    const [selectedSessionId, setSelectedSessionId] = useState(note.session_id || '')
+    const [selectedSessionId, setSelectedSessionId] = useState(note.session_id ? note.session_id : 'none')
     const supabase = createClient()
 
     // Fetch current user with profile information
@@ -104,14 +104,16 @@ export default function CreateNote({ note, onNoteUpdated, campaignId }) {
         setIsSubmitting(true)
 
         try {
+            const formData = new FormData()
             if (note.id) {
                 // Update existing note
-                const formData = new FormData()
                 formData.append('noteId', note.id)
                 formData.append('title', title)
                 formData.append('content', content)
                 formData.append('isPublic', isPublic)
-                formData.append('sessionId', selectedSessionId)
+                if (selectedSessionId !== 'none') {
+                    formData.append('sessionId', selectedSessionId)
+                }
 
                 const result = await updateNote(formData)
                 if (result.success) {
@@ -123,12 +125,13 @@ export default function CreateNote({ note, onNoteUpdated, campaignId }) {
                 }
             } else {
                 // Create new note
-                const formData = new FormData()
                 formData.append('campaignId', campaignId)
                 formData.append('title', title)
                 formData.append('content', content)
                 formData.append('isPublic', isPublic)
-                formData.append('sessionId', selectedSessionId)
+                if (selectedSessionId !== 'none') {
+                    formData.append('sessionId', selectedSessionId)
+                }
 
                 const result = await createNote(formData)
                 if (result.success) {
@@ -136,8 +139,7 @@ export default function CreateNote({ note, onNoteUpdated, campaignId }) {
                     setTitle('')
                     setContent('')
                     setIsPublic(false)
-                    setSelectedSessionId('')
-                    // Refresh the page to show the new note
+                    setSelectedSessionId('none')
                     router.refresh()
                 } else {
                     setError(result.error || 'An error occurred while creating the note')
@@ -214,12 +216,15 @@ export default function CreateNote({ note, onNoteUpdated, campaignId }) {
                     />
                     <label htmlFor="isPublic">Make this note public</label>
                 </div>
-                <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
+                <Select 
+                    value={selectedSessionId} 
+                    onValueChange={setSelectedSessionId}
+                >
                     <SelectTrigger className="w-[250px]">
                         <SelectValue placeholder="Link to session (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">No session</SelectItem>
+                        <SelectItem value="none">No session</SelectItem>
                         {sessions.map(session => (
                             <SelectItem key={session.id} value={session.id}>
                                 {session.name} ({formatSessionDate(session.scheduled_date)})

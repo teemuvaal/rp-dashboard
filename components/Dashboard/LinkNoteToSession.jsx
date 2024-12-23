@@ -13,13 +13,13 @@ import { updateNote } from "@/app/dashboard/actions";
 import { useRouter } from "next/navigation";
 
 export default function LinkNoteToSession({ availableNotes, sessionId, campaignId }) {
-    const [selectedNoteId, setSelectedNoteId] = useState('');
+    const [selectedNoteId, setSelectedNoteId] = useState('none');
     const [isLinking, setIsLinking] = useState(false);
     const [error, setError] = useState(null);
     const router = useRouter();
 
     const handleLink = async () => {
-        if (!selectedNoteId) return;
+        if (!selectedNoteId || selectedNoteId === 'none') return;
 
         setIsLinking(true);
         setError(null);
@@ -31,7 +31,7 @@ export default function LinkNoteToSession({ availableNotes, sessionId, campaignI
 
             const result = await updateNote(formData);
             if (result.success) {
-                setSelectedNoteId('');
+                setSelectedNoteId('none');
                 router.refresh();
             } else {
                 setError(result.error || 'Failed to link note');
@@ -51,6 +51,7 @@ export default function LinkNoteToSession({ availableNotes, sessionId, campaignI
                         <SelectValue placeholder="Select a note to link" />
                     </SelectTrigger>
                     <SelectContent>
+                        <SelectItem value="none">Select a note...</SelectItem>
                         {availableNotes.map(note => (
                             <SelectItem key={note.id} value={note.id}>
                                 <div className="flex flex-col">
@@ -65,7 +66,7 @@ export default function LinkNoteToSession({ availableNotes, sessionId, campaignI
                 </Select>
                 <Button 
                     onClick={handleLink} 
-                    disabled={!selectedNoteId || isLinking}
+                    disabled={!selectedNoteId || selectedNoteId === 'none' || isLinking}
                 >
                     {isLinking ? 'Linking...' : 'Link Note'}
                 </Button>

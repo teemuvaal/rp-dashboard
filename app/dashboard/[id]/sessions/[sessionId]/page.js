@@ -9,15 +9,17 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CalendarDays, Clock, Users, NotebookPen } from "lucide-react"
+import { CalendarDays, Clock, Users, NotebookPen, CalendarClock, Sparkles } from "lucide-react"
 import Link from "next/link"
 import LinkNoteToSession from "@/components/Dashboard/LinkNoteToSession"
+import SessionStatusToggle from "@/components/Dashboard/SessionStatusToggle"
 import {
     Accordion,
     AccordionContent,
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion"
+import SessionSummary from "@/components/Dashboard/SessionSummary"
 
 export default async function SessionPage({ params }) {
     const sessionId = params.sessionId;
@@ -73,7 +75,7 @@ export default async function SessionPage({ params }) {
         .eq('campaign_id', campaignId)
         .or(`is_public.eq.true,user_id.eq.${user.id}`);
 
-    // Fetch available notes for linking (public notes and user's notes that aren't linked to any session)
+    // Fetch available notes for linking
     const { data: availableNotes } = await supabase
         .from('notes')
         .select(`
@@ -110,27 +112,40 @@ export default async function SessionPage({ params }) {
                             <CardDescription>{session.description}</CardDescription>
                         </div>
                         {isOwner && (
-                            <Button variant="outline" asChild>
-                                <Link href={`/dashboard/${campaignId}/sessions/${sessionId}/edit`}>
-                                    Edit Session
-                                </Link>
-                            </Button>
+                            <div className="flex items-center gap-4">
+                                <SessionStatusToggle
+                                    sessionId={sessionId}
+                                    campaignId={campaignId}
+                                    initialStatus={session.status}
+                                />
+                                <Button variant="outline" asChild>
+                                    <Link href={`/dashboard/${campaignId}/sessions/${sessionId}/edit`}>
+                                        Edit Session
+                                    </Link>
+                                </Button>
+                            </div>
                         )}
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                         <div className="flex items-center space-x-2">
                             <CalendarDays className="h-4 w-4 opacity-70" />
                             <span className="text-sm text-muted-foreground">{formattedDate}</span>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-1">
                             <Clock className="h-4 w-4 opacity-70" />
                             <span className="text-sm text-muted-foreground">
                                 {formattedTime} ({session.duration_minutes} minutes)
                             </span>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-1">
+                            <CalendarClock className="h-4 w-4 opacity-70" />
+                            <span className="text-sm text-muted-foreground">
+                                {session.status}
+                            </span>
+                        </div>
+                        <div className="flex items-center space-x-1">
                             <Users className="h-4 w-4 opacity-70" />
                             <span className="text-sm text-muted-foreground">
                                 Campaign: {session.campaigns.name}
@@ -139,6 +154,7 @@ export default async function SessionPage({ params }) {
                     </div>
                 </CardContent>
             </Card>
+            <SessionSummary session={session} />
 
             {/* Notes Section */}
             <Card>

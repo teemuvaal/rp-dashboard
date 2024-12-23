@@ -102,6 +102,49 @@ export async function createSession(formData) {
   
 }
 
+export async function updateSessionStatus(formData) {
+  const supabase = createClient()
+
+  // Get the current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError) {
+    return { error: 'Authentication error' }
+  }
+
+  const sessionId = formData.get('sessionId')
+  const campaignId = formData.get('campaignId')
+  const status = formData.get('status')
+
+  // Check if the user is the campaign owner
+  const { data: campaign, error: campaignError } = await supabase
+    .from('campaigns')
+    .select('owner_id')
+    .eq('id', campaignId)
+    .single()
+
+  if (campaignError) {
+    return { error: 'Error fetching campaign details' }
+  }
+
+  if (campaign.owner_id !== user.id) {
+    return { error: 'Only the campaign owner can update session status' }
+  }
+
+  // Update the session status
+  const { error: updateError } = await supabase
+    .from('sessions')
+    .update({ status })
+    .eq('id', sessionId)
+
+  if (updateError) {
+    return { error: updateError.message }
+  }
+
+  revalidatePath(`/dashboard/${campaignId}/sessions/${sessionId}`)
+  return { success: true }
+}
+
 export async function deleteSession(sessionId, campaignId) {
   const supabase = createClient()
 
