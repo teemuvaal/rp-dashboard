@@ -74,7 +74,7 @@ export default async function Dashboard() {
                         <Card>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                                 <div>
-                                    <CardTitle>Your Campaigns</CardTitle>
+                                    <CardTitle>Campaigns</CardTitle>
                                     <CardDescription>
                                         Manage and access your active campaigns
                                     </CardDescription>
@@ -129,7 +129,7 @@ export default async function Dashboard() {
                                             </div>
                                             <div className="flex justify-between">
                                                 <span>Campaign Limit</span>
-                                                <span className="font-medium">1/3</span>
+                                                <span className="font-medium">Unlimited!</span>
                                             </div>
                                         </div>
                                     </div>
@@ -148,9 +148,9 @@ export default async function Dashboard() {
                                     New Campaign
                                 </Button>
                                 <Button className="w-full justify-start" variant="ghost" asChild>
-                                    <Link href="/dashboard/subscription">
+                                    <Link href="/dashboard">
                                         <CreditCard className="mr-2 h-4 w-4" />
-                                        Upgrade Plan
+                                        <p className="text-muted-foreground">Upgrade Plan (coming soon!)</p>
                                     </Link>
                                 </Button>
                             </CardContent>

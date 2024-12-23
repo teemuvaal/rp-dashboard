@@ -10,16 +10,21 @@ This is about building a functioning product with a focus on AI tools and realti
 
 - Next.js
 - Supabase (auth, db, storage)
-- TailwindCSS
-- Shadcn UI
-- Resend
-- OpenAI
+- TailwindCSS (styling)
+- Shadcn UI (components)
+- Resend (email)
+- OpenAI (AI text)
+- Replicate (AI image)
+- Upstash (rate limiting)
 
 ## Features
 
+- Login with Discord
 - Campaign Management (Sessions, Notes, Assets, etc.)
-- Collaboration (Realtime) for Notes
-- AI enhanced Session Summaries
+- Craft campaign details: characters, locations, items, etc.
+- AI enhanced Session Summaries (OpenAI)
+- Create session recaps and stories with images (Replicate)
+- Polls to vote for session times or details
 
 ## To Do
 
