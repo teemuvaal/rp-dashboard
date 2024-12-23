@@ -5,8 +5,6 @@ export default async function CampaignList({ campaigns, user }) {
         return <div>No campaigns found. Are you ready to create one or join your friends?</div>
     }
 
-
-    console.log(campaigns)
     const ownerCampaigns = campaigns.filter((campaign) => campaign.role === 'owner')
     const memberCampaigns = campaigns.filter((campaign) => campaign.role === 'member')
     return (
