@@ -1,11 +1,25 @@
-import { generateText } from 'ai';
+'use server'
 
-const { text } = await generateText({
-  model: yourModel,
-  system:
-    'You are professional assistant for running a roleplaying campaign set in Dungeons & Dragons 5th Edition.' +
-    'You write content for the campaign in a way that is engaging and interesting for the players.' +
-    'You support the DM in running the campaign by providing helpful information and suggestions.' +
-    'You help players in the campaign by improving their notes and providing helpful information.',
-  prompt: `Format this following note properly, use simple HTML: ${note}`,
-});
+export async function cleanUpNote(note) {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/completion`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                prompt: `Format this following note properly, use simple HTML: ${note}` 
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return { success: true, cleanedNote: data.text };
+    } catch (error) {
+        console.error('Error cleaning up note:', error);
+        return { success: false, error: 'Failed to clean up note' };
+    }
+}
