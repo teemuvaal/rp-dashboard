@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { updateNote, createNote, fetchSessions } from '@/app/dashboard/actions'
+import { cleanUpNote } from '@/app/dashboard/aiactions'
 import dynamic from 'next/dynamic'
 import { createClient } from '@/utils/supabase/client'
 import Image from 'next/image'
@@ -13,6 +14,16 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter,
+} from "@/components/ui/dialog"
+import { Wand2 } from "lucide-react"
 
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false })
 import 'react-quill-new/dist/quill.snow.css'
@@ -29,6 +40,9 @@ export default function CreateNote({ note, onNoteUpdated, campaignId }) {
     const [sessions, setSessions] = useState([])
     const [selectedSessionId, setSelectedSessionId] = useState(note.session_id ? note.session_id : 'none')
     const supabase = createClient()
+    const [isCleaning, setIsCleaning] = useState(false)
+    const [cleanedContent, setCleanedContent] = useState(null)
+    const [showCleanDialog, setShowCleanDialog] = useState(false)
 
     // Fetch current user with profile information
     useEffect(() => {
@@ -165,6 +179,31 @@ export default function CreateNote({ note, onNoteUpdated, campaignId }) {
         });
     };
 
+    const handleCleanUp = async () => {
+        setIsCleaning(true)
+        setError(null)
+
+        try {
+            const result = await cleanUpNote(content)
+            if (result.success) {
+                setCleanedContent(result.cleanedNote)
+                setShowCleanDialog(true)
+            } else {
+                setError(result.error || 'Failed to clean up note')
+            }
+        } catch (err) {
+            setError('An unexpected error occurred while cleaning up the note')
+        } finally {
+            setIsCleaning(false)
+        }
+    }
+
+    const acceptCleanedVersion = () => {
+        setContent(cleanedContent)
+        setCleanedContent(null)
+        setShowCleanDialog(false)
+    }
+
     return (
         <div className="space-y-4">
             {note.id && (
@@ -236,6 +275,43 @@ export default function CreateNote({ note, onNoteUpdated, campaignId }) {
                     </SelectContent>
                 </Select>
             </div>
+            <div className="flex gap-2 items-center">
+                <Button 
+                    variant="outline" 
+                    onClick={handleCleanUp}
+                    disabled={isCleaning || !content}
+                    className="gap-2"
+                >
+                    <Wand2 className="h-4 w-4" />
+                    {isCleaning ? 'Formatting...' : 'Format with AI'}
+                </Button>
+            </div>
+
+            <Dialog open={showCleanDialog} onOpenChange={setShowCleanDialog}>
+                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Format using AI</DialogTitle>
+                        <DialogDescription>
+                            Review the cleaned up version of your note. You can accept it or keep your original version.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="mt-4 space-y-4">
+                        <div 
+                            className="prose max-w-none p-4 border rounded-md bg-muted"
+                            dangerouslySetInnerHTML={{ __html: cleanedContent }}
+                        />
+                    </div>
+                    <DialogFooter className="flex gap-2 mt-4">
+                        <Button variant="outline" onClick={() => setShowCleanDialog(false)}>
+                            Keep Original
+                        </Button>
+                        <Button onClick={acceptCleanedVersion}>
+                            Accept New Version
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <div className="h-[60vh]">
                 <ReactQuill 
                     theme="snow" 

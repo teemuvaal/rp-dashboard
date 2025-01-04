@@ -17,7 +17,7 @@ export default function SessionSummary({ session }) {
                     <CardDescription>Session Summary</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <createSummary />
+                    <div>This would be to create a summary</div>
                 </CardContent>
             </Card>
         </div>
