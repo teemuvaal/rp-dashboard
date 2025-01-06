@@ -780,6 +780,57 @@ export async function fetchNotes(campaignId) {
   return { notes }
 }
 
+export async function fetchSessionNotes(sessionId) {
+  const supabase = createClient()
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError) {
+    return { error: 'Authentication error' }
+  }
+
+  // First get the campaign ID for this session
+  const { data: session, error: sessionError } = await supabase
+    .from('sessions')
+    .select('campaign_id')
+    .eq('id', sessionId)
+    .single()
+
+  if (sessionError) {
+    return { error: 'Session not found' }
+  }
+
+  // Then fetch the notes
+  const { data: notes, error } = await supabase
+    .from('notes')
+    .select(`
+      id,
+      title,
+      content,
+      is_public,
+      created_at,
+      updated_at,
+      user_id,
+      session_id,
+      users (
+        username,
+        profile_picture
+      )
+    `)
+    .eq('campaign_id', session.campaign_id)
+    .eq('session_id', sessionId)
+    .or(`is_public.eq.true,user_id.eq.${user.id}`)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching notes:', error)
+    return { error: 'Error fetching notes' }
+  }
+
+  return { notes }
+}
+
+
 export async function updateNote(formData) {
   const supabase = createClient()
 
@@ -1241,4 +1292,67 @@ export async function fetchSessions(campaignId) {
   } catch (error) {
     return { error: 'Failed to fetch sessions' };
   }
+}
+
+export async function saveSummary({ sessionId, content }) {
+  const supabase = createClient()
+
+  // Get the current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError) {
+    return { error: 'Authentication error' }
+  }
+
+  // Check if the user is the campaign owner
+  const { data: session, error: sessionError } = await supabase
+    .from('sessions')
+    .select('campaign_id, campaigns!inner(owner_id)')
+    .eq('id', sessionId)
+    .single()
+
+  if (sessionError) {
+    return { error: 'Session not found' }
+  }
+
+  if (session.campaigns.owner_id !== user.id) {
+    return { error: 'Only the campaign owner can save summaries' }
+  }
+
+  // Check if a summary already exists
+  const { data: existingSummary } = await supabase
+    .from('session_summaries')
+    .select('id')
+    .eq('session_id', sessionId)
+    .single()
+
+  let result;
+  
+  if (existingSummary) {
+    // Update existing summary
+    result = await supabase
+      .from('session_summaries')
+      .update({
+        content,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existingSummary.id)
+      .select()
+      .single()
+  } else {
+    // Create new summary
+    result = await supabase
+      .from('session_summaries')
+      .insert({
+        session_id: sessionId,
+        content
+      })
+      .select()
+      .single()
+  }
+
+  if (result.error) {
+    return { error: result.error.message }
+  }
+
+  return { success: true, summary: result.data }
 }
