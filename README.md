@@ -10,7 +10,6 @@ Need to do prover provider for user to avoid refetching user id on some pages.
 
 Need to fix the AI cleanup note function.
 
-
 ## Tech Stack
 
 - Next.js
@@ -43,12 +42,14 @@ Below is a list of features that are complete or in progress and should be compl
     - [x] Invite Members
     - [ ] Remove Members
 - [x] Create Session
-  - [ ] Session summary
+  - [x] Session summary
   - [ ] Session recap
+  - [ ] Session highlights
 - [x] Create Note
   - [x] Show active participants
-  - [ ] Collab editing
-  - [ ] AI Cleanup
+  - [ ] Collab editing (might be too difficult to implement)
+  - [x] AI Cleanup
+  - [ ] Link to session
 - [ ] Characters
   - [ ] DND Template
   - [ ] Scrape from DND Beyond?
