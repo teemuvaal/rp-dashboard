@@ -15,7 +15,7 @@ export async function POST(request) {
         'You help players in the campaign by improving their notes and providing helpful information.',
       prompt,
     });
-
+    console.log(text)
     return NextResponse.json({ text });
   } catch (error) {
     console.error('Completion error:', error);
