@@ -35,7 +35,7 @@ export default function CreateCampaignForm() {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-red-950 hover:bg-red-700 text-white font-bold">
+                <Button className="font-bold">
                     Create Campaign
                 </Button>
             </DialogTrigger>

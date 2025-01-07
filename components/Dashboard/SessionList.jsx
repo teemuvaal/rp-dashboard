@@ -38,6 +38,7 @@ function SessionCard({ session, onDelete, isDeleting, campaignId }) {
                 <p>Status: {session.status}</p>
             </CardContent>
             <CardFooter>
+                <div className="flex gap-4">
                 <Button variant="outline" asChild>
                     <Link href={`/dashboard/${campaignId}/sessions/${session.id}`}>
                         View Session
@@ -50,6 +51,7 @@ function SessionCard({ session, onDelete, isDeleting, campaignId }) {
                 >
                     {isDeleting ? 'Deleting...' : 'Delete Session'}
                 </Button>
+                </div>
             </CardFooter>
         </Card>
     )

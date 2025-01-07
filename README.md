@@ -4,25 +4,31 @@ Adventure Hub is a web app for DMs and players to create and share their adventu
 
 ## Notes
 
-This is about building a functioning product with a focus on AI tools and realtime collaboration.
+This is about building a functioning product with a focus on AI tools and realtime collaboration. Migration to Next.js 15 / React 19 is currently difficult due to the use of Supabase Auth Helpers ReactQuill no working with React 19.
+
+Need to do prover provider for user to avoid refetching user id on some pages.
+
+Need to fix the AI cleanup note function.
 
 ## Tech Stack
 
 - Next.js
 - Supabase (auth, db, storage)
-- TailwindCSS
-- ShadCN
-- Resend
-- OpenAI
+- TailwindCSS (styling)
+- Shadcn UI (components)
+- Resend (email)
+- OpenAI (AI text)
+- Replicate (AI image)
+- Upstash (rate limiting)
 
 ## Features
 
-- Campaign Notes (Supabase Realtime)
-- Character Sheets
-- Dice Roller (Supabase Realtime?)
-- Map Builder
-- DM Tools
-- Session Notes
+- Login with Discord
+- Campaign Management (Sessions, Notes, Assets, etc.)
+- Craft campaign details: characters, locations, items, etc.
+- AI enhanced Session Summaries (OpenAI)
+- Create session recaps and stories with images (Replicate)
+- Polls to vote for session times or details
 
 ## To Do
 
@@ -36,17 +42,20 @@ Below is a list of features that are complete or in progress and should be compl
     - [x] Invite Members
     - [ ] Remove Members
 - [x] Create Session
-  - [ ] Session summary
+  - [x] Session summary
   - [ ] Session recap
+  - [ ] Session highlights
 - [x] Create Note
   - [x] Show active participants
-  - [ ] Collab editing
-  - [ ] AI Cleanup
+  - [ ] Collab editing (might be too difficult to implement)
+  - [x] AI Cleanup
+  - [ ] Link to session
 - [ ] Characters
   - [ ] DND Template
   - [ ] Scrape from DND Beyond?
+  - [ ] Image-to-Text
 - [ ] Setup RLS
-- [ ] Session polling
+- [x] Create Polls
 - [ ] Assets
   - [ ] Asset types
   - [ ] Asset management

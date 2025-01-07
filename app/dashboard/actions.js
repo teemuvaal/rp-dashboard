@@ -51,7 +51,6 @@ export async function createSession(formData) {
   const duration = formData.get('duration')
   const scheduled_date = formData.get('date')
 
-  console.log('Received form data:', { campaignId, name, description, duration, scheduled_date });
 
   if (!campaignId) {
     return { error: 'Campaign ID is missing' }
@@ -100,8 +99,50 @@ export async function createSession(formData) {
   // Check if data exists and has at least one item before accessing its id
   const sessionId = data && data.length > 0 ? data[0].id : null;
 
-  return { success: true, sessionId }
   
+}
+
+export async function updateSessionStatus(formData) {
+  const supabase = createClient()
+
+  // Get the current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError) {
+    return { error: 'Authentication error' }
+  }
+
+  const sessionId = formData.get('sessionId')
+  const campaignId = formData.get('campaignId')
+  const status = formData.get('status')
+
+  // Check if the user is the campaign owner
+  const { data: campaign, error: campaignError } = await supabase
+    .from('campaigns')
+    .select('owner_id')
+    .eq('id', campaignId)
+    .single()
+
+  if (campaignError) {
+    return { error: 'Error fetching campaign details' }
+  }
+
+  if (campaign.owner_id !== user.id) {
+    return { error: 'Only the campaign owner can update session status' }
+  }
+
+  // Update the session status
+  const { error: updateError } = await supabase
+    .from('sessions')
+    .update({ status })
+    .eq('id', sessionId)
+
+  if (updateError) {
+    return { error: updateError.message }
+  }
+
+  revalidatePath(`/dashboard/${campaignId}/sessions/${sessionId}`)
+  return { success: true }
 }
 
 export async function deleteSession(sessionId, campaignId) {
@@ -167,7 +208,8 @@ export async function fetchUserCampaigns() {
           description,
           created_at,
           updated_at,
-          owner_id
+          owner_id,
+          campaign_image
         )
       `)
       .eq('user_id', user.id)
@@ -618,47 +660,85 @@ export async function updateProfile(formData) {
 }
 
 export async function createNote(formData) {
-  const supabase = createClient()
+    const supabase = createClient();
 
-  try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    if (userError) {
-      console.error('Authentication error:', userError)
-      return { error: 'Authentication error' }
+        if (userError) {
+            console.error('Authentication error:', userError);
+            return { error: 'Authentication error' };
+        }
+
+        const campaignId = formData.get('campaignId');
+        const sessionId = formData.get('sessionId') || null;
+        const title = formData.get('title');
+        const content = formData.get('content');
+        const isPublic = formData.get('isPublic') === 'true';
+
+        // Verify campaign membership
+        const { data: membership } = await supabase
+            .from('campaign_members')
+            .select('role')
+            .eq('campaign_id', campaignId)
+            .eq('user_id', user.id)
+            .single();
+
+        if (!membership) {
+            return { error: 'Not a campaign member' };
+        }
+
+        // If linking to a session, verify session exists and belongs to campaign
+        if (sessionId) {
+            const { data: session } = await supabase
+                .from('sessions')
+                .select('id')
+                .eq('id', sessionId)
+                .eq('campaign_id', campaignId)
+                .single();
+
+            if (!session) {
+                return { error: 'Invalid session' };
+            }
+        }
+
+        const { data, error } = await supabase
+            .from('notes')
+            .insert({
+                campaign_id: campaignId,
+                session_id: sessionId,
+                user_id: user.id,
+                title,
+                content,
+                is_public: isPublic,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            })
+            .select(`
+                *,
+                users (
+                    username,
+                    profile_picture
+                )
+            `)
+            .single();
+
+        if (error) {
+            console.error('Error creating note:', error);
+            return { error: error.message };
+        }
+
+        return { 
+            success: true, 
+            note: {
+                ...data,
+                author: data.users?.username || 'Unknown'
+            }
+        };
+    } catch (error) {
+        console.error('Unexpected error in createNote:', error);
+        return { error: 'An unexpected error occurred' };
     }
-
-    const campaignId = formData.get('campaignId')
-    const sessionId = formData.get('sessionId') || null
-    const title = formData.get('title')
-    const content = formData.get('content')
-    const isPublic = formData.get('isPublic') === 'true'
-
-    const { data, error } = await supabase
-      .from('notes')
-      .insert({
-        campaign_id: campaignId,
-        session_id: sessionId,
-        user_id: user.id,
-        title,
-        content,
-        is_public: isPublic,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .select()
-
-    if (error) {
-      console.error('Error creating note:', error)
-      return { error: error.message }
-    }
-
-    revalidatePath(`/dashboard/${campaignId}/notes`)
-    return { success: true, note: data[0] }
-  } catch (error) {
-    console.error('Unexpected error in createNote:', error)
-    return { error: 'An unexpected error occurred' }
-  }
 }
 
 export async function fetchNotes(campaignId) {
@@ -700,6 +780,40 @@ export async function fetchNotes(campaignId) {
   return { notes }
 }
 
+export async function fetchSessionNotes(sessionId) {
+  const supabase = createClient()
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError) {
+    return { error: 'Authentication error' }
+  }
+
+  // Fetch notes linked to this session
+  const { data: notes, error } = await supabase
+    .from('notes')
+    .select('title, content')
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching notes:', error)
+    return { error: 'Error fetching notes' }
+  }
+
+  if (!notes || notes.length === 0) {
+    return { error: 'No notes found for this session' }
+  }
+
+  // Combine all notes into a single text chunk
+  const combinedNotes = notes.map(note => (
+    `Note: ${note.title}\n${note.content}`
+  )).join('\n\n---\n\n')
+
+  return { notes: combinedNotes }
+}
+
+
 export async function updateNote(formData) {
   const supabase = createClient()
 
@@ -712,6 +826,26 @@ export async function updateNote(formData) {
     }
 
     const noteId = formData.get('noteId')
+    const sessionId = formData.get('sessionId')
+
+    // If we're just updating the session link, we don't need the other fields
+    if (sessionId !== null && !formData.get('title')) {
+      const { data, error } = await supabase
+        .from('notes')
+        .update({ session_id: sessionId || null })
+        .eq('id', noteId)
+        .eq('user_id', user.id)
+        .select()
+
+      if (error) {
+        console.error('Error updating note:', error)
+        return { error: error.message }
+      }
+
+      return { success: true, note: data[0] }
+    }
+
+    // Otherwise, update all fields
     const title = formData.get('title')
     const content = formData.get('content')
     const isPublic = formData.get('isPublic') === 'true'
@@ -722,6 +856,7 @@ export async function updateNote(formData) {
         title,
         content,
         is_public: isPublic,
+        session_id: sessionId || null,
         updated_at: new Date().toISOString()
       })
       .eq('id', noteId)
@@ -825,4 +960,382 @@ export async function deleteNote(noteId) {
     console.error('Unexpected error in deleteNote:', error)
     return { error: 'An unexpected error occurred' }
   }
+}
+
+export async function createPoll(formData) {
+    const supabase = createClient();
+    
+    // Check authentication
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+        return { success: false, error: 'Not authenticated' };
+    }
+
+    // Get form data
+    const campaignId = formData.get('campaignId');
+    const title = formData.get('title');
+    const description = formData.get('description');
+    const allowMultiple = formData.get('allowMultiple') === 'true';
+    const options = JSON.parse(formData.get('options'));
+
+    // Verify campaign ownership
+    const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('owner_id')
+        .eq('id', campaignId)
+        .single();
+
+    if (!campaign || campaign.owner_id !== session.user.id) {
+        return { success: false, error: 'Not authorized' };
+    }
+
+    // Create poll
+    const { data: poll, error: pollError } = await supabase
+        .from('polls')
+        .insert({
+            campaign_id: campaignId,
+            title,
+            description,
+            allow_multiple: allowMultiple,
+            created_by: session.user.id,
+            is_active: true
+        })
+        .select()
+        .single();
+
+    if (pollError) {
+        console.error('Error creating poll:', pollError);
+        return { success: false, error: 'Failed to create poll' };
+    }
+
+    // Create poll options
+    const optionsToInsert = options.map(option => ({
+        poll_id: poll.id,
+        option_text: option
+    }));
+
+    const { error: optionsError } = await supabase
+        .from('poll_options')
+        .insert(optionsToInsert);
+
+    if (optionsError) {
+        console.error('Error creating poll options:', optionsError);
+        // Clean up the poll since options failed
+        await supabase.from('polls').delete().eq('id', poll.id);
+        return { success: false, error: 'Failed to create poll options' };
+    }
+
+    return { success: true, poll };
+}
+
+export async function updatePoll(formData) {
+    const supabase = createClient();
+    
+    // Check authentication
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+        return { success: false, error: 'Not authenticated' };
+    }
+
+    // Get form data
+    const pollId = formData.get('pollId');
+    const campaignId = formData.get('campaignId');
+    const isActive = formData.get('isActive') === 'true';
+
+    // Verify campaign ownership
+    const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('owner_id')
+        .eq('id', campaignId)
+        .single();
+
+    if (!campaign || campaign.owner_id !== session.user.id) {
+        return { success: false, error: 'Not authorized' };
+    }
+
+    // Update poll
+    const { error } = await supabase
+        .from('polls')
+        .update({ is_active: isActive })
+        .eq('id', pollId)
+        .eq('campaign_id', campaignId);
+
+    if (error) {
+        console.error('Error updating poll:', error);
+        return { success: false, error: 'Failed to update poll' };
+    }
+
+    return { success: true };
+}
+
+export async function votePoll(formData) {
+    const supabase = createClient();
+    
+    // Check authentication
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+        return { success: false, error: 'Not authenticated' };
+    }
+
+    // Get form data
+    const pollId = formData.get('pollId');
+    const campaignId = formData.get('campaignId');
+    const selectedOptions = JSON.parse(formData.get('options'));
+
+    // Verify campaign membership
+    const { data: membership } = await supabase
+        .from('campaign_members')
+        .select('role')
+        .eq('campaign_id', campaignId)
+        .eq('user_id', session.user.id)
+        .single();
+
+    if (!membership) {
+        return { success: false, error: 'Not a campaign member' };
+    }
+
+    // Get poll details to check if multiple votes are allowed
+    const { data: poll } = await supabase
+        .from('polls')
+        .select('allow_multiple, is_active')
+        .eq('id', pollId)
+        .single();
+
+    if (!poll) {
+        return { success: false, error: 'Poll not found' };
+    }
+
+    if (!poll.is_active) {
+        return { success: false, error: 'Poll is not active' };
+    }
+
+    if (!poll.allow_multiple && selectedOptions.length > 1) {
+        return { success: false, error: 'Multiple selections not allowed' };
+    }
+
+    // Delete existing votes if not allowing multiple
+    if (!poll.allow_multiple) {
+        await supabase
+            .from('poll_votes')
+            .delete()
+            .eq('poll_id', pollId)
+            .eq('user_id', session.user.id);
+    }
+
+    // Insert new votes
+    const votesToInsert = selectedOptions.map(optionId => ({
+        poll_id: pollId,
+        option_id: optionId,
+        user_id: session.user.id
+    }));
+
+    const { error: votesError } = await supabase
+        .from('poll_votes')
+        .insert(votesToInsert);
+
+    if (votesError) {
+        console.error('Error recording votes:', votesError);
+        return { success: false, error: 'Failed to record vote' };
+    }
+
+    return { success: true };
+}
+
+export async function getPolls(campaignId) {
+    const supabase = createClient();
+    
+    // First fetch polls with their options and votes
+    const { data: polls, error } = await supabase
+        .from('polls')
+        .select(`
+            *,
+            options:poll_options (
+                id,
+                option_text,
+                votes:poll_votes (
+                    user_id
+                )
+            )
+        `)
+        .eq('campaign_id', campaignId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching polls:', error);
+        return [];
+    }
+
+    // Get all unique user IDs from votes
+    const userIds = new Set();
+    polls.forEach(poll => {
+        poll.options.forEach(option => {
+            option.votes.forEach(vote => {
+                userIds.add(vote.user_id);
+            });
+        });
+    });
+
+    // Fetch user profiles for all voters
+    const { data: userProfiles } = await supabase
+        .from('users')
+        .select('id, username, profile_picture')
+        .in('id', Array.from(userIds));
+
+    // Create a map of user profiles for quick lookup
+    const userProfileMap = Object.fromEntries(
+        (userProfiles || []).map(profile => [profile.id, profile])
+    );
+
+    // Transform the data to include vote counts and voters with their profiles
+    const transformedPolls = polls.map(poll => ({
+        ...poll,
+        options: poll.options.map(option => ({
+            ...option,
+            votes: option.votes.length || 0,
+            voters: option.votes.map(vote => {
+                const profile = userProfileMap[vote.user_id];
+                return {
+                    id: vote.user_id,
+                    username: profile?.username || 'Unknown',
+                    profile_picture: profile?.profile_picture
+                };
+            })
+        }))
+    }));
+
+    return transformedPolls;
+}
+
+export async function deletePoll(formData) {
+    const supabase = createClient();
+    
+    // Check authentication
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+        return { success: false, error: 'Not authenticated' };
+    }
+
+    // Get form data
+    const pollId = formData.get('pollId');
+    const campaignId = formData.get('campaignId');
+
+    // Verify campaign ownership
+    const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('owner_id')
+        .eq('id', campaignId)
+        .single();
+
+    if (!campaign || campaign.owner_id !== session.user.id) {
+        return { success: false, error: 'Not authorized' };
+    }
+
+    // Delete poll (cascade will handle options and votes)
+    const { error } = await supabase
+        .from('polls')
+        .delete()
+        .eq('id', pollId)
+        .eq('campaign_id', campaignId);
+
+    if (error) {
+        console.error('Error deleting poll:', error);
+        return { success: false, error: 'Failed to delete poll' };
+    }
+
+    return { success: true };
+}
+
+export async function fetchSessions(campaignId) {
+  const supabase = createClient()
+  
+  try {
+    // First check if the campaign exists
+    const { data: campaign, error: campaignError } = await supabase
+      .from('campaigns')
+      .select('id')
+      .eq('id', campaignId)
+      .single();
+
+    if (campaignError) {
+      return { error: 'Campaign not found' };
+    }
+
+    // Fetch sessions
+    const { data: sessions, error } = await supabase
+      .from('sessions')
+      .select('id, name, scheduled_date, status')
+      .eq('campaign_id', campaignId)
+      .order('scheduled_date', { ascending: true });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    return { sessions: sessions || [] };
+  } catch (error) {
+    return { error: 'Failed to fetch sessions' };
+  }
+}
+
+export async function saveSummary({ sessionId, content }) {
+  const supabase = createClient()
+
+  // Get the current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError) {
+    return { error: 'Authentication error' }
+  }
+
+  // Check if the user is the campaign owner
+  const { data: session, error: sessionError } = await supabase
+    .from('sessions')
+    .select('campaign_id, campaigns!inner(owner_id)')
+    .eq('id', sessionId)
+    .single()
+
+  if (sessionError) {
+    return { error: 'Session not found' }
+  }
+
+  if (session.campaigns.owner_id !== user.id) {
+    return { error: 'Only the campaign owner can save summaries' }
+  }
+
+  // Check if a summary already exists
+  const { data: existingSummary } = await supabase
+    .from('session_summaries')
+    .select('id')
+    .eq('session_id', sessionId)
+    .single()
+
+  let result;
+  
+  if (existingSummary) {
+    // Update existing summary
+    result = await supabase
+      .from('session_summaries')
+      .update({
+        content,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existingSummary.id)
+      .select()
+      .single()
+  } else {
+    // Create new summary
+    result = await supabase
+      .from('session_summaries')
+      .insert({
+        session_id: sessionId,
+        content
+      })
+      .select()
+      .single()
+  }
+
+  if (result.error) {
+    return { error: result.error.message }
+  }
+
+  return { success: true, summary: result.data }
 }

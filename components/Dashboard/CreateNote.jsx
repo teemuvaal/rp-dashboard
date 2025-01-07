@@ -1,337 +1,345 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { updateNote } from '@/app/dashboard/actions'
+import { updateNote, createNote, fetchSessions } from '@/app/dashboard/actions'
+import { cleanUpNote } from '@/app/dashboard/aiactions'
 import dynamic from 'next/dynamic'
 import { createClient } from '@/utils/supabase/client'
 import Image from 'next/image'
-import QuillCursors from 'quill-cursors'
+import { useRouter } from 'next/navigation'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter,
+} from "@/components/ui/dialog"
+import { Wand2 } from "lucide-react"
 
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false })
-import 'react-quill/dist/quill.snow.css'
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false })
+import 'react-quill-new/dist/quill.snow.css'
 
-// Register the cursors module with Quill
-if (typeof window !== 'undefined') {
-  const Quill = require('quill')
-  Quill.register('modules/cursors', QuillCursors)
-}
+export default function CreateNote({ note, onNoteUpdated, campaignId }) {
+    const router = useRouter();
+    const [title, setTitle] = useState(note.title)
+    const [content, setContent] = useState(note.content)
+    const [isPublic, setIsPublic] = useState(note.is_public)
+    const [error, setError] = useState(null)
+    const [presentUsers, setPresentUsers] = useState([])
+    const [currentUser, setCurrentUser] = useState(null)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [sessions, setSessions] = useState([])
+    const [selectedSessionId, setSelectedSessionId] = useState(note.session_id ? note.session_id : 'none')
+    const supabase = createClient()
+    const [isCleaning, setIsCleaning] = useState(false)
+    const [cleanedContent, setCleanedContent] = useState(null)
+    const [showCleanDialog, setShowCleanDialog] = useState(false)
 
-export default function CreateNote({ note, onNoteUpdated }) {
-  const [title, setTitle] = useState(note.title)
-  const [content, setContent] = useState(note.content)
-  const [isPublic, setIsPublic] = useState(note.is_public)
-  const [error, setError] = useState(null)
-  const [presentUsers, setPresentUsers] = useState([])
-  const [currentUser, setCurrentUser] = useState(null)
-  const [quillInstance, setQuillInstance] = useState(null)
-  const [isTyping, setIsTyping] = useState(false)
-  const [cursors, setCursors] = useState(null)
-  const supabase = createClient()
-
-  // Fetch current user with profile information
-  useEffect(() => {
-    const fetchUserWithProfile = async () => {
-      const { data: { user }, error } = await supabase.auth.getUser()
-      if (!error && user) {
-        const { data: userProfile } = await supabase
-          .from('users')
-          .select('username, profile_picture')
-          .eq('id', user.id)
-          .single()
-        
-        setCurrentUser({ ...user, ...userProfile })
-      }
-    }
-    fetchUserWithProfile()
-  }, [])
-
-  // Separate presence effect
-  useEffect(() => {
-    if (!currentUser) return
-
-    const channel = supabase.channel(`note:${note.id}`, {
-      config: {
-        presence: {
-          key: currentUser.id,
-        },
-      },
-    })
-
-    // Handle presence state changes
-    channel.on('presence', { event: 'sync' }, () => {
-      const state = channel.presenceState()
-      const users = Object.values(state).map(presence => presence[0])
-      setPresentUsers(users)
-    })
-
-    // Subscribe and track presence
-    channel.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        await channel.track({
-          user_id: currentUser.id,
-          username: currentUser.username,
-          profile_picture: currentUser.profile_picture,
-          timestamp: new Date().toISOString(),
-        })
-      }
-    })
-
-    return () => {
-      channel.unsubscribe()
-    }
-  }, [currentUser, note.id])
-
-  // Separate cursor and collaboration effect
-  useEffect(() => {
-    if (!currentUser || !quillInstance) return
-
-    // Initialize cursors module
-    const cursorsModule = quillInstance.getModule('cursors')
-    setCursors(cursorsModule)
-
-    const collaborationChannel = supabase.channel(`note:${note.id}:cursors`, {
-      config: {
-        broadcast: { self: true },
-      },
-    })
-
-    // Enhanced cursor position handling
-    collaborationChannel.on('broadcast', { event: 'cursor-update' }, ({ payload }) => {
-      if (payload.sender !== currentUser.id && cursorsModule) {
-        const { sender, range, username, color } = payload
-        
-        if (range === null) {
-          cursorsModule.removeCursor(sender)
-        } else {
-          cursorsModule.createCursor(sender, username, color)
-          cursorsModule.moveCursor(sender, range)
+    // Fetch current user with profile information
+    useEffect(() => {
+        const fetchUserWithProfile = async () => {
+            const { data: { user }, error } = await supabase.auth.getUser()
+            if (!error && user) {
+                const { data: userProfile } = await supabase
+                    .from('users')
+                    .select('username, profile_picture')
+                    .eq('id', user.id)
+                    .single()
+                
+                setCurrentUser({ ...user, ...userProfile })
+            }
         }
-      }
-    })
+        fetchUserWithProfile()
+    }, [])
 
-    // Subscribe to collaboration channel
-    collaborationChannel.subscribe()
+    // Fetch sessions
+    useEffect(() => {
+        const loadSessions = async () => {
+            if (!campaignId) return;
 
-    // Enhanced selection change handler
-    const selectionHandler = (range, oldRange, source) => {
-      if (source === 'user') {
-        const cursorColor = `hsl(${Math.random() * 360}, 70%, 50%)`
-        collaborationChannel.send({
-          type: 'broadcast',
-          event: 'cursor-update',
-          payload: {
-            range,
-            sender: currentUser.id,
-            username: currentUser.username,
-            color: cursorColor
-          }
+            try {
+                const result = await fetchSessions(campaignId);
+                if (result.error) {
+                    setError(result.error);
+                    return;
+                }
+                
+                if (result.sessions) {
+                    setSessions(result.sessions);
+                }
+            } catch (error) {
+                setError('Failed to load sessions');
+            }
+        };
+        
+        loadSessions();
+    }, [campaignId]);
+
+    // Presence effect for viewing users
+    useEffect(() => {
+        if (!currentUser || !note.id) return
+
+        const channel = supabase.channel(`note:${note.id}`, {
+            config: {
+                presence: {
+                    key: currentUser.id,
+                },
+            },
         })
-      }
-    }
 
-    // Handle editor blur to remove cursor
-    const handleBlur = () => {
-      collaborationChannel.send({
-        type: 'broadcast',
-        event: 'cursor-update',
-        payload: {
-          range: null,
-          sender: currentUser.id
-        }
-      })
-    }
-
-    quillInstance.on('selection-change', selectionHandler)
-    quillInstance.on('blur', handleBlur)
-
-    return () => {
-      quillInstance.off('selection-change', selectionHandler)
-      quillInstance.off('blur', handleBlur)
-      collaborationChannel.unsubscribe()
-    }
-  }, [quillInstance, currentUser, note.id])
-
-  // Separate content synchronization effect
-  useEffect(() => {
-    if (!currentUser || !quillInstance) return
-
-    const contentChannel = supabase.channel(`note:${note.id}:content`, {
-      config: {
-        broadcast: { self: false }, // Don't receive own changes
-      },
-    })
-
-    // Handle incoming content changes
-    contentChannel.on('broadcast', { event: 'content-update' }, ({ payload }) => {
-      if (payload.sender !== currentUser.id) {
-        const currentSelection = quillInstance.getSelection()
-        
-        // Temporarily disable event listeners to prevent echo
-        quillInstance.off('text-change', handleTextChange)
-        
-        // Apply the changes
-        quillInstance.updateContents(payload.delta, 'api')
-        
-        // Restore selection if it existed
-        if (currentSelection) {
-          quillInstance.setSelection(currentSelection)
-        }
-        
-        // Re-enable event listeners
-        quillInstance.on('text-change', handleTextChange)
-      }
-    })
-
-    // Handle text changes
-    const handleTextChange = (delta, oldContents, source) => {
-      if (source === 'user') {
-        contentChannel.send({
-          type: 'broadcast',
-          event: 'content-update',
-          payload: {
-            delta,
-            sender: currentUser.id,
-            timestamp: new Date().toISOString()
-          }
+        channel.on('presence', { event: 'sync' }, () => {
+            const state = channel.presenceState()
+            const users = Object.values(state).map(presence => presence[0])
+            setPresentUsers(users)
         })
-      }
+
+        channel.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                await channel.track({
+                    user_id: currentUser.id,
+                    username: currentUser.username,
+                    profile_picture: currentUser.profile_picture,
+                    timestamp: new Date().toISOString(),
+                })
+            }
+        })
+
+        return () => {
+            channel.unsubscribe()
+        }
+    }, [currentUser, note.id])
+
+    const handleSubmit = async () => {
+        setError(null)
+        setIsSubmitting(true)
+
+        try {
+            const formData = new FormData()
+            if (note.id) {
+                // Update existing note
+                formData.append('noteId', note.id)
+                formData.append('title', title)
+                formData.append('content', content)
+                formData.append('isPublic', isPublic)
+                if (selectedSessionId !== 'none') {
+                    formData.append('sessionId', selectedSessionId)
+                }
+
+                const result = await updateNote(formData)
+                if (result.success) {
+                    if (onNoteUpdated) {
+                        onNoteUpdated(result.note)
+                    }
+                } else {
+                    setError(result.error || 'An error occurred while updating the note')
+                }
+            } else {
+                // Create new note
+                formData.append('campaignId', campaignId)
+                formData.append('title', title)
+                formData.append('content', content)
+                formData.append('isPublic', isPublic)
+                if (selectedSessionId !== 'none') {
+                    formData.append('sessionId', selectedSessionId)
+                }
+
+                const result = await createNote(formData)
+                if (result.success) {
+                    setTitle('')
+                    setContent('')
+                    setIsPublic(false)
+                    setSelectedSessionId('none')
+                    router.refresh()
+                } else {
+                    setError(result.error || 'An error occurred while creating the note')
+                }
+            }
+        } catch (error) {
+            setError('An unexpected error occurred')
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
-    // Subscribe to content channel and set up listeners
-    contentChannel.subscribe()
-    quillInstance.on('text-change', handleTextChange)
+    const formatSessionDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+    };
 
-    return () => {
-      quillInstance.off('text-change', handleTextChange)
-      contentChannel.unsubscribe()
+    const handleCleanUp = async () => {
+        setIsCleaning(true)
+        setError(null)
+
+        try {
+            const result = await cleanUpNote(content)
+            if (result.success) {
+                setCleanedContent(result.cleanedNote)
+                setShowCleanDialog(true)
+            } else {
+                setError(result.error || 'Failed to clean up note')
+            }
+        } catch (err) {
+            setError('An unexpected error occurred while cleaning up the note')
+        } finally {
+            setIsCleaning(false)
+        }
     }
-  }, [quillInstance, currentUser, note.id])
 
-  const handleUpdate = async () => {
-    setError(null)
-
-    const formData = new FormData()
-    formData.append('noteId', note.id)
-    formData.append('title', title)
-    formData.append('content', content)
-    formData.append('isPublic', isPublic)
-
-    try {
-      const result = await updateNote(formData)
-      if (result.success) {
-        onNoteUpdated(result.note)
-      } else {
-        console.error('Error updating note:', result.error)
-        setError(result.error || 'An error occurred while updating the note')
-      }
-    } catch (error) {
-      console.error('Unexpected error:', error)
-      setError('An unexpected error occurred')
+    const acceptCleanedVersion = () => {
+        setContent(cleanedContent)
+        setCleanedContent(null)
+        setShowCleanDialog(false)
     }
-  }
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm text-gray-500">
-        <span>{presentUsers.length} viewing</span>
-        <div className="flex -space-x-2">
-          {presentUsers.map((user) => (
-            <div
-              key={user.user_id}
-              className="relative inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 ring-2 ring-white overflow-hidden"
-              title={user.username || 'Anonymous'}
-            >
-              {user.profile_picture ? (
-                <Image
-                  src={user.profile_picture}
-                  alt={user.username || 'User avatar'}
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <span className="text-sm font-medium">
-                  {(user.username || 'A')[0].toUpperCase()}
-                </span>
-              )}
+    return (
+        <div className="space-y-4">
+            {note.id && (
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <span>{presentUsers.length} viewing</span>
+                    <div className="flex -space-x-2">
+                        {presentUsers.map((user) => (
+                            <div
+                                key={user.user_id}
+                                className="relative inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 ring-2 ring-white overflow-hidden"
+                                title={user.username || 'Anonymous'}
+                            >
+                                {user.profile_picture ? (
+                                    <Image
+                                        src={user.profile_picture}
+                                        alt={user.username || 'User avatar'}
+                                        fill
+                                        className="object-cover"
+                                    />
+                                ) : (
+                                    <span className="text-sm font-medium">
+                                        {(user.username || 'A')[0].toUpperCase()}
+                                    </span>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+            {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <strong className="font-bold">Error: </strong>
+                    <span className="block sm:inline">{error}</span>
+                </div>
+            )}
+            <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Note Title"
+                className="w-full p-2 border rounded"
+                required
+            />
+            <div className="flex gap-4">
+                <div className="flex items-center">
+                    <input
+                        type="checkbox"
+                        id="isPublic"
+                        checked={isPublic}
+                        onChange={(e) => setIsPublic(e.target.checked)}
+                        className="mr-2"
+                    />
+                    <label htmlFor="isPublic">Make this note public</label>
+                </div>
+                <Select 
+                    value={selectedSessionId} 
+                    onValueChange={setSelectedSessionId}
+                >
+                    <SelectTrigger className="w-[250px]">
+                        <SelectValue placeholder="Link to session (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="none">No session</SelectItem>
+                        {sessions.map(session => (
+                            <SelectItem key={session.id} value={session.id}>
+                                {session.name} ({formatSessionDate(session.scheduled_date)})
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
-          ))}
+            <div className="flex gap-2 items-center">
+                <Button 
+                    variant="outline" 
+                    onClick={handleCleanUp}
+                    disabled={isCleaning || !content}
+                    className="gap-2"
+                >
+                    <Wand2 className="h-4 w-4" />
+                    {isCleaning ? 'Formatting...' : 'Format with AI'}
+                </Button>
+            </div>
+
+            <Dialog open={showCleanDialog} onOpenChange={setShowCleanDialog}>
+                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Format using AI</DialogTitle>
+                        <DialogDescription>
+                            Review the cleaned up version of your note. You can accept it or keep your original version.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="mt-4 space-y-4">
+                        <div 
+                            className="prose max-w-none p-4 border rounded-md bg-muted"
+                            dangerouslySetInnerHTML={{ __html: cleanedContent }}
+                        />
+                    </div>
+                    <DialogFooter className="flex gap-2 mt-4">
+                        <Button variant="outline" onClick={() => setShowCleanDialog(false)}>
+                            Keep Original
+                        </Button>
+                        <Button onClick={acceptCleanedVersion}>
+                            Accept New Version
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <div className="h-[60vh]">
+                <ReactQuill 
+                    theme="snow" 
+                    value={content} 
+                    onChange={setContent}
+                    className="h-[calc(100%-42px)]"
+                    modules={{
+                        toolbar: [
+                            [{ 'header': [1, 2, 3, false] }],
+                            ['bold', 'italic', 'underline', 'strike'],
+                            ['blockquote', 'code-block'],
+                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                            ['link', 'image'],
+                            ['clean']
+                        ],
+                        history: {
+                            delay: 1000,
+                            maxStack: 500,
+                        }
+                    }}
+                />
+            </div>
+            <Button 
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+            >
+                {isSubmitting ? 'Saving...' : (note.id ? 'Save Changes' : 'Create Note')}
+            </Button>
         </div>
-      </div>
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{error}</span>
-        </div>
-      )}
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Note Title"
-        className="w-full p-2 border rounded"
-        required
-      />
-      <div className="h-[60vh]">
-        <ReactQuill 
-          theme="snow" 
-          value={content} 
-          onChange={(value, delta, source, editor) => {
-            setContent(value)
-          }}
-          className="h-[calc(100%-42px)]"
-          modules={{
-            toolbar: [
-              [{ 'header': [1, 2, 3, false] }],
-              ['bold', 'italic', 'underline', 'strike'],
-              ['blockquote', 'code-block'],
-              [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-              ['link', 'image'],
-              ['clean']
-            ],
-            cursors: {
-              transformOnTextChange: true,
-              hideDelayMs: 5000,
-              hideSpeedMs: 300,
-              selectionChangeSource: null,
-              bound: true,
-              template: `
-                <span class="custom-cursor-container">
-                  <span class="custom-cursor-flag">
-                    <span class="custom-cursor-name"></span>
-                  </span>
-                  <span class="custom-cursor-caret"></span>
-                </span>
-              `
-            },
-            history: {
-              userOnly: true,
-              delay: 1000,
-              maxStack: 500,
-            },
-            keyboard: {
-              bindings: {
-                // Add custom key bindings if needed
-              }
-            }
-          }}
-          ref={(ref) => {
-            if (ref) {
-              setQuillInstance(ref.getEditor())
-            }
-          }}
-        />
-      </div>
-      <div className="flex items-center">
-        <input
-          type="checkbox"
-          id="isPublic"
-          checked={isPublic}
-          onChange={(e) => setIsPublic(e.target.checked)}
-          className="mr-2"
-        />
-        <label htmlFor="isPublic">Make this note public</label>
-      </div>
-      <Button onClick={handleUpdate}>Save Changes</Button>
-    </div>
-  )
+    )
 }
