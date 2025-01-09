@@ -35,9 +35,11 @@ export default function RootLayout({ children }) {
     <html lang="en" suppressHydrationWarning className={cn("antialiased", inter.variable, baskerville.variable, DepartureMono.variable)}>
       <body
         className={cn(
-          "min-h-screen bg-background font-sans antialiased"
+          "min-h-screen bg-background antialiased"
         )}
-        suppressHydrationWarning
+        style={{
+          fontFamily: 'var(--font-sans)'
+        }}
       >
         <ThemeProvider
           attribute="class"
