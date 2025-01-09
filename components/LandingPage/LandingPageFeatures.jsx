@@ -9,26 +9,31 @@ const features = [
     {
         title: "Campaign Notes",
         icon: <NotebookPen height={20} width={20}/>,
-        children: "All your campaign notes in one place. Create, share and live through your campaign with your players. Add, edit and collaborate on real time with your players.",
+        children: "Share your notes, keep them organized and clean up with AI.",
         image: "/productshot_dashboard.png"
     },
     {
-        title: "Character Sheets",
+        title: "Polls",
         icon: <User height={20} width={20}/>,
-        children: "Create and share your character sheets with your players. Craft and enhance your characters background using AI."
+        children: "Manage your sessions, schedules and more with polls."
     },
     {
-        title: "Interactive Assets",
+        title: "Assets",
         icon: <Map height={20} width={20}/>,
-        children: "Share your maps and assets with your players. Use AI to generate your maps and assets."
+        children: "Share and manage your campaign assets with your players."
     }
 ]
 
 
 export default function LandingPageFeatures() {
     return (
-        <div>
+        <div className="flex flex-col items-center justify-center" id="features">
             <h2>Features</h2>
+            <div className="flex flex-col items-center justify-center">
+                {features.map((feature, index) => (
+                    <FeatureCard key={index} {...feature} />
+                ))}
+            </div>
         </div>
     )
 }
