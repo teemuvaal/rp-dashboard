@@ -1,35 +1,22 @@
-"use client"
-
-import { motion } from "framer-motion";
-
-
 export default function LandingPageHero() {
     return (
-        <div>
-            <div className="flex flex-col items-center text-[#3c2a1e] px-4 sm:px-0">
-                <div className="py-2 mt-4">
-                    <p className="text-sm sm:text-base">Hello, Dungeon Master!👋</p>
+        <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 py-16">
+            <h1 className="text-4xl md:text-6xl font-departure-mono text-center tracking-tight">
+                AdventureHub.ai
+            </h1>
+            <div className="flex flex-col md:flex-row justify-between items-center w-full max-w-6xl mt-12 gap-8">
+                <div className="flex-1 space-y-4">
+                    <p className="text-xl md:text-2xl font-departure-mono text-muted-foreground">
+                        Your digital companion for tabletop adventures
+                    </p>
+                    <p className="text-lg text-muted-foreground">
+                        Streamline your campaign management with AI-powered tools
+                    </p>
                 </div>
-                <div className="py-2 flex items-center justify-center flex-col">
-                <motion.h1 
-                className="text-5xl font-bold tracking-tighter sm:text-6xl md:text-7xl/none font-serif"
-                initial={{ opacity: 0, y: -50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                ADVENTURE HUB
-              </motion.h1>
-              <motion.p 
-                className="mx-auto max-w-[700px] text-xl text-[#5a4738] md:text-2xl font-serif"
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                    Your next adventure starts here!
-                </motion.p> 
-                </div>
-                <div className="cover-image w-full h-[200px] sm:h-[400px] lg:h-[600px] overflow-hidden">
-                    <img src="/LandingPageHero.png" alt="adventure map" className="object-cover w-full h-full" />
+                <div className="flex-1">
+                    <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
+                        <p className="text-muted-foreground">Image placeholder</p>
+                    </div>
                 </div>
             </div>
         </div>

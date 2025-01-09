@@ -27,25 +27,8 @@ const features = [
 
 export default function LandingPageFeatures() {
     return (
-        <div className="px-4 sm:px-0 bg-[#e8dcc9]">
-            <div className="flex flex-col items-center justify-center w-full my-6 sm:my-10 gap-2">
-                <h2 className="text-2xl sm:text-3xl font-bold font-serif text-[#3c2a1e]">Features</h2>
-            </div>
-            <div className="flex flex-col items-center justify-center w-full my-6 sm:my-10 gap-4 sm:gap-2">
-                {features.map((feature, index) => (
-                    <motion.div
-                    key={index}
-                    className="flex flex-col items-center text-center p-6 bg-[#f5efe4] rounded-lg shadow-lg"
-                    initial={{ opacity: 0, y: 50 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <FeatureCard key={index} title={feature.title} icon={feature.icon} children={feature.children} />
-                    </motion.div>
-                ))}
-            </div>
+        <div>
+            <h2>Features</h2>
         </div>
     )
 }
