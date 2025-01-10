@@ -1,9 +1,11 @@
+"use client"
+
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
 import config from "@/config";
-
-
+import DarkModeToggle from "@/components/Dashboard/DarkModeToggle"
+import { motion } from "framer-motion";
   
 const links = [
     {
@@ -11,24 +13,64 @@ const links = [
         href: "#top",
     },
     {
+        label: "Features",
+        href: "#features",
+    },
+    {
         label: "FAQ",
         href: "#faq",
     },
 ]
 
-
 export default function LandingPageNav() {
     return (
-        <div className={`sticky top-0 flex flex-col sm:flex-row justify-between p-2 bg-red-950 bg-clip-padding backdrop-filter backdrop-blur-lg bg-opacity-10 border-opacity-50 border-2 border-red-950`}>
-            <span className="flex flex-row gap-2 align-middle justify-center sm:justify-start mb-2 sm:mb-0">
-                <Image src="/dice.png" alt="logo" width={40} height={40} />
-                <h1 className={`text-xl sm:text-2xl font-bold uppercase mt-1 sm:mt-2 font-serif text-[#3c2a1e]`}>AdventureHub.ai</h1>
-            </span>
-            <span className="flex justify-center sm:justify-end sm:mr-4 items-center">
-            <Button className={`bg-red-950 hover:bg-red-900 text-sm sm:text-base px-3 py-1 sm:px-4 sm:py-2`}>
-                <Link href="/login">Login</Link>
-            </Button>
-            </span>
-        </div>
+        <motion.div 
+            initial={{ y: -100 }}
+            animate={{ y: 0 }}
+            className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b"
+        >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between h-16">
+                    {/* Logo and Brand */}
+                    <div className="flex-shrink-0">
+                        <Link href="/" className="flex items-center space-x-2">
+                            <span 
+                                style={{ fontFamily: 'var(--font-departure-mono)' }}
+                                className="text-lg font-semibold"
+                            >
+                                AdventureHub.ai
+                            </span>
+                        </Link>
+                    </div>
+
+                    {/* Navigation Links */}
+                    <nav className="hidden md:flex items-center space-x-8">
+                        {links.map((link) => (
+                            <Link
+                                key={link.href}
+                                href={link.href}
+                                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                {link.label}
+                            </Link>
+                        ))}
+                    </nav>
+
+                    {/* Right Side Actions */}
+                    <div className="flex items-center space-x-4">
+                        <DarkModeToggle />
+                        <Link href="/login">
+                            <Button
+                                variant="default"
+                                className="rounded-full"
+                                size="sm"
+                            >
+                                Sign In
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        </motion.div>
     )
 }

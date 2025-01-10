@@ -1,26 +1,38 @@
+
+
+const problemData = [
+    {
+        title: "Plan & schedule your sessions",
+        description: "Organize your sessions, keep track of events and keep the hype up between sessions with AI-powered session recaps.",
+    },
+    {
+        title: "Share notes between players",
+        description: "All of your notes, assets and story arcs in one place available to all players.",
+    },
+    {
+        title: "AI-powered session recaps",
+        description: "Relive your session highlights with smart AI-powered session recaps.",
+    }
+]
+
 export default function LandingPageProblem() {
     return (
-        <div className="flex flex-row items-center text-center gap-4 text-[#3c2a1e] text-sm">
-            <p
-            className="w-1/4"
-            >
-                Your time running campaigns is spent on the following: write notes, clean up notes and create summaries for your players of past sessions.
-            </p>
-            <p
-            className="w-1/4"
-            >
-                Notes on paper are not easily sharable and time consuming to clean up and upload.
-            </p>
-            <p
-            className="w-1/4"
-            >
-                Chat history is easily cluttered and hard to read. When and where are we playing? Is Mary or John playing?
-            </p>
-            <p
-            className="w-1/4"
-            >
-                Writing compelling summaries is hard and time consuming. It's not easy to summarize multiple sessions to a quick recap that sparks the players interest after a break.
-            </p>
+        <div>
+            <h1
+            className="text-2xl md:text-4xl text-foreground mb-6"
+            >Don't let your campaign fall apart - get everyone on the same story arc</h1>
+        <div className="flex flex-row items-center justify-center h-auto sm:h-20 text-sm">
+            {problemData.map((problem, index) => (
+                <div key={index}
+                className="p-4 w-1/3"
+                >
+                    <h2
+                    className="text-lg font-bold"
+                    >{problem.title}</h2>
+                    <p>{problem.description}</p>
+                </div>
+            ))}
         </div>
+    </div>
     )
 }
