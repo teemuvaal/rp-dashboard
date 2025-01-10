@@ -16,12 +16,11 @@ export default function FeatureCard({children, image, icon, title}) {
                 <div className="flex w-full md:w-3/5 p-6 md:p-8"> 
                     <div className="flex flex-col space-y-6 w-full">
                         <h2 
-                            style={{ fontFamily: 'var(--font-departure-mono)' }}
                             className="text-xl md:text-2xl font-semibold"
                         >
                             <span className="flex flex-row gap-2 items-center">
                                 {icon}
-                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-neutral-950 to-neutral-500">
+                                <span>
                                     {title}
                                 </span>
                             </span>

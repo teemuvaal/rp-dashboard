@@ -19,7 +19,7 @@ export default function LandingPageProblem() {
     return (
         <div>
             <h1
-            className="text-2xl md:text-4xl text-white mb-6"
+            className="text-2xl md:text-4xl text-foreground mb-6"
             >Don't let your campaign fall apart - get everyone on the same story arc</h1>
         <div className="flex flex-row items-center justify-center h-auto sm:h-20 text-sm">
             {problemData.map((problem, index) => (

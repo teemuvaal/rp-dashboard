@@ -16,7 +16,7 @@ const FAQ = [
     },
     {
         question: "How much does it cost?",
-        answer: "It's free!"
+        answer: "Get started for free! Subscription plans will be available soon."
     }
 ]
 
@@ -24,7 +24,20 @@ const FAQ = [
 export default function LandingPageFAQ() {
     return (
         <div id="faq" className="">  
-            <h2>FAQ</h2>
+            <h2
+            style={{ fontFamily: 'var(--font-departure-mono)' }}
+            className="text-2xl md:text-4xl text-foreground mb-6"
+            >FAQ</h2>
+            <Accordion type="single" collapsible>
+                {FAQ.map((faq, index) => (
+                    <AccordionItem key={index} value={`item-${index + 1}`}>
+                        <AccordionTrigger>{faq.question}</AccordionTrigger>
+                        <AccordionContent>
+                            {faq.answer}
+                        </AccordionContent>
+                    </AccordionItem>
+                ))}
+            </Accordion>
         </div>
     )
 }
