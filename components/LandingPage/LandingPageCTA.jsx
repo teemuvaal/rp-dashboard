@@ -1,11 +1,16 @@
 import { Button } from "@/components/ui/button"
 import { Swords } from "lucide-react"
 import Link from "next/link"
+import { Separator } from "@/components/ui/separator"
 
 export default function LandingPageCTA() {
     return (
-        <div className="flex flex-col justify-center items-center py-4 h-auto sm:h-20 gap-4">
-            <p>
+        <div 
+        style={{ fontFamily: 'var(--font-departure-mono)' }}
+        className="flex flex-col justify-center items-center py-4 sm:h-20 gap-4">
+            <p
+            className="text-sm text-muted-foreground"
+            >
                 AdventureHub.ai is currently in development. Sign up to get early access to the beta.
             </p>
            <Link href="/login">

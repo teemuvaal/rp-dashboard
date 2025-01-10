@@ -65,49 +65,60 @@ export default function LandingPageHero() {
     }, [isTypingComplete, resetTyping]);
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 py-8">
-            <h1
-                style={{ fontFamily: 'var(--font-departure-mono)' }} 
-                className="text-4xl md:text-6xl text-center tracking-tight">
-                AdventureHub.ai
-            </h1>
-            <div className="flex flex-col md:flex-row justify-between items-center w-full max-w-6xl mt-12 gap-8">
-                <div className="flex-1 space-y-4">
+        <div className="relative min-h-[75vh] lg:min-h-[70vh] w-full overflow-hidden">
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={currentStoryIndex}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="absolute inset-0"
+                >
+                    <Image 
+                        src={storyData[currentStoryIndex].image}
+                        alt="Story Image"
+                        fill
+                        className="object-cover"
+                        priority
+                    />
+                    <div 
+                        className="absolute inset-0" 
+                        style={{
+                            background: 'linear-gradient(to right, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.7))'
+                        }}
+                    />
+                </motion.div>
+            </AnimatePresence>
+
+            <div className="relative z-10 flex flex-col items-start justify-center h-full max-w-6xl mx-auto px-6 py-16 md:py-20">
+                <motion.h1
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    style={{ fontFamily: 'var(--font-departure-mono)' }} 
+                    className="text-4xl md:text-6xl text-white mb-6"
+                >
+                    AdventureHub.ai
+                </motion.h1>
+                
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="max-w-2xl"
+                >
+                    <p className="text-lg md:text-xl text-white/90 mb-6" style={{ fontFamily: 'var(--font-departure-mono)' }}>
+                        Your digital companion for tabletop adventures
+                    </p>
                     <div 
                         style={{ fontFamily: 'var(--font-departure-mono)' }}
-                        className="text-sm text-muted-foreground h-32 overflow-hidden">
+                        className="text-base md:text-lg text-white/80 leading-relaxed"
+                    >
                         {displayedText}
-                        <span className="animate-pulse">|</span>
+                        <span className="animate-pulse ml-1">|</span>
                     </div>
-                </div>
-                <div className="flex-1">
-                    <div className="aspect-video bg-muted rounded-lg overflow-hidden">
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={currentStoryIndex}
-                                initial={{ opacity: 0, scale: 1.1 }}
-                                animate={{ 
-                                    opacity: 1,
-                                    scale: 1.2,
-                                    transition: {
-                                        opacity: { duration: 0.5 },
-                                        scale: { duration: 10, ease: "linear" }
-                                    }
-                                }}
-                                exit={{ opacity: 0, scale: 1.1 }}
-                                className="relative w-full h-full"
-                            >
-                                <Image 
-                                    src={storyData[currentStoryIndex].image}
-                                    alt="Story Image"
-                                    fill
-                                    className="object-cover"
-                                    priority
-                                />
-                            </motion.div>
-                        </AnimatePresence>
-                    </div>
-                </div>
+                </motion.div>
             </div>
         </div>
     )
