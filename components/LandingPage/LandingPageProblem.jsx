@@ -17,7 +17,9 @@ const problemData = [
 
 export default function LandingPageProblem() {
     return (
-        <div>
+        <div 
+        style={{ fontFamily: 'var(--font-sans)' }}
+        id="problem">
             <h1
             className="text-2xl md:text-4xl text-foreground mb-6"
             >Don't let your campaign fall apart - get everyone on the same story arc</h1>
