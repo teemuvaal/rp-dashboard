@@ -10,7 +10,7 @@ import {
     NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu"
 import { navigationMenuTriggerStyle } from "@/components/ui/navigation-menu"
-import { Newspaper, NotebookPen, Notebook, Beer, Users, ChartBar } from "lucide-react"
+import { Newspaper, NotebookPen, Notebook, Beer, Users, ChartBar, Library } from "lucide-react"
 import CreateSessionForm from "@/components/Dashboard/CreateSessionForm"
 import { Separator } from "@/components/ui/separator"
 import AddNoteButton from "@/components/Dashboard/AddNoteButton"
@@ -80,7 +80,7 @@ export default function AppMenu({params}) {
                     <NavigationMenuItem>
                         <NavigationMenuTrigger>Notes</NavigationMenuTrigger>
                         <NavigationMenuContent>
-                            <div className="flex flex-col gap-2 w-[500px] h-[150px] p-4">
+                            <div className="flex flex-col gap-2 w-[500px] h-[200px] p-4">
                                 <span className="flex flex-row gap-2 justify-between">
                                     <NavigationMenuLink asChild>
                                         <Link href={`/dashboard/${params.id}/notes/`} className={navigationMenuTriggerStyle()}>
@@ -100,6 +100,19 @@ export default function AppMenu({params}) {
                                     </NavigationMenuLink>
                                     <p className="text-sm text-gray-500">
                                         Create a new note to share with the team.
+                                    </p>
+                                </span>
+                                <span className="flex flex-row gap-2 justify-between">
+                                    <NavigationMenuLink asChild>
+                                        <Link href={`/dashboard/${params.id}/assets/`} className={navigationMenuTriggerStyle()}>
+                                            <span className="flex flex-row items-center">
+                                                <Library className="w-4 h-4 mr-2" />
+                                                Assets
+                                            </span>
+                                        </Link>
+                                    </NavigationMenuLink>
+                                    <p className="text-sm text-gray-500">
+                                        Manage campaign assets and resources.
                                     </p>
                                 </span>
                             </div>
