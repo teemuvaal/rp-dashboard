@@ -1339,3 +1339,130 @@ export async function saveSummary({ sessionId, content }) {
 
   return { success: true, summary: result.data }
 }
+
+// Asset Actions
+export async function createAsset(formData) {
+    const supabase = createClient()
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError) return { error: 'Not authenticated' }
+
+    const campaignId = formData.get('campaignId')
+    const title = formData.get('title')
+    const description = formData.get('description')
+    const content = formData.get('content')
+    const type = formData.get('type')
+    const isPublic = formData.get('isPublic') === 'true'
+
+    if (!title || !content || !type) {
+        return { error: 'Missing required fields' }
+    }
+
+    const { data, error } = await supabase
+        .from('assets')
+        .insert({
+            campaign_id: campaignId,
+            user_id: user.id,
+            title,
+            description,
+            content,
+            type,
+            is_public: isPublic
+        })
+        .select()
+        .single()
+
+    if (error) {
+        console.error('Error creating asset:', error)
+        return { error: 'Failed to create asset' }
+    }
+
+    return { success: true, data }
+}
+
+export async function updateAsset(formData) {
+    const supabase = createClient()
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError) return { error: 'Not authenticated' }
+
+    const assetId = formData.get('assetId')
+    const title = formData.get('title')
+    const description = formData.get('description')
+    const content = formData.get('content')
+    const type = formData.get('type')
+    const isPublic = formData.get('isPublic') === 'true'
+
+    if (!assetId || !title || !content || !type) {
+        return { error: 'Missing required fields' }
+    }
+
+    const { data, error } = await supabase
+        .from('assets')
+        .update({
+            title,
+            description,
+            content,
+            type,
+            is_public: isPublic,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', assetId)
+        .select()
+        .single()
+
+    if (error) {
+        console.error('Error updating asset:', error)
+        return { error: 'Failed to update asset' }
+    }
+
+    return { success: true, data }
+}
+
+export async function deleteAsset(formData) {
+    const supabase = createClient()
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError) return { error: 'Not authenticated' }
+
+    const assetId = formData.get('assetId')
+    if (!assetId) return { error: 'Asset ID is required' }
+
+    const { error } = await supabase
+        .from('assets')
+        .delete()
+        .eq('id', assetId)
+
+    if (error) {
+        console.error('Error deleting asset:', error)
+        return { error: 'Failed to delete asset' }
+    }
+
+    return { success: true }
+}
+
+export async function fetchAssets(campaignId) {
+    const supabase = createClient()
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError) return { error: 'Not authenticated' }
+
+    const { data, error } = await supabase
+        .from('assets')
+        .select(`
+            *,
+            users (
+                username,
+                profile_picture
+            )
+        `)
+        .eq('campaign_id', campaignId)
+        .order('created_at', { ascending: false })
+
+    if (error) {
+        console.error('Error fetching assets:', error)
+        return { error: 'Failed to fetch assets' }
+    }
+
+    return { assets: data }
+}
