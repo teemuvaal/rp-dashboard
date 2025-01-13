@@ -56,8 +56,8 @@ Below is a list of features that are complete or in progress and should be compl
   - [ ] Image-to-Text
 - [ ] Setup RLS
 - [x] Create Polls
-- [ ] Assets
-  - [ ] Asset types
-  - [ ] Asset management
-  - [ ] Asset library
+- [x] Assets
+  - [x] Asset types
+  - [x] Asset management
+  - [x] Asset library
 - [ ] Proper Roles and Permissions System
