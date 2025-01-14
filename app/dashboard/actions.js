@@ -1466,3 +1466,19 @@ export async function fetchAssets(campaignId) {
 
     return { assets: data }
 }
+
+export async function fetchSummary(sessionId) {
+    const supabase = createClient()
+
+    const { data, error } = await supabase
+        .from('session_summaries')
+        .select('content')
+        .eq('session_id', sessionId)
+        .single()
+
+    if (error) {
+        return { error: 'Failed to fetch summary' }
+    }
+
+    return { summary: data }
+}
