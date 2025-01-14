@@ -17,8 +17,8 @@ export default function CampaignTile({name, description, role, id, campaign_imag
             <Image
               src={campaign_image || '/campaign-placeholder.png'}
               alt={name}
-              layout="fill"
-              objectFit="cover"
+              fill
+              style={{objectFit: 'cover'}}
               quality={100}
               className="transition-transform duration-300 group-hover:scale-105"
             />

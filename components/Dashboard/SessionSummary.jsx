@@ -1,17 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Wand2 } from "lucide-react";
-import { fetchSessionNotes, saveSummary } from "@/app/dashboard/actions";
+import { fetchSessionNotes, saveSummary, fetchSummary } from "@/app/dashboard/actions";
 import { createSummary } from "@/app/dashboard/aiactions";
 import { useRouter } from 'next/navigation';
 
@@ -20,6 +19,16 @@ export default function SessionSummary({ session }) {
     const [error, setError] = useState(null);
     const [summary, setSummary] = useState(null);
     const router = useRouter();
+
+    useEffect(() => {
+        const loadSummary = async () => {
+            const result = await fetchSummary(session.id);
+            if (!result.error && result.summary?.content) {
+                setSummary(result.summary.content);
+            }
+        };
+        loadSummary();
+    }, [session.id]);
 
     const handleGenerateSummary = async () => {
         setIsGenerating(true);
@@ -75,7 +84,7 @@ export default function SessionSummary({ session }) {
                     <div>
                         <CardTitle>Session Summary</CardTitle>
                         <CardDescription>
-                            Generate a summary from all notes linked to this session
+                            {summary ? 'View the summary for this session' : 'Generate a summary from all notes linked to this session'}
                         </CardDescription>
                     </div>
                     <Button
