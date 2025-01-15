@@ -7,6 +7,10 @@ import Link from 'next/link'
 import { LockKeyhole, Globe, MoveRight, NotepadText } from 'lucide-react'
 import { format } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import rehypeHighlight from 'rehype-highlight'
+import 'highlight.js/styles/github-dark.css'
 
 export default function NotesList({ initialNotes, campaignId }) {
   const [notes, setNotes] = useState(initialNotes)
@@ -44,7 +48,14 @@ export default function NotesList({ initialNotes, campaignId }) {
               </CardHeader>
             </div>
             <CardContent>
-            <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: note.content }} />
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeHighlight]}
+                >
+                  {note.content.length > 200 ? `${note.content.substring(0, 200)}...` : note.content}
+                </ReactMarkdown>
+              </div>
             </CardContent>
             <CardFooter>
             <p className="text-sm text-gray-500">
