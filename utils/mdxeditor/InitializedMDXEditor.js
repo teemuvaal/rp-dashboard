@@ -40,7 +40,6 @@ const defaultPlugins = (readOnly = false) => {
           <ListsToggle />
           <InsertImage />
           <InsertTable />
-          <InsertCodeBlock />
           <InsertThematicBreak />
         </>
       )
@@ -53,7 +52,6 @@ const defaultPlugins = (readOnly = false) => {
     headingsPlugin(),
     listsPlugin(),
     quotePlugin(),
-    codeBlockPlugin(),
     markdownShortcutPlugin()
   ]
 }
@@ -68,7 +66,7 @@ export default function InitializedMDXEditor({ markdown, onChange, readOnly = fa
       readOnly={readOnly}
       plugins={defaultPlugins(readOnly)}
       contentEditableClassName="prose dark:prose-invert max-w-none min-h-[200px] p-4 text-foreground bg-background"
-      className="mdxeditor !bg-background !text-foreground border rounded-md [&_.toolbar]:!bg-background [&_.toolbar]:!text-foreground [&_.toolbar]:border-b [&_button]:!text-foreground [&_button:hover]:!bg-accent [&_.selected]:!bg-accent"
+      className="mdxeditor bg-background text-foreground border rounded-md [&_.toolbar]:!bg-background [&_.toolbar]:!text-foreground [&_.toolbar]:border-b [&_button]:!text-foreground [&_button:hover]:!bg-accent [&_.selected]:!bg-accent"
     />
   )
 }
