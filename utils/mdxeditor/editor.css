@@ -1,0 +1,139 @@
+.mdxeditor {
+  /* Light theme variables */
+  --accentBase: hsl(var(--background));
+  --accentBgSubtle: hsl(var(--muted));
+  --accentBg: hsl(var(--accent));
+  --accentBgHover: hsl(var(--accent));
+  --accentBgActive: hsl(var(--accent));
+  --accentLine: hsl(var(--border));
+  --accentBorder: hsl(var(--border));
+  --accentBorderHover: hsl(var(--border));
+  --accentSolid: hsl(var(--primary));
+  --accentSolidHover: hsl(var(--ring));
+  --accentText: hsl(var(--foreground));
+  --accentTextContrast: hsl(var(--card-foreground));
+
+  --baseBase: hsl(var(--background));
+  --baseBgSubtle: hsl(var(--muted));
+  --baseBg: hsl(var(--background));
+  --baseBgHover: hsl(var(--accent));
+  --baseBgActive: hsl(var(--accent));
+  --baseLine: hsl(var(--border));
+  --baseBorder: hsl(var(--border));
+  --baseBorderHover: hsl(var(--border));
+  --baseSolid: hsl(var(--primary));
+  --baseSolidHover: hsl(var(--ring));
+  --baseText: hsl(var(--foreground));
+  --baseTextContrast: hsl(var(--card-foreground));
+  --basePageBg: hsl(var(--background));
+
+  font-family: var(--font-sans);
+  --font-mono: var(--font-mono);
+  background: var(--basePageBg);
+  color: var(--baseText);
+}
+
+.dark .mdxeditor {
+  /* Dark theme variables */
+  --accentBase: hsl(var(--background));
+  --accentBgSubtle: hsl(var(--muted));
+  --accentBg: hsl(var(--accent));
+  --accentBgHover: hsl(var(--accent));
+  --accentBgActive: hsl(var(--accent));
+  --accentLine: hsl(var(--border));
+  --accentBorder: hsl(var(--border));
+  --accentBorderHover: hsl(var(--border));
+  --accentSolid: hsl(var(--primary));
+  --accentSolidHover: hsl(var(--ring));
+  --accentText: hsl(var(--foreground));
+  --accentTextContrast: hsl(var(--card-foreground));
+
+  --baseBase: hsl(var(--background));
+  --baseBgSubtle: hsl(var(--muted));
+  --baseBg: hsl(var(--background));
+  --baseBgHover: hsl(var(--accent));
+  --baseBgActive: hsl(var(--accent));
+  --baseLine: hsl(var(--border));
+  --baseBorder: hsl(var(--border));
+  --baseBorderHover: hsl(var(--border));
+  --baseSolid: hsl(var(--primary));
+  --baseSolidHover: hsl(var(--ring));
+  --baseText: hsl(var(--foreground));
+  --baseTextContrast: hsl(var(--card-foreground));
+  --basePageBg: hsl(var(--background));
+}
+
+/* Additional styling for editor elements */
+.mdxeditor-toolbar {
+  background: var(--baseBase) !important;
+  border-bottom: 1px solid var(--baseBorder) !important;
+}
+
+.mdxeditor button {
+  color: var(--baseText) !important;
+}
+
+.mdxeditor button:hover {
+  background: var(--baseBgHover) !important;
+}
+
+.mdxeditor button.selected {
+  background: var(--accentBg) !important;
+}
+
+.mdxeditor-root-contenteditable {
+  background: var(--basePageBg) !important;
+  color: var(--baseText) !important;
+}
+
+/* Rich text mode styles */
+.mdxeditor-source-editor,
+.mdxeditor-diff-editor {
+  background: var(--basePageBg) !important;
+  color: var(--baseText) !important;
+}
+
+.mdxeditor h1 {
+  font-size: 2.25em !important;
+  font-weight: bold !important;
+  margin-top: 1em !important;
+  margin-bottom: 0.5em !important;
+}
+
+.mdxeditor h2 {
+  font-size: 1.75em !important;
+  font-weight: bold !important;
+  margin-top: 1em !important;
+  margin-bottom: 0.5em !important;
+}
+
+.mdxeditor h3 {
+  font-size: 1.5em !important;
+  font-weight: bold !important;
+  margin-top: 1em !important;
+  margin-bottom: 0.5em !important;
+}
+
+.mdxeditor ul, .mdxeditor ol {
+  padding-left: 1.5em !important;
+  margin: 0.5em 0 !important;
+}
+
+.mdxeditor li {
+  margin: 0.25em 0 !important;
+}
+
+.mdxeditor code {
+  background: var(--baseBgSubtle) !important;
+  padding: 0.2em 0.4em !important;
+  border-radius: 0.25em !important;
+  font-family: var(--font-mono) !important;
+}
+
+.mdxeditor pre {
+  background: var(--baseBgSubtle) !important;
+  padding: 1em !important;
+  border-radius: 0.5em !important;
+  margin: 1em 0 !important;
+  overflow-x: auto !important;
+} 
