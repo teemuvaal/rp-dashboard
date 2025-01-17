@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { updateNote, createNote, fetchSessions } from '@/app/dashboard/actions'
 import { cleanUpNote } from '@/app/dashboard/aiactions'
-import dynamic from 'next/dynamic'
 import { createClient } from '@/utils/supabase/client'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -24,9 +23,7 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog"
 import { Wand2 } from "lucide-react"
-
-const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false })
-import 'react-quill-new/dist/quill.snow.css'
+import { ForwardRefEditor } from '@/utils/mdxeditor/ForwardRefEditor'
 
 export default function CreateNote({ note, onNoteUpdated, campaignId }) {
     const router = useRouter();
@@ -296,10 +293,14 @@ export default function CreateNote({ note, onNoteUpdated, campaignId }) {
                         </DialogDescription>
                     </DialogHeader>
                     <div className="mt-4 space-y-4">
-                        <div 
-                            className="prose max-w-none p-4 border rounded-md bg-muted"
-                            dangerouslySetInnerHTML={{ __html: cleanedContent }}
-                        />
+                        <div className="prose max-w-none p-4 border rounded-md bg-muted">
+                            {cleanedContent && (
+                                <ForwardRefEditor
+                                    markdown={cleanedContent}
+                                    readOnly={true}
+                                />
+                            )}
+                        </div>
                     </div>
                     <DialogFooter className="flex gap-2 mt-4">
                         <Button variant="outline" onClick={() => setShowCleanDialog(false)}>
@@ -312,26 +313,10 @@ export default function CreateNote({ note, onNoteUpdated, campaignId }) {
                 </DialogContent>
             </Dialog>
 
-            <div className="h-[60vh]">
-                <ReactQuill 
-                    theme="snow" 
-                    value={content} 
+            <div className="h-[60vh] border rounded-md">
+                <ForwardRefEditor
+                    markdown={content}
                     onChange={setContent}
-                    className="h-[calc(100%-42px)]"
-                    modules={{
-                        toolbar: [
-                            [{ 'header': [1, 2, 3, false] }],
-                            ['bold', 'italic', 'underline', 'strike'],
-                            ['blockquote', 'code-block'],
-                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                            ['link', 'image'],
-                            ['clean']
-                        ],
-                        history: {
-                            delay: 1000,
-                            maxStack: 500,
-                        }
-                    }}
                 />
             </div>
             <Button 

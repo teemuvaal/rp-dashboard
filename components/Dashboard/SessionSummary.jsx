@@ -9,15 +9,18 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
-import { Wand2 } from "lucide-react";
+import { Wand2, Save, X } from "lucide-react";
 import { fetchSessionNotes, saveSummary, fetchSummary } from "@/app/dashboard/actions";
 import { createSummary } from "@/app/dashboard/aiactions";
 import { useRouter } from 'next/navigation';
+import { ForwardRefEditor } from '@/utils/mdxeditor/ForwardRefEditor';
 
 export default function SessionSummary({ session }) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState(null);
     const [summary, setSummary] = useState(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedSummary, setEditedSummary] = useState(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -25,6 +28,7 @@ export default function SessionSummary({ session }) {
             const result = await fetchSummary(session.id);
             if (!result.error && result.summary?.content) {
                 setSummary(result.summary.content);
+                setEditedSummary(result.summary.content);
             }
         };
         loadSummary();
@@ -67,14 +71,47 @@ export default function SessionSummary({ session }) {
                 return;
             }
 
+            // Update local state immediately
             setSummary(summaryResult.cleanedNote);
+            setEditedSummary(summaryResult.cleanedNote);
+            
+            // Refresh both the current page and the sessions route
             router.refresh();
+            router.push(`/dashboard/${session.campaign_id}/sessions/${session.id}`);
 
         } catch (err) {
             setError('Failed to generate summary');
         } finally {
             setIsGenerating(false);
         }
+    };
+
+    const handleSaveSummary = async () => {
+        try {
+            const saveResult = await saveSummary({
+                sessionId: session.id,
+                content: editedSummary
+            });
+
+            if (saveResult.error) {
+                setError(saveResult.error);
+                return;
+            }
+
+            setSummary(editedSummary);
+            setIsEditing(false);
+            
+            // Refresh both routes
+            router.refresh();
+            router.push(`/dashboard/${session.campaign_id}/sessions/${session.id}`);
+        } catch (err) {
+            setError('Failed to save summary');
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setEditedSummary(summary);
+        setIsEditing(false);
     };
 
     return (
@@ -84,18 +121,28 @@ export default function SessionSummary({ session }) {
                     <div>
                         <CardTitle>Session Summary</CardTitle>
                         <CardDescription>
-                            {summary ? 'View the summary for this session' : 'Generate a summary from all notes linked to this session'}
+                            {summary ? 'View and edit the summary for this session' : 'Generate a summary from all notes linked to this session'}
                         </CardDescription>
                     </div>
-                    <Button
-                        variant="outline"
-                        onClick={handleGenerateSummary}
-                        disabled={isGenerating}
-                        className="gap-2"
-                    >
-                        <Wand2 className="h-4 w-4" />
-                        {isGenerating ? 'Generating...' : 'Generate Summary'}
-                    </Button>
+                    <div className="flex gap-2">
+                        {summary && !isEditing && (
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsEditing(true)}
+                            >
+                                Edit
+                            </Button>
+                        )}
+                        <Button
+                            variant="outline"
+                            onClick={handleGenerateSummary}
+                            disabled={isGenerating}
+                            className="gap-2"
+                        >
+                            <Wand2 className="h-4 w-4" />
+                            {isGenerating ? 'Generating...' : 'Generate Summary'}
+                        </Button>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent>
@@ -103,10 +150,34 @@ export default function SessionSummary({ session }) {
                     <p className="text-sm text-red-500 mb-4">{error}</p>
                 )}
                 {summary ? (
-                    <div 
-                        className="prose max-w-none"
-                        dangerouslySetInnerHTML={{ __html: summary }}
-                    />
+                    <div className="space-y-4">
+                        <div className="prose dark:prose-invert max-w-none">
+                            <ForwardRefEditor
+                                markdown={isEditing ? editedSummary : summary}
+                                onChange={isEditing ? setEditedSummary : undefined}
+                                readOnly={!isEditing}
+                            />
+                        </div>
+                        {isEditing && (
+                            <div className="flex justify-end gap-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={handleCancelEdit}
+                                    className="gap-2"
+                                >
+                                    <X className="h-4 w-4" />
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={handleSaveSummary}
+                                    className="gap-2"
+                                >
+                                    <Save className="h-4 w-4" />
+                                    Save Changes
+                                </Button>
+                            </div>
+                        )}
+                    </div>
                 ) : (
                     <p className="text-sm text-muted-foreground">
                         Click the button above to generate a summary from all notes linked to this session.

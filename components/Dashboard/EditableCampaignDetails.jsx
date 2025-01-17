@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { updateCampaignDetails, uploadCampaignImage } from '@/app/dashboard/actions'
+import { generateCampaignImage } from '@/app/dashboard/aiactions'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Pen, Pencil, Save, Sparkles, Upload, X } from 'lucide-react'
@@ -15,6 +16,7 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
     const [isEditingDescription, setIsEditingDescription] = useState(false)
     const [isUploading, setIsUploading] = useState(false)
     const [newTag, setNewTag] = useState('')
+    const [isGeneratingImage, setIsGeneratingImage] = useState(false)
     const router = useRouter()
 
     const handleSave = async (field) => {
@@ -75,6 +77,33 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
             router.refresh()
         }
     }
+
+    const handleGenerateImage = async () => {
+        if (!editedCampaign.description) {
+            alert('Please add a campaign description first');
+            return;
+        }
+
+        setIsGeneratingImage(true);
+        try {
+            const result = await generateCampaignImage({
+                campaignId,
+                description: editedCampaign.description
+            });
+
+            if (result.success) {
+                setEditedCampaign({ ...editedCampaign, campaign_image: result.imageUrl });
+                router.refresh();
+            } else {
+                alert(result.error || 'Failed to generate image');
+            }
+        } catch (error) {
+            console.error('Error generating image:', error);
+            alert('An unexpected error occurred');
+        } finally {
+            setIsGeneratingImage(false);
+        }
+    };
 
     return (
         <div className="flex flex-col gap-8">
@@ -140,7 +169,7 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
                 <div className="flex flex-col gap-4">
                     <div className="flex flex-wrap gap-2">
                         {editedCampaign.tags.map((tag, index) => (
-                            <Badge>
+                            <Badge key={index}>
                             <span key={index} className="flex items-center">
                                 {tag}
                                 <X
@@ -183,22 +212,26 @@ export default function EditableCampaignDetails({ campaign, campaignId }) {
                             className="rounded-md w-[200px] h-[200px] object-cover"
                         />
                     )}
-                    <div>
-                    <label className="flex items-center gap-2 cursor-pointer border-2 border-gray-200 rounded-md p-2 w-[200px]">
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="hidden"
-                        />
-                        <Upload className="w-5 h-5" />
-                        <span>{isUploading ? 'Uploading...' : 'Upload image'}</span>
-                    </label>
+                    <div className="flex flex-col gap-2">
+                        <label className="flex items-center gap-2 cursor-pointer border-2 border-gray-200 rounded-md p-2 w-[200px]">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                className="hidden"
+                            />
+                            <Upload className="w-5 h-5" />
+                            <span>{isUploading ? 'Uploading...' : 'Upload image'}</span>
+                        </label>
+                        <Button 
+                            onClick={handleGenerateImage}
+                            disabled={isGeneratingImage || !editedCampaign.description}
+                            className="flex items-center gap-2 w-[200px]"
+                        >
+                            <Sparkles className="w-5 h-5" />
+                            {isGeneratingImage ? 'Generating...' : 'Generate with AI'}
+                        </Button>
                     </div>
-                </div>
-                <div className="group flex flex-row gap-2 items-center border-2 shadow-sm border-gray-200 rounded-full w-[400px] p-4">
-                <Sparkles className="text-gray-200  w-8 h-8 cursor-pointer group-hover:scale-110" />
-                <h1 className="font-bold text-gray-200">Coming soon! Generate your campaign image with AI</h1>                    
                 </div>
             </div>
         </div>
