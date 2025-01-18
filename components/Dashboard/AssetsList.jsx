@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { deleteAsset, updateAsset } from "@/app/dashboard/actions";
 import { useRouter } from 'next/navigation';
-import { Trash2, Link, FileText, Image as ImageIcon, File } from "lucide-react";
+import { Trash2, Link, FileText, Image as ImageIcon, File, Globe, Lock } from "lucide-react";
 import Image from "next/image";
 import {
     AlertDialog,
@@ -118,10 +118,14 @@ export default function AssetsList({ assets, campaignId, error: listError }) {
                                 )}
                             </div>
                             <div className="flex items-center gap-2">
-                                <Switch
-                                    checked={asset.is_public}
-                                    onCheckedChange={() => handleTogglePublic(asset)}
-                                />
+                                <div className="flex items-center gap-2">
+                                    <Lock className={`h-4 w-4 ${asset.is_public ? 'text-muted-foreground/30' : 'text-muted-foreground'}`} />
+                                    <Switch
+                                        checked={asset.is_public}
+                                        onCheckedChange={() => handleTogglePublic(asset)}
+                                    />
+                                    <Globe className={`h-4 w-4 ${asset.is_public ? 'text-muted-foreground' : 'text-muted-foreground/30'}`} />
+                                </div>
                                 <EditAssetDialog asset={asset} />
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
