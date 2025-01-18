@@ -10,7 +10,9 @@ export async function cleanUpNote(note) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ 
-                prompt: `Format this following note properly as markdown, using standard markdown syntax. Ensure proper headings, lists, code blocks, and other markdown elements are used appropriately: ${note}` 
+                prompt: `Format this following note properly as markdown, using standard markdown syntax. Ensure proper headings, lists, code blocks, and other markdown elements are used appropriately: ${note}` +
+                        `The cleaned up version should be in the same language as the note.` +
+                        `Improve the note structure to add a summary, key events, and other important information.`
             }),
         });
 
