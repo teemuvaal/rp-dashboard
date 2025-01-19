@@ -966,8 +966,8 @@ export async function createPoll(formData) {
     const supabase = createClient();
     
     // Check authentication
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
         return { success: false, error: 'Not authenticated' };
     }
 
@@ -985,7 +985,7 @@ export async function createPoll(formData) {
         .eq('id', campaignId)
         .single();
 
-    if (!campaign || campaign.owner_id !== session.user.id) {
+    if (!campaign || campaign.owner_id !== user.id) {
         return { success: false, error: 'Not authorized' };
     }
 
@@ -997,7 +997,7 @@ export async function createPoll(formData) {
             title,
             description,
             allow_multiple: allowMultiple,
-            created_by: session.user.id,
+            created_by: user.id,
             is_active: true
         })
         .select()
@@ -1032,8 +1032,8 @@ export async function updatePoll(formData) {
     const supabase = createClient();
     
     // Check authentication
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
         return { success: false, error: 'Not authenticated' };
     }
 
@@ -1049,7 +1049,7 @@ export async function updatePoll(formData) {
         .eq('id', campaignId)
         .single();
 
-    if (!campaign || campaign.owner_id !== session.user.id) {
+    if (!campaign || campaign.owner_id !== user.id) {
         return { success: false, error: 'Not authorized' };
     }
 
@@ -1072,8 +1072,8 @@ export async function votePoll(formData) {
     const supabase = createClient();
     
     // Check authentication
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
         return { success: false, error: 'Not authenticated' };
     }
 
@@ -1087,7 +1087,7 @@ export async function votePoll(formData) {
         .from('campaign_members')
         .select('role')
         .eq('campaign_id', campaignId)
-        .eq('user_id', session.user.id)
+        .eq('user_id', user.id)
         .single();
 
     if (!membership) {
@@ -1210,8 +1210,8 @@ export async function deletePoll(formData) {
     const supabase = createClient();
     
     // Check authentication
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
         return { success: false, error: 'Not authenticated' };
     }
 
@@ -1226,7 +1226,7 @@ export async function deletePoll(formData) {
         .eq('id', campaignId)
         .single();
 
-    if (!campaign || campaign.owner_id !== session.user.id) {
+    if (!campaign || campaign.owner_id !== user.id) {
         return { success: false, error: 'Not authorized' };
     }
 
