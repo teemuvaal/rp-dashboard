@@ -14,13 +14,24 @@ import { Newspaper, NotebookPen, Notebook, Beer, Users, ChartBar, Library } from
 import CreateSessionForm from "@/components/Dashboard/CreateSessionForm"
 import { Separator } from "@/components/ui/separator"
 import AddNoteButton from "@/components/Dashboard/AddNoteButton"
+import { Button } from "@/components/ui/button"
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+  } from "@/components/ui/sheet"
+  
+
 
 // TODO: REFACTOR EACH MENU ITEM TO BE A COMPONENT
 
 export default function AppMenu({params}) {
     return (
         <nav
-        className="my-4"
+        className="my-4 flex flex-row"
         >
             <NavigationMenu>
                 <NavigationMenuList>
@@ -141,9 +152,26 @@ export default function AppMenu({params}) {
                                 </span>
                             </div>
                         </NavigationMenuContent>
-                    </NavigationMenuItem>
+                    </NavigationMenuItem>                   
                 </NavigationMenuList>
             </NavigationMenu>
+            <Sheet>
+            <SheetTrigger asChild>
+                <Button
+                variant="outline"
+                >
+                    AI Assistant
+                </Button>
+            </SheetTrigger>
+            <SheetContent>
+                <SheetHeader>
+                    <SheetTitle>AI Assistant</SheetTitle>
+                    <SheetDescription>
+                        Chat with your AI Assistant to brain storm, design and implement ideas.
+                    </SheetDescription>
+                </SheetHeader>
+            </SheetContent>
+        </Sheet>
 
         </nav>
     )
