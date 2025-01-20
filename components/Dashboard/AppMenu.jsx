@@ -23,7 +23,7 @@ import {
     SheetTitle,
     SheetTrigger,
   } from "@/components/ui/sheet"
-  
+  import AssistantChat from "@/components/Dashboard/AssistantChat"
 
 
 // TODO: REFACTOR EACH MENU ITEM TO BE A COMPONENT
@@ -170,6 +170,7 @@ export default function AppMenu({params}) {
                         Chat with your AI Assistant to brain storm, design and implement ideas.
                     </SheetDescription>
                 </SheetHeader>
+                <AssistantChat />
             </SheetContent>
         </Sheet>
 
