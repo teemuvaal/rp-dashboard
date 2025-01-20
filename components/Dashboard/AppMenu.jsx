@@ -28,7 +28,7 @@ import {
 
 // TODO: REFACTOR EACH MENU ITEM TO BE A COMPONENT
 
-export default function AppMenu({params}) {
+export default function AppMenu({params, isOwner}) {
     return (
         <nav
         className="my-4 flex flex-row"
@@ -155,6 +155,7 @@ export default function AppMenu({params}) {
                     </NavigationMenuItem>                   
                 </NavigationMenuList>
             </NavigationMenu>
+            {isOwner && (
             <Sheet>
             <SheetTrigger asChild>
                 <Button
@@ -163,16 +164,17 @@ export default function AppMenu({params}) {
                     AI Assistant
                 </Button>
             </SheetTrigger>
-            <SheetContent>
+            <SheetContent className="w-[600px]">
                 <SheetHeader>
                     <SheetTitle>AI Assistant</SheetTitle>
                     <SheetDescription>
                         Chat with your AI Assistant to brain storm, design and implement ideas.
                     </SheetDescription>
                 </SheetHeader>
-                <AssistantChat />
-            </SheetContent>
-        </Sheet>
+                    <AssistantChat />
+                </SheetContent>
+            </Sheet>
+            )}
 
         </nav>
     )
