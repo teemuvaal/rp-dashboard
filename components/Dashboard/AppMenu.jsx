@@ -164,7 +164,7 @@ export default function AppMenu({params, isOwner}) {
                     AI Assistant
                 </Button>
             </SheetTrigger>
-            <SheetContent className="w-[600px]">
+            <SheetContent className="w-[800px]">
                 <SheetHeader>
                     <SheetTitle>AI Assistant</SheetTitle>
                     <SheetDescription>
