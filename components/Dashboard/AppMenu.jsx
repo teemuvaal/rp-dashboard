@@ -171,7 +171,7 @@ export default function AppMenu({params, isOwner}) {
                         Chat with your AI Assistant to brain storm, design and implement ideas.
                     </SheetDescription>
                 </SheetHeader>
-                    <AssistantChat />
+                    <AssistantChat campaignId={params.id} />
                 </SheetContent>
             </Sheet>
             )}
