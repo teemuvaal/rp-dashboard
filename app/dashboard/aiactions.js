@@ -1,7 +1,8 @@
 'use server'
 
-import { uploadCampaignImage } from './actions';
+import { uploadCampaignImage, createAsset } from './actions';
 
+// Cleans up a note and returns a cleaned up version
 export async function cleanUpNote(note) {
     try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/completion`, {
@@ -29,6 +30,8 @@ export async function cleanUpNote(note) {
         return { success: false, error: 'Failed to clean up note' };
     }
 }
+
+// Creates a summary for a session based on notes linked to session
 
 export async function createSummary({notes}) {
     try {
@@ -59,6 +62,24 @@ export async function createSummary({notes}) {
         return { success: false, error: 'Failed to create a summary' };
     }
 }
+
+// Creates an asset for a campaign
+
+export async function generateAsset({ campaignId, name, description }) {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/completion`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt: description }),
+        });
+    } catch (error) {
+        console.error('Error generating asset:', error);
+        return { success: false, error: error.message || 'Failed to generate asset' };
+    }
+}
+
 
 export async function generateCampaignImage({ campaignId, description }) {
     try {

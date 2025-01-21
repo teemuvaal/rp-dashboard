@@ -37,6 +37,8 @@ export default async function CampaignLayout({ children, params }) {
         .eq('user_id', user.id)
         .single()
 
+    const isOwner = membership?.role === 'owner'
+
     if (membershipError || !membership) {
         redirect('/dashboard')
     }
@@ -50,7 +52,7 @@ export default async function CampaignLayout({ children, params }) {
             <div className="flex flex-col min-h-screen w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-background">
                 <TopNav campaigns={[campaign]} user={userData}/>
                 <Hero name={campaign.name} description={campaign.description} image={campaign.campaign_image} />
-                <AppMenu params={params}/>
+                <AppMenu params={params} isOwner={isOwner}/>
                 {children}
             </div>
         </div>

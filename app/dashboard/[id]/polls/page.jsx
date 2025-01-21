@@ -8,8 +8,8 @@ export default async function PollsPage({ params }) {
     const supabase = createClient();
 
     // Check if user is authenticated
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
         redirect('/login');
     }
 
@@ -20,7 +20,7 @@ export default async function PollsPage({ params }) {
         .eq('id', params.id)
         .single();
 
-    if (!campaign || campaign.owner_id !== session.user.id) {
+    if (!campaign || campaign.owner_id !== user.id) {
         redirect(`/dashboard/${params.id}`);
     }
 

@@ -9,8 +9,8 @@ export default async function AssetsPage({ params }) {
     const supabase = createClient();
 
     // Check if user is authenticated
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
         redirect('/login');
     }
 
@@ -19,7 +19,7 @@ export default async function AssetsPage({ params }) {
         .from('campaign_members')
         .select('role')
         .eq('campaign_id', params.id)
-        .eq('user_id', session.user.id)
+        .eq('user_id', user.id)
         .single();
 
     if (!membership) {

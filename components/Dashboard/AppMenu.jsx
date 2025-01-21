@@ -14,13 +14,24 @@ import { Newspaper, NotebookPen, Notebook, Beer, Users, ChartBar, Library } from
 import CreateSessionForm from "@/components/Dashboard/CreateSessionForm"
 import { Separator } from "@/components/ui/separator"
 import AddNoteButton from "@/components/Dashboard/AddNoteButton"
+import { Button } from "@/components/ui/button"
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+  } from "@/components/ui/sheet"
+  import AssistantChat from "@/components/Dashboard/AssistantChat"
+
 
 // TODO: REFACTOR EACH MENU ITEM TO BE A COMPONENT
 
-export default function AppMenu({params}) {
+export default function AppMenu({params, isOwner}) {
     return (
         <nav
-        className="my-4"
+        className="my-4 flex flex-row"
         >
             <NavigationMenu>
                 <NavigationMenuList>
@@ -141,9 +152,29 @@ export default function AppMenu({params}) {
                                 </span>
                             </div>
                         </NavigationMenuContent>
-                    </NavigationMenuItem>
+                    </NavigationMenuItem>                   
                 </NavigationMenuList>
             </NavigationMenu>
+            {isOwner && (
+            <Sheet>
+            <SheetTrigger asChild>
+                <Button
+                variant="outline"
+                >
+                    AI Assistant
+                </Button>
+            </SheetTrigger>
+            <SheetContent className="w-[800px]">
+                <SheetHeader>
+                    <SheetTitle>AI Assistant</SheetTitle>
+                    <SheetDescription>
+                        Chat with your AI Assistant to brain storm, design and implement ideas.
+                    </SheetDescription>
+                </SheetHeader>
+                    <AssistantChat campaignId={params.id} />
+                </SheetContent>
+            </Sheet>
+            )}
 
         </nav>
     )
