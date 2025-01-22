@@ -17,6 +17,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { createNote } from '@/app/dashboard/actions';
 import { createAsset } from '@/app/dashboard/actions';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function Chat({ campaignId }) {
   const router = useRouter();
@@ -160,8 +161,8 @@ export default function Chat({ campaignId }) {
         ))}
       </div>
 
-      <form onSubmit={handleSubmitWithSave} className="absolute bottom-0 left-0 right-0 p-4">
-        <input
+      <form onSubmit={handleSubmitWithSave} className="absolute bottom-0 left-0 right-0 p-4 gap-2">
+        <Textarea
           className="w-full p-2 border border-gray-300 rounded shadow-xl bg-background"
           value={input}
           placeholder="Ask a question..."
