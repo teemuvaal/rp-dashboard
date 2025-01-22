@@ -1482,3 +1482,30 @@ export async function fetchSummary(sessionId) {
 
     return { summary: data }
 }
+
+export async function fetchAsset(assetId) {
+    try {
+        const supabase = createClient();
+
+        const { data: asset, error } = await supabase
+            .from('assets')
+            .select(`
+                *,
+                users:user_id (
+                    username
+                )
+            `)
+            .eq('id', assetId)
+            .single();
+
+        if (error) {
+            console.error('Error fetching asset:', error);
+            return null;
+        }
+
+        return asset;
+    } catch (error) {
+        console.error('Error in fetchAsset:', error);
+        return null;
+    }
+}

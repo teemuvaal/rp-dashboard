@@ -18,6 +18,7 @@ import {
 import { Pencil } from "lucide-react";
 import { updateAsset } from "@/app/dashboard/actions";
 import { useRouter } from 'next/navigation';
+import { ForwardRefEditor } from '@/utils/mdxeditor/ForwardRefEditor';
 
 export default function EditAssetDialog({ asset }) {
     const router = useRouter();
@@ -68,7 +69,7 @@ export default function EditAssetDialog({ asset }) {
                     <Pencil className="h-4 w-4" />
                 </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-4xl">
                 <DialogHeader>
                     <DialogTitle>Edit Asset</DialogTitle>
                     <DialogDescription>
@@ -100,13 +101,12 @@ export default function EditAssetDialog({ asset }) {
                     <div className="space-y-2">
                         <Label htmlFor="content">Content</Label>
                         {asset.type === 'text' ? (
-                            <Textarea
-                                id="content"
-                                value={content}
-                                onChange={(e) => setContent(e.target.value)}
-                                placeholder="Enter asset content"
-                                required
-                            />
+                            <div className="min-h-[400px] border rounded-md">
+                                <ForwardRefEditor
+                                    markdown={content}
+                                    onChange={setContent}
+                                />
+                            </div>
                         ) : (
                             <Input
                                 id="content"
