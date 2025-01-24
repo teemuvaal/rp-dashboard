@@ -6,29 +6,25 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
-import { Pencil } from "lucide-react";
 import { updateAsset } from "@/app/dashboard/actions";
 import { useRouter } from 'next/navigation';
 import { ForwardRefEditor } from '@/utils/mdxeditor/ForwardRefEditor';
+import { ArrowLeft, Pencil } from 'lucide-react';
+import Image from "next/image";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github-dark.css';
 
-export default function EditAssetDialog({ asset }) {
+export default function ViewAsset({ asset, campaignId }) {
     const router = useRouter();
+    const [isEditing, setIsEditing] = useState(false);
     const [title, setTitle] = useState(asset.title);
     const [description, setDescription] = useState(asset.description || '');
     const [content, setContent] = useState(asset.content);
     const [isPublic, setIsPublic] = useState(asset.is_public);
     const [error, setError] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [open, setOpen] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -46,7 +42,7 @@ export default function EditAssetDialog({ asset }) {
 
             const result = await updateAsset(formData);
             if (result.success) {
-                setOpen(false);
+                setIsEditing(false);
                 router.refresh();
             } else {
                 setError(result.error || 'Failed to update asset');
@@ -59,24 +55,29 @@ export default function EditAssetDialog({ asset }) {
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+        <div className="container mx-auto py-6 max-w-5xl">
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                    <Button
+                        variant="ghost"
+                        onClick={() => router.push(`/dashboard/${campaignId}/assets`)}
+                    >
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Back to Assets
+                    </Button>
+                    <h1 className="text-2xl font-bold">{isEditing ? 'Edit Asset' : 'View Asset'}</h1>
+                </div>
+                <Button
+                    variant="outline"
+                    onClick={() => setIsEditing(!isEditing)}
                 >
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="h-4 w-4 mr-2" />
+                    {isEditing ? 'Cancel Edit' : 'Edit Asset'}
                 </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl">
-                <DialogHeader>
-                    <DialogTitle>Edit Asset</DialogTitle>
-                    <DialogDescription>
-                        Make changes to your asset here. Click save when you're done.
-                    </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
+            </div>
+
+            {isEditing ? (
+                <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
                         <Label htmlFor="title">Title</Label>
                         <Input
@@ -101,7 +102,7 @@ export default function EditAssetDialog({ asset }) {
                     <div className="space-y-2">
                         <Label htmlFor="content">Content</Label>
                         {asset.type === 'text' ? (
-                            <div className="min-h-[400px] border rounded-md">
+                            <div className="min-h-[600px] border rounded-md">
                                 <ForwardRefEditor
                                     markdown={content}
                                     onChange={setContent}
@@ -131,16 +132,64 @@ export default function EditAssetDialog({ asset }) {
                         <p className="text-sm text-red-500">{error}</p>
                     )}
 
-                    <DialogFooter>
-                        <Button 
-                            type="submit" 
-                            disabled={isSubmitting}
+                    <div className="flex justify-end gap-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsEditing(false)}
                         >
+                            Cancel
+                        </Button>
+                        <Button type="submit" disabled={isSubmitting}>
                             {isSubmitting ? 'Saving...' : 'Save Changes'}
                         </Button>
-                    </DialogFooter>
+                    </div>
                 </form>
-            </DialogContent>
-        </Dialog>
+            ) : (
+                <div className="space-y-6">
+                    {description && (
+                        <p className="text-muted-foreground">{description}</p>
+                    )}
+                    <div className="border rounded-lg p-6 bg-card">
+                        {asset.type === 'image' ? (
+                            <div className="relative h-[500px] w-full">
+                                <Image
+                                    src={asset.content}
+                                    alt={asset.title}
+                                    fill
+                                    className="object-contain rounded-md"
+                                />
+                            </div>
+                        ) : asset.type === 'link' ? (
+                            <a 
+                                href={asset.content}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-500 hover:underline"
+                            >
+                                {asset.content}
+                            </a>
+                        ) : asset.type === 'text' ? (
+                            <div className="prose prose-lg dark:prose-invert max-w-none">
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    rehypePlugins={[rehypeHighlight]}
+                                >
+                                    {content}
+                                </ReactMarkdown>
+                            </div>
+                        ) : (
+                            <p className="text-muted-foreground whitespace-pre-wrap">
+                                {content}
+                            </p>
+                        )}
+                    </div>
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>Created by {asset.users.username}</span>
+                        <span>{asset.is_public ? 'Public' : 'Private'}</span>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 } 
