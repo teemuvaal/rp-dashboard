@@ -27,14 +27,23 @@ export async function signInWithDiscord() {
   const supabase = createClient()
   
   try {
+    // Ensure we have the site URL
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+    if (!siteUrl) {
+      return { error: 'Missing NEXT_PUBLIC_SITE_URL configuration' }
+    }
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'discord',
       options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`
+        redirectTo: `${siteUrl}/auth/callback`,
+        // Specify scopes if needed
+        scopes: 'identify email',
       },
     })
 
     if (error) {
+      console.error('Discord auth error:', error)
       return { error: error.message }
     }
 
@@ -44,6 +53,7 @@ export async function signInWithDiscord() {
 
     return { url: data.url }
   } catch (error) {
+    console.error('Failed to initialize Discord login:', error)
     return { error: 'Failed to initialize Discord login' }
   }
 }
