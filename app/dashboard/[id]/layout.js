@@ -49,23 +49,20 @@ export default async function CampaignLayout({ children, params }) {
         redirect('/dashboard')
     }
 
-
-
     return (
-        <div
-        className="bg-black"
-        >
-            <div className="flex flex-col min-h-screen w-full px-4 sm:px-6 lg:px-8 bg-background">
-            <SidebarProvider>
-            <AppSidebar />
-                <main>
-                    <SidebarTrigger />
-                        <TopNav campaigns={[campaign]} user={userData}/>
-                        <Hero name={campaign.name} description={campaign.description} image={campaign.campaign_image} />
-                        <AppMenu params={params} isOwner={isOwner}/>
-                        {children}
-                    
-                </main>
+        <div className="bg-black">
+            <div className="flex flex-col min-h-screen w-full bg-background">
+                <SidebarProvider>
+                    <AppSidebar />
+                    <main className="flex-1">
+                        <SidebarTrigger />
+                        <div className="px-2 lg:px-4">
+                            <TopNav campaigns={[campaign]} user={userData}/>
+                            <Hero name={campaign.name} description={campaign.description} image={campaign.campaign_image} />
+                            <AppMenu params={params} isOwner={isOwner}/>
+                            {children}
+                        </div>
+                    </main>
                 </SidebarProvider>
             </div>
         </div>
