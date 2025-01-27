@@ -25,6 +25,7 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
+import DarkModeToggle from "@/components/Dashboard/DarkModeToggle"
 
 // This is sample data.
 const data = {
@@ -155,6 +156,7 @@ export function AppSidebar({ userData }) {
   return (
     (<Sidebar collapsible="icon">
       <SidebarHeader>
+        <DarkModeToggle />
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>
