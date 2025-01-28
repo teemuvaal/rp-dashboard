@@ -155,12 +155,12 @@ const data = {
   ],
 }
 
-export function AppSidebar({ userData }) {
+export function AppSidebar({ userData, campaign, isOwner }) {
   return (
     (<Sidebar collapsible="icon">
       <SidebarHeader>
         <DarkModeToggle />
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher userData={userData} campaign={campaign} />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />

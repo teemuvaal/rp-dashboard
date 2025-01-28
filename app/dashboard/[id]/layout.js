@@ -53,7 +53,7 @@ export default async function CampaignLayout({ children, params }) {
         <div className="bg-black">
             <div className="flex flex-col min-h-screen w-full bg-background">
                 <SidebarProvider>
-                    <AppSidebar userData={userData}/>
+                    <AppSidebar userData={userData} campaign={campaign} isOwner={isOwner}/>
                     <main className="flex-1">
                         <SidebarTrigger />
                         <div className="px-2 lg:px-4">
