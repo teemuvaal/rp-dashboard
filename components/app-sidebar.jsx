@@ -12,6 +12,9 @@ import {
   PieChart,
   Settings2,
   SquareTerminal,
+  Notebook,
+  Users,
+  ChartBar,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -48,9 +51,9 @@ const data = {
   ],
   navMain: [
     {
-      title: "Playground",
-      url: "#",
-      icon: SquareTerminal,
+      title: "Notes",
+      url: "/notes",
+      icon: Notebook,
       isActive: true,
       items: [
         {
@@ -68,8 +71,8 @@ const data = {
       ],
     },
     {
-      title: "Models",
-      url: "#",
+      title: "Sessions",
+      url: "/sessions",
       icon: Bot,
       items: [
         {
@@ -133,21 +136,21 @@ const data = {
       ],
     },
   ],
-  projects: [
+  tools: [
     {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
+      name: "Members",
+      url: "/members",
+      icon: Users,
     },
     {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
+      name: "Polls",
+      url: "/polls",
+      icon: ChartBar,
     },
     {
-      name: "Travel",
-      url: "#",
-      icon: Map,
+      name: "Campaign Settings",
+      url: "/details",
+      icon: Settings2,
     },
   ],
 }
@@ -161,7 +164,7 @@ export function AppSidebar({ userData }) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        <NavProjects tools={data.tools} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser userData={userData} />

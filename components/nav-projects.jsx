@@ -21,15 +21,15 @@ import {
 import { DotsHorizontalIcon } from "@radix-ui/react-icons"
 
 export function NavProjects({
-  projects
+  tools
 }) {
   const { isMobile } = useSidebar()
 
   return (
     (<SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>Projects</SidebarGroupLabel>
+      <SidebarGroupLabel>Admin</SidebarGroupLabel>
       <SidebarMenu>
-        {projects.map((item) => (
+        {tools.map((item) => (
           <SidebarMenuItem key={item.name}>
             <SidebarMenuButton asChild>
               <a href={item.url}>
