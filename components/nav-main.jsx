@@ -1,4 +1,5 @@
 "use client";
+
 import {
   Collapsible,
   CollapsibleContent,
@@ -14,47 +15,81 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
-import { ChevronRightIcon } from "@radix-ui/react-icons"
+import { ChevronRight } from "lucide-react"
+import AddNoteButton from "@/components/Dashboard/AddNoteButton"
+import NavNotes from "@/components/nav-notes"
+import NavAssets from "@/components/nav-assets"
+import { usePathname } from "next/navigation"
+import Link from "next/link"
 
-export function NavMain({
-  items
-}) {
+const DynamicComponent = ({ type, component, props }) => {
+  switch (component) {
+    case "AddNoteButton":
+      return <AddNoteButton {...props} />
+    case "NavNotes":
+      return <NavNotes {...props} />
+    case "NavAssets":
+      return <NavAssets {...props} />
+    default:
+      return null
+  }
+}
+
+export function NavMain({ items }) {
+  const pathname = usePathname()
+
   return (
-    (<SidebarGroup>
+    <SidebarGroup>
       <SidebarGroupLabel>Campaign</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <Collapsible
             key={item.title}
             asChild
-            defaultOpen={item.isActive}
-            className="group/collapsible">
+            defaultOpen={item.isActive || pathname.startsWith(item.url)}
+            className="group/collapsible"
+          >
             <SidebarMenuItem>
               <CollapsibleTrigger asChild>
                 <SidebarMenuButton tooltip={item.title}>
-                  {item.icon && <item.icon />}
+                  {item.icon && <item.icon className="h-4 w-4" />}
                   <span>{item.title}</span>
-                  <ChevronRightIcon
-                    className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                  <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                 </SidebarMenuButton>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <SidebarMenuSub>
-                  {item.items?.map((subItem) => (
-                    <SidebarMenuSubItem key={subItem.title}>
-                      <SidebarMenuSubButton asChild>
-                        <a href={subItem.url}>
-                          <span>{subItem.title}</span>
-                        </a>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  ))}
+                  {item.items?.map((subItem) => {
+                    if (subItem.type === "component") {
+                      return (
+                        <div key={subItem.title}>
+                          <DynamicComponent
+                            type={subItem.type}
+                            component={subItem.component}
+                            props={subItem.props}
+                          />
+                        </div>
+                      )
+                    }
+
+                    const isActive = pathname === subItem.url
+                    return (
+                      <SidebarMenuSubItem key={subItem.title}>
+                        <SidebarMenuSubButton asChild>
+                          <Link href={subItem.url}>
+                            {subItem.icon && <subItem.icon className="h-4 w-4 mr-2" />}
+                            <span>{subItem.title}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    )
+                  })}
                 </SidebarMenuSub>
               </CollapsibleContent>
             </SidebarMenuItem>
           </Collapsible>
         ))}
       </SidebarMenu>
-    </SidebarGroup>)
-  );
+    </SidebarGroup>
+  )
 }
