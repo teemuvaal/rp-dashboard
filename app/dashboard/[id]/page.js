@@ -22,7 +22,6 @@ export default async function CampaignFeed({ params }) {
     const feedItems = await fetchFeedItems(params.id)
 
     const campaign = await fetchCampaignDetails(params.id)
-    console.log(campaign)
 
     // Fetch calendar events
     const sessions = await fetchSessions(params.id)

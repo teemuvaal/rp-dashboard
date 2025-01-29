@@ -15,12 +15,14 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
+import { Separator } from "@/components/ui/separator"
 import { ChevronRight } from "lucide-react"
 import AddNoteButton from "@/components/Dashboard/AddNoteButton"
 import NavNotes from "@/components/nav-notes"
 import NavAssets from "@/components/nav-assets"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
+import AiChatOpen from "@/components/Dashboard/AiChatOpen"
 
 const DynamicComponent = ({ type, component, props }) => {
   switch (component) {
@@ -30,12 +32,14 @@ const DynamicComponent = ({ type, component, props }) => {
       return <NavNotes {...props} />
     case "NavAssets":
       return <NavAssets {...props} />
+    case "AiChatOpen":
+      return <AiChatOpen {...props} />
     default:
       return null
   }
 }
 
-export function NavMain({ items }) {
+export function NavMain({ items, params }) {
   const pathname = usePathname()
 
   return (
@@ -89,6 +93,8 @@ export function NavMain({ items }) {
             </SidebarMenuItem>
           </Collapsible>
         ))}
+        <Separator />
+        <AiChatOpen params={params} />
       </SidebarMenu>
     </SidebarGroup>
   )
