@@ -14,12 +14,22 @@ import PollCard from "./PollCard";
 import { ChartBar } from "lucide-react";
 import Link from "next/link";
 import CreatePostDialog from "./CreatePostDialog";
+import DashboardHero from "@/components/Dashboard/DashboardHero"
 
-export default function Feed({ feedItems = [], sessions = [], polls = [], isOwner = false, campaignId, createPost }) {
+export default function Feed({ feedItems = [], sessions = [], polls = [], isOwner = false, campaignId, createPost, campaign }) {
     // Ensure polls is an array and filter active ones
     const activePolls = Array.isArray(polls) ? polls.filter(poll => poll.is_active) : [];
 
+    // Ensure we have the campaign object
+    const campaignDetails = campaign?.campaign || {};
+
     return (
+        <>
+        <DashboardHero 
+            name={campaignDetails.name} 
+            description={campaignDetails.description} 
+            image={campaignDetails.campaign_image} 
+        />
         <Card>
             <div className="w-full flex flex-col lg:flex-row p-2 sm:p-4 mb-auto gap-2 h-full">
                 <div className="w-full lg:w-2/3 p-2 sm:p-4">
@@ -98,5 +108,6 @@ export default function Feed({ feedItems = [], sessions = [], polls = [], isOwne
                 </div>
             </div>
         </Card>  
+        </>
     )
 }

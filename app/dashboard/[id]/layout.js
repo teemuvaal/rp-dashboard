@@ -56,9 +56,7 @@ export default async function CampaignLayout({ children, params }) {
                     <AppSidebar userData={userData} campaign={campaign} isOwner={isOwner} params={params}/>
                     <main className="flex-1">
                         <SidebarTrigger />
-                        <div className="px-2 lg:px-4">
-                            <Hero name={campaign.name} description={campaign.description} image={campaign.campaign_image} />
-                            <AppMenu params={params} isOwner={isOwner}/>
+                        <div className="px-2 lg:px-4">                          
                             {children}
                         </div>
                     </main>

@@ -1,4 +1,4 @@
-export default function Hero({ name, description, image }) {
+export default function DashboardHero({ name, description, image }) {
     const backgroundImage = image || '/LandingPageHero.png';
 
     return (
