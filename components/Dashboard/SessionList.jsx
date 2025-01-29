@@ -78,7 +78,7 @@ export default function SessionList({ sessions, campaignId }) {
         <div className="space-y-8 mt-4">
             <Separator />
             <div>
-                <h3 className="text-xl font-semibold mb-4">Upcoming Sessions</h3>
+                <h3 className="text-xl font-semibold mb-4" id="upcoming-sessions">Upcoming Sessions</h3>
                 {upcomingSessions.length === 0 ? (
                     <p>No upcoming sessions scheduled.</p>
                 ) : (
@@ -95,7 +95,7 @@ export default function SessionList({ sessions, campaignId }) {
             </div>
             <Separator />
             <div>
-                <h3 className="text-xl font-semibold mb-4">Past Sessions</h3>
+                <h3 className="text-xl font-semibold mb-4" id="past-sessions">Past Sessions</h3>
                 {pastSessions.length === 0 ? (
                     <p>No past sessions.</p>
                 ) : (
