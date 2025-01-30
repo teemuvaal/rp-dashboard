@@ -8,6 +8,7 @@ import {
     SidebarTrigger,
   } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
+import { Toaster } from "@/components/ui/toaster";
 
 
 export default async function CampaignLayout({ children, params }) {
@@ -58,6 +59,7 @@ export default async function CampaignLayout({ children, params }) {
                         <SidebarTrigger />
                         <div className="px-2 lg:px-4">                          
                             {children}
+                            <Toaster />
                         </div>
                     </main>
                 </SidebarProvider>

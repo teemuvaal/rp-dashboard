@@ -1,6 +1,7 @@
 'use server'
 
 import { uploadCampaignImage, createAsset } from './actions';
+import { createClient } from '@/utils/supabase/server';
 
 // Cleans up a note and returns a cleaned up version
 export async function cleanUpNote(note) {
@@ -181,7 +182,7 @@ export async function generateHighlightImages(highlights, sessionId) {
         const promptData = await promptResponse.json();
         const imagePrompts = JSON.parse(promptData.text);
 
-        // Generate images in parallel
+        // Generate and upload images in parallel
         const imagePromises = imagePrompts.map(async (prompt, index) => {
             // Generate the image
             const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/images`, {
@@ -207,15 +208,19 @@ export async function generateHighlightImages(highlights, sessionId) {
             // Create a File object
             const file = new File([imageBlob], `session-highlight-${index + 1}.png`, { type: 'image/png' });
             
-            // Upload to storage
+            // Upload to storage using uploadAsset
             const formData = new FormData();
             formData.append('file', file);
             formData.append('sessionId', sessionId);
-            formData.append('highlightIndex', index.toString());
+            formData.append('type', 'visual_summary');
+            formData.append('index', index.toString());
 
-            // TODO: Create a new action to handle session highlight image uploads
-            // For now, we'll just return the blob URL
-            return URL.createObjectURL(imageBlob);
+            const uploadResult = await uploadSessionImage(formData);
+            if (uploadResult.error) {
+                throw new Error(`Failed to upload image ${index + 1}: ${uploadResult.error}`);
+            }
+
+            return uploadResult.imageUrl;
         });
 
         // Wait for all images to be generated and uploaded
@@ -224,7 +229,7 @@ export async function generateHighlightImages(highlights, sessionId) {
         return { 
             success: true, 
             imageUrls,
-            prompts: imagePrompts // Return the prompts for reference
+            prompts: imagePrompts
         };
     } catch (error) {
         console.error('Error generating highlight images:', error);
@@ -232,5 +237,45 @@ export async function generateHighlightImages(highlights, sessionId) {
             success: false, 
             error: error.message || 'Failed to generate highlight images' 
         };
+    }
+}
+
+// Helper function to upload session images to Supabase storage
+async function uploadSessionImage(formData) {
+    const supabase = createClient()
+    
+    try {
+        const file = formData.get('file');
+        const sessionId = formData.get('sessionId');
+        const type = formData.get('type');
+        const index = formData.get('index');
+
+        if (!file || !sessionId) {
+            throw new Error('Missing required parameters');
+        }
+
+        // Create a unique file path
+        const timestamp = Date.now();
+        const fileExt = file.name.split('.').pop();
+        const filePath = `sessions/${sessionId}/${type}/${index}-${timestamp}.${fileExt}`;
+
+        // Upload the file to Supabase storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('session-images')
+            .upload(filePath, file);
+
+        if (uploadError) {
+            throw uploadError;
+        }
+
+        // Get the public URL for the uploaded file
+        const { data: { publicUrl } } = supabase.storage
+            .from('session-images')
+            .getPublicUrl(filePath);
+
+        return { success: true, imageUrl: publicUrl };
+    } catch (error) {
+        console.error('Error uploading session image:', error);
+        return { error: error.message || 'Failed to upload image' };
     }
 }

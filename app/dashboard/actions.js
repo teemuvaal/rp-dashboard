@@ -1511,3 +1511,88 @@ export async function fetchAsset(assetId) {
         return null;
     }
 }
+
+export async function saveVisualSummary({ sessionId, summaryId, highlights, imageUrls, imagePrompts }) {
+    const supabase = createClient();
+
+    // Get the current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) {
+        return { error: 'Authentication error' };
+    }
+
+    // Check if the user is the campaign owner
+    const { data: session, error: sessionError } = await supabase
+        .from('sessions')
+        .select('campaign_id, campaigns!inner(owner_id)')
+        .eq('id', sessionId)
+        .single();
+
+    if (sessionError) {
+        return { error: 'Session not found' };
+    }
+
+    if (session.campaigns.owner_id !== user.id) {
+        return { error: 'Only the campaign owner can save visual summaries' };
+    }
+
+    // Check if a visual summary already exists
+    const { data: existingVisualSummary } = await supabase
+        .from('session_visual_summaries')
+        .select('id')
+        .eq('session_id', sessionId)
+        .single();
+
+    let result;
+    
+    if (existingVisualSummary) {
+        // Update existing visual summary
+        result = await supabase
+            .from('session_visual_summaries')
+            .update({
+                highlights,
+                image_urls: imageUrls,
+                image_prompts: imagePrompts,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', existingVisualSummary.id)
+            .select()
+            .single();
+    } else {
+        // Create new visual summary
+        result = await supabase
+            .from('session_visual_summaries')
+            .insert({
+                session_id: sessionId,
+                summary_id: summaryId,
+                highlights,
+                image_urls: imageUrls,
+                image_prompts: imagePrompts
+            })
+            .select()
+            .single();
+    }
+
+    if (result.error) {
+        return { error: result.error.message };
+    }
+
+    return { success: true, visualSummary: result.data };
+}
+
+// Add a function to fetch visual summary
+export async function fetchVisualSummary(sessionId) {
+    const supabase = createClient();
+
+    const { data, error } = await supabase
+        .from('session_visual_summaries')
+        .select('*')
+        .eq('session_id', sessionId)
+        .single();
+
+    if (error) {
+        return { error: error.message };
+    }
+
+    return { visualSummary: data };
+}

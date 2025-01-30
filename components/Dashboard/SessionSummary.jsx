@@ -1,40 +1,30 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 import { Wand2, Save, X } from "lucide-react";
 import { fetchSessionNotes, saveSummary, fetchSummary } from "@/app/dashboard/actions";
-import { createSummary, extractSummaryHighlights } from "@/app/dashboard/aiactions";
+import { createSummary } from "@/app/dashboard/aiactions";
 import { useRouter } from 'next/navigation';
 import { ForwardRefEditor } from '@/utils/mdxeditor/ForwardRefEditor';
-import { useToast } from "@/components/ui/use-toast"
+import VisualSummary from './VisualSummary';
 
 export default function SessionSummary({ session }) {
     const [isGenerating, setIsGenerating] = useState(false);
-    const [error, setError] = useState(null);
-    const [summary, setSummary] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
+    const [error, setError] = useState(null);
     const [editedSummary, setEditedSummary] = useState(null);
-    const [highlights, setHighlights] = useState([]);
-    const [generatedImages, setGeneratedImages] = useState([]);
-    const [imagePrompts, setImagePrompts] = useState([]);
-    const [currentStep, setCurrentStep] = useState('initial'); // 'initial', 'extracting', 'generating', 'complete'
+    const [sessionSummary, setSessionSummary] = useState(null);
     const router = useRouter();
     const { toast } = useToast();
 
     useEffect(() => {
         const loadSummary = async () => {
-            const result = await fetchSummary(session.id);
-            if (!result.error && result.summary?.content) {
-                setSummary(result.summary.content);
-                setEditedSummary(result.summary.content);
+            const { summary, error } = await fetchSummary(session.id);
+            if (!error && summary) {
+                setSessionSummary(summary);
             }
         };
         loadSummary();
@@ -45,48 +35,50 @@ export default function SessionSummary({ session }) {
         setError(null);
 
         try {
-            // Fetch notes linked to this session
-            const result = await fetchSessionNotes(session.id);
+            // Fetch all notes for this session
+            const { notes, error: notesError } = await fetchSessionNotes(session.id);
+            if (notesError) throw new Error(notesError);
+
+            if (!notes || notes.length === 0) {
+                throw new Error('No notes found for this session');
+            }
+
+            // Combine all note contents
+            const combinedNotes = notes.map(note => note.content).join('\n\n');
+
+            // Generate summary using AI
+            const { success, cleanedNote: generatedSummary, error: aiError } = 
+                await createSummary({ notes: combinedNotes });
+
+            if (!success || !generatedSummary) {
+                throw new Error(aiError || 'Failed to generate summary');
+            }
+
+            // Save the summary
+            const { success: saveSuccess, error: saveError } = 
+                await saveSummary({ sessionId: session.id, content: generatedSummary });
+
+            if (!saveSuccess) {
+                throw new Error(saveError || 'Failed to save summary');
+            }
+
+            // Update local state
+            setSessionSummary({ content: generatedSummary });
             
-            if (result.error) {
-                setError(result.error);
-                return;
-            }
-
-            if (!result.notes || result.notes.length === 0) {
-                setError('No notes found for this session');
-                return;
-            }
-
-            // Create a summary from the notes
-            const summaryResult = await createSummary({ notes: result.notes });
-            
-            if (summaryResult.error) {
-                setError(summaryResult.error);
-                return;
-            }
-
-            // Save the summary to the database
-            const saveResult = await saveSummary({
-                sessionId: session.id,
-                content: summaryResult.cleanedNote
+            toast({
+                title: "Summary generated",
+                description: "The session summary has been created successfully.",
             });
 
-            if (saveResult.error) {
-                setError(saveResult.error);
-                return;
-            }
-
-            // Update local state immediately
-            setSummary(summaryResult.cleanedNote);
-            setEditedSummary(summaryResult.cleanedNote);
-            
-            // Refresh both the current page and the sessions route
             router.refresh();
-            router.push(`/dashboard/${session.campaign_id}/sessions/${session.id}`);
-
         } catch (err) {
-            setError('Failed to generate summary');
+            console.error('Error generating summary:', err);
+            setError(err.message);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: err.message || "Failed to generate summary. Please try again.",
+            });
         } finally {
             setIsGenerating(false);
         }
@@ -94,202 +86,113 @@ export default function SessionSummary({ session }) {
 
     const handleSaveSummary = async () => {
         try {
-            const saveResult = await saveSummary({
+            const { success, error } = await saveSummary({
                 sessionId: session.id,
                 content: editedSummary
             });
 
-            if (saveResult.error) {
-                setError(saveResult.error);
-                return;
+            if (!success) {
+                throw new Error(error || 'Failed to save summary');
             }
 
-            setSummary(editedSummary);
+            setSessionSummary({ content: editedSummary });
             setIsEditing(false);
-            
-            // Refresh both routes
+            toast({
+                title: "Summary saved",
+                description: "Your changes have been saved successfully.",
+            });
             router.refresh();
-            router.push(`/dashboard/${session.campaign_id}/sessions/${session.id}`);
         } catch (err) {
-            setError('Failed to save summary');
-        }
-    };
-
-    const handleCancelEdit = () => {
-        setEditedSummary(summary);
-        setIsEditing(false);
-    };
-
-    const handleGenerateVisualSummary = async () => {
-        setIsGenerating(true);
-        setCurrentStep('extracting');
-        
-        try {
-            // Step 1: Extract highlights from the summary
-            const { success, highlights: extractedHighlights, error } = await extractSummaryHighlights(summary);
-            
-            if (!success || !extractedHighlights) {
-                throw new Error(error || 'Failed to extract highlights');
-            }
-
-            setHighlights(extractedHighlights);
-            
+            console.error('Error saving summary:', err);
             toast({
-                title: "Highlights extracted!",
-                description: "Generating images...",
-            });
-
-            // Step 2: Generate images from highlights
-            setCurrentStep('generating');
-            const { success: imageSuccess, imageUrls, prompts, error: imageError } = 
-                await generateHighlightImages(extractedHighlights, session.id);
-
-            if (!imageSuccess) {
-                throw new Error(imageError || 'Failed to generate images');
-            }
-
-            setGeneratedImages(imageUrls);
-            setImagePrompts(prompts);
-            setCurrentStep('complete');
-
-            toast({
-                title: "Images generated!",
-                description: "Visual summary is ready.",
-            });
-
-            // TODO: Next steps
-            // 1. Convert summary to speech
-            // 2. Create visual presentation
-
-        } catch (error) {
-            console.error('Error generating visual summary:', error);
-            toast({
-                title: "Error",
-                description: error.message || "Failed to generate visual summary. Please try again.",
                 variant: "destructive",
+                title: "Error",
+                description: err.message || "Failed to save summary. Please try again.",
             });
-            setCurrentStep('initial');
-        } finally {
-            setIsGenerating(false);
         }
     };
 
     return (
-        <Card>
-            <CardHeader>
-                <div className="flex justify-between items-start">
-                    <div>
-                        <CardTitle>Session Summary</CardTitle>
-                        <CardDescription>
-                            {summary ? 'View and edit the summary for this session' : 'Generate a summary from all notes linked to this session'}
-                        </CardDescription>
-                    </div>
-                    <div className="flex gap-2">
-                        {summary && !isEditing && (
-                            <>
+        <>
+            <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <CardTitle>Session Summary</CardTitle>
+                            <CardDescription>
+                                {sessionSummary?.content ? 'View and edit the summary for this session' : 'Generate a summary from session notes'}
+                            </CardDescription>
+                        </div>
+                        <div className="flex gap-2">
+                            {sessionSummary?.content && !isEditing && (
                                 <Button
                                     variant="outline"
                                     onClick={() => setIsEditing(true)}
                                 >
                                     Edit
                                 </Button>
+                            )}
+                            {!sessionSummary?.content && (
                                 <Button
                                     variant="outline"
-                                    onClick={handleGenerateVisualSummary}
+                                    onClick={handleGenerateSummary}
                                     disabled={isGenerating}
                                     className="gap-2"
                                 >
                                     <Wand2 className="h-4 w-4" />
-                                    {isGenerating ? (
-                                        currentStep === 'extracting' ? 'Extracting highlights...' :
-                                        currentStep === 'generating' ? 'Generating images...' :
-                                        'Processing...'
-                                    ) : 'Generate Visual Summary'}
+                                    {isGenerating ? 'Generating...' : 'Generate Summary'}
                                 </Button>
-                            </>
-                        )}
-                        {!summary && (
-                            <Button
-                                variant="outline"
-                                onClick={handleGenerateSummary}
-                                disabled={isGenerating}
-                                className="gap-2"
-                            >
-                                <Wand2 className="h-4 w-4" />
-                                {isGenerating ? 'Generating...' : 'Generate Summary'}
-                            </Button>
-                        )}
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent>
-                {error && (
-                    <p className="text-sm text-red-500 mb-4">{error}</p>
-                )}
-                {summary ? (
-                    <div className="space-y-4">
-                        <div className="prose dark:prose-invert max-w-none">
-                            <ForwardRefEditor
-                                markdown={isEditing ? editedSummary : summary}
-                                onChange={isEditing ? setEditedSummary : undefined}
-                                readOnly={!isEditing}
-                            />
+                            )}
                         </div>
-                        {isEditing && (
-                            <div className="flex justify-end gap-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={handleCancelEdit}
-                                    className="gap-2"
-                                >
-                                    <X className="h-4 w-4" />
-                                    Cancel
-                                </Button>
-                                <Button
-                                    onClick={handleSaveSummary}
-                                    className="gap-2"
-                                >
-                                    <Save className="h-4 w-4" />
-                                    Save Changes
-                                </Button>
-                            </div>
-                        )}
                     </div>
-                ) : (
-                    <p className="text-sm text-muted-foreground">
-                        Click the button above to generate a summary from all notes linked to this session.
-                    </p>
-                )}
-
-                {/* Display highlights and generated images */}
-                {highlights.length > 0 && (
-                    <div className="mt-6 space-y-6">
-                        <h3 className="text-lg font-semibold">Visual Summary</h3>
-                        <div className="grid grid-cols-1 gap-6">
-                            {highlights.map((highlight, index) => (
-                                <div key={index} className="space-y-2">
-                                    <p className="text-sm text-muted-foreground">{highlight}</p>
-                                    {generatedImages[index] && (
-                                        <div className="relative aspect-video w-full overflow-hidden rounded-lg">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img
-                                                src={generatedImages[index]}
-                                                alt={`Generated scene ${index + 1}`}
-                                                className="object-cover w-full h-full"
-                                            />
-                                        </div>
-                                    )}
-                                    {imagePrompts[index] && (
-                                        <p className="text-xs text-muted-foreground">
-                                            Prompt: {imagePrompts[index]}
-                                        </p>
-                                    )}
+                </CardHeader>
+                <CardContent>
+                    {error && (
+                        <p className="text-sm text-red-500 mb-4">{error}</p>
+                    )}
+                    {sessionSummary?.content ? (
+                        <div className="space-y-4">
+                            {isEditing ? (
+                                <div className="space-y-4">
+                                    <ForwardRefEditor
+                                        markdown={editedSummary || sessionSummary.content}
+                                        onChange={setEditedSummary}
+                                    />
+                                    <div className="flex justify-end gap-2">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setIsEditing(false)}
+                                        >
+                                            <X className="h-4 w-4 mr-2" />
+                                            Cancel
+                                        </Button>
+                                        <Button onClick={handleSaveSummary}>
+                                            <Save className="h-4 w-4 mr-2" />
+                                            Save Changes
+                                        </Button>
+                                    </div>
                                 </div>
-                            ))}
+                            ) : (
+                                <div className="prose dark:prose-invert max-w-none">
+                                    <ForwardRefEditor
+                                        markdown={sessionSummary.content}
+                                        readOnly={true}
+                                    />
+                                </div>
+                            )}
                         </div>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
+                    ) : (
+                        <p className="text-sm text-muted-foreground">
+                            Click the button above to generate a summary from all notes linked to this session.
+                        </p>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* Only show visual summary option if we have a text summary */}
+            {sessionSummary?.content && (
+                <VisualSummary session={session} sessionSummary={sessionSummary} />
+            )}
+        </>
     );
 }
