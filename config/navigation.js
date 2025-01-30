@@ -12,19 +12,10 @@ import {
     Users,
     ChartBar,
     Library,
-    Home,
-    History,
-    Star,
     Settings,
 } from "lucide-react"
 
 export const getMainNavigation = (params) => [
-    {
-        title: "Feed",
-        url: `/dashboard/${params.id}`,
-        icon: Home,
-        isActive: true,
-    },
     {
         title: "Notes",
         url: `/dashboard/${params.id}/notes`,

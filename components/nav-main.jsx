@@ -16,7 +16,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, Home } from "lucide-react"
 import AddNoteButton from "@/components/Dashboard/AddNoteButton"
 import NavNotes from "@/components/nav-notes"
 import NavAssets from "@/components/nav-assets"
@@ -46,7 +46,16 @@ export function NavMain({ items, params }) {
     <SidebarGroup>
       <SidebarGroupLabel>Campaign</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) => (
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild>
+            <Link href={`/dashboard/${params.id}`}>
+              <Home className="h-4 w-4" />
+              <span>Feed</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <Separator className="my-2" />
+        {items.filter(item => item.title !== "Feed").map((item) => (
           <Collapsible
             key={item.title}
             asChild
