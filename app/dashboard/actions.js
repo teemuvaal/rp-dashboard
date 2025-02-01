@@ -1596,3 +1596,46 @@ export async function fetchVisualSummary(sessionId) {
 
     return { visualSummary: data };
 }
+
+export async function removeCampaignMember(formData) {
+    const supabase = createClient();
+
+    // Get the current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) {
+        return { error: 'Not authenticated' };
+    }
+
+    const campaignId = formData.get('campaignId');
+    const memberId = formData.get('memberId');
+
+    // Check if the user is the campaign owner
+    const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('owner_id')
+        .eq('id', campaignId)
+        .single();
+
+    if (!campaign || campaign.owner_id !== user.id) {
+        return { error: 'Not authorized to remove members' };
+    }
+
+    // Don't allow removing the owner
+    if (memberId === campaign.owner_id) {
+        return { error: 'Cannot remove the campaign owner' };
+    }
+
+    // Remove the member
+    const { error: deleteError } = await supabase
+        .from('campaign_members')
+        .delete()
+        .eq('campaign_id', campaignId)
+        .eq('user_id', memberId);
+
+    if (deleteError) {
+        console.error('Error removing member:', deleteError);
+        return { error: 'Failed to remove member' };
+    }
+
+    return { success: true };
+}

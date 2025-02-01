@@ -39,18 +39,18 @@ Below is a list of features that are complete or in progress and should be compl
   - [x] Campaign Setting
   - [x] Campaign Image
     - [x] AI Generate
-  - [ ] Campaign Members Management
+  - [x] Campaign Members Management
     - [x] Invite Members
     - [ ] Remove Members
 - [x] Create Session
   - [x] Session summary
   - [x] Session recap
-  - [ ] Session highlights
+  - [x] Session highlights
 - [x] Create Note
   - [x] Show active participants
   - [ ] Collab editing (might be too difficult to implement)
   - [x] AI Cleanup
-  - [ ] Link to session
+  - [x] Link to session
 - [ ] Characters
   - [ ] DND Template
   - [ ] Scrape from DND Beyond?
