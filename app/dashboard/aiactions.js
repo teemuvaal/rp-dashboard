@@ -160,7 +160,7 @@ Summary to analyze: ${summary}`
     }
 }
 
-export async function generateHighlightImages(highlights, sessionId) {
+export async function generateHighlightImages(highlights, sessionId, artStyle = 'fantasy') {
     try {
         // Convert highlights to image-optimized prompts using OpenAI
         const promptResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/completion`, {
@@ -169,8 +169,8 @@ export async function generateHighlightImages(highlights, sessionId) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ 
-                prompt: `Convert these scene descriptions into detailed image generation prompts. Make them more specific and optimized for Stable Diffusion. Include art style directions. Format as JSON array.
-                Example format: ["A majestic dragon emerging from dark storm clouds, scales crackling with electricity, dramatic lighting, epic fantasy art style, detailed scales, volumetric lighting"]
+                prompt: `Convert these scene descriptions into detailed image generation prompts. Make them more specific and optimized for Flux image model. Art style should be ${artStyle}. Format as JSON array.
+                Example format: ["A majestic dragon emerging from dark storm clouds, scales crackling with electricity, dramatic lighting, ${artStyle} art style, detailed scales, volumetric lighting"]
                 Scenes to convert: ${JSON.stringify(highlights)}`
             }),
         });

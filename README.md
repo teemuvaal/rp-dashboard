@@ -41,7 +41,7 @@ Below is a list of features that are complete or in progress and should be compl
     - [x] AI Generate
   - [x] Campaign Members Management
     - [x] Invite Members
-    - [ ] Remove Members
+    - [x] Remove Members
 - [x] Create Session
   - [x] Session summary
   - [x] Session recap

@@ -8,6 +8,22 @@ import { Wand2 } from "lucide-react";
 import { extractSummaryHighlights, generateHighlightImages } from "@/app/dashboard/aiactions";
 import { saveVisualSummary, fetchVisualSummary } from "@/app/dashboard/actions";
 import { useRouter } from 'next/navigation';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+
+const artStyles = [
+    { value: "80s fantasy book cover", label: "80s Fantasy Book Cover" },
+    { value: "realistic", label: "Realistic" },
+    { value: "watercolor", label: "Watercolor" },
+    { value: "oil-painting", label: "Oil Painting" },
+    { value: "digital-art", label: "Digital Art" },
+    { value: "pixel-art", label: "Pixel Art" },
+];
 
 export default function VisualSummary({ session, sessionSummary }) {
     const [isGenerating, setIsGenerating] = useState(false);
@@ -15,6 +31,7 @@ export default function VisualSummary({ session, sessionSummary }) {
     const [generatedImages, setGeneratedImages] = useState([]);
     const [imagePrompts, setImagePrompts] = useState([]);
     const [currentStep, setCurrentStep] = useState('initial'); // 'initial', 'extracting', 'generating', 'complete'
+    const [selectedStyle, setSelectedStyle] = useState("fantasy");
     const { toast } = useToast();
     const router = useRouter();
 
@@ -59,10 +76,10 @@ export default function VisualSummary({ session, sessionSummary }) {
                 description: "Generating images from the highlights...",
             });
 
-            // Step 2: Generate images from highlights
+            // Step 2: Generate images from highlights with selected style
             setCurrentStep('generating');
             const { success: imageSuccess, imageUrls, prompts, error: imageError } = 
-                await generateHighlightImages(extractedHighlights, session.id);
+                await generateHighlightImages(extractedHighlights, session.id, selectedStyle);
 
             if (!imageSuccess) {
                 throw new Error(imageError || 'Failed to generate images');
@@ -117,19 +134,37 @@ export default function VisualSummary({ session, sessionSummary }) {
                                 : 'Generate visual representations of key moments'}
                         </CardDescription>
                     </div>
-                    <Button
-                        variant="outline"
-                        onClick={handleGenerateVisualSummary}
-                        disabled={isGenerating || !sessionSummary?.content}
-                        className="gap-2"
-                    >
-                        <Wand2 className="h-4 w-4" />
-                        {isGenerating ? (
-                            currentStep === 'extracting' ? 'Extracting highlights...' :
-                            currentStep === 'generating' ? 'Generating images...' :
-                            'Processing...'
-                        ) : highlights.length > 0 ? 'Regenerate Visual Summary' : 'Generate Visual Summary'}
-                    </Button>
+                    <div className="flex items-center gap-4">
+                        <Select
+                            value={selectedStyle}
+                            onValueChange={setSelectedStyle}
+                            disabled={isGenerating}
+                        >
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Select art style" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {artStyles.map((style) => (
+                                    <SelectItem key={style.value} value={style.value}>
+                                        {style.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Button
+                            variant="outline"
+                            onClick={handleGenerateVisualSummary}
+                            disabled={isGenerating || !sessionSummary?.content}
+                            className="gap-2"
+                        >
+                            <Wand2 className="h-4 w-4" />
+                            {isGenerating ? (
+                                currentStep === 'extracting' ? 'Extracting highlights...' :
+                                currentStep === 'generating' ? 'Generating images...' :
+                                'Processing...'
+                            ) : highlights.length > 0 ? 'Regenerate Visual Summary' : 'Generate Visual Summary'}
+                        </Button>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent>
