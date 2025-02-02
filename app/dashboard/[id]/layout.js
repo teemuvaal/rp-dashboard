@@ -3,6 +3,13 @@ import Hero from "@/components/Dashboard/DashboardHero";
 import AppMenu from "@/components/Dashboard/AppMenu";
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import {
+    SidebarProvider,
+    SidebarTrigger,
+  } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/app-sidebar"
+import { Toaster } from "@/components/ui/toaster";
+
 
 export default async function CampaignLayout({ children, params }) {
     const supabase = createClient()
@@ -43,17 +50,19 @@ export default async function CampaignLayout({ children, params }) {
         redirect('/dashboard')
     }
 
-
-
     return (
-        <div
-        className="bg-black"
-        >
-            <div className="flex flex-col min-h-screen w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 bg-background">
-                <TopNav campaigns={[campaign]} user={userData}/>
-                <Hero name={campaign.name} description={campaign.description} image={campaign.campaign_image} />
-                <AppMenu params={params} isOwner={isOwner}/>
-                {children}
+        <div className="bg-black">
+            <div className="flex flex-col min-h-screen w-full bg-background">
+                <SidebarProvider>
+                    <AppSidebar userData={userData} campaign={campaign} isOwner={isOwner} params={params}/>
+                    <main className="flex-1">
+                        <SidebarTrigger />
+                        <div className="px-2 lg:px-4">                          
+                            {children}
+                            <Toaster />
+                        </div>
+                    </main>
+                </SidebarProvider>
             </div>
         </div>
     );

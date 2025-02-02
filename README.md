@@ -29,6 +29,7 @@ Need to fix the AI cleanup note function.
 - AI enhanced Session Summaries (OpenAI)
 - Create session recaps and stories with images (Replicate)
 - Polls to vote for session times or details
+- Archive past adventures
 
 ## To Do
 
@@ -37,19 +38,19 @@ Below is a list of features that are complete or in progress and should be compl
 - [x] Create Campaign
   - [x] Campaign Setting
   - [x] Campaign Image
-    - [ ] AI Generate
-  - [ ] Campaign Members Management
+    - [x] AI Generate
+  - [x] Campaign Members Management
     - [x] Invite Members
     - [ ] Remove Members
 - [x] Create Session
   - [x] Session summary
-  - [ ] Session recap
-  - [ ] Session highlights
+  - [x] Session recap
+  - [x] Session highlights
 - [x] Create Note
   - [x] Show active participants
   - [ ] Collab editing (might be too difficult to implement)
   - [x] AI Cleanup
-  - [ ] Link to session
+  - [x] Link to session
 - [ ] Characters
   - [ ] DND Template
   - [ ] Scrape from DND Beyond?
@@ -61,3 +62,4 @@ Below is a list of features that are complete or in progress and should be compl
   - [x] Asset management
   - [x] Asset library
 - [ ] Proper Roles and Permissions System
+- [ ] Import assets between campaigns

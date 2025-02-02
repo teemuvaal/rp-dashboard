@@ -4,6 +4,8 @@ import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
+
+
 export async function createCampaign(formData) {
   const supabase = createClient()
 
@@ -1508,4 +1510,132 @@ export async function fetchAsset(assetId) {
         console.error('Error in fetchAsset:', error);
         return null;
     }
+}
+
+export async function saveVisualSummary({ sessionId, summaryId, highlights, imageUrls, imagePrompts }) {
+    const supabase = createClient();
+
+    // Get the current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) {
+        return { error: 'Authentication error' };
+    }
+
+    // Check if the user is the campaign owner
+    const { data: session, error: sessionError } = await supabase
+        .from('sessions')
+        .select('campaign_id, campaigns!inner(owner_id)')
+        .eq('id', sessionId)
+        .single();
+
+    if (sessionError) {
+        return { error: 'Session not found' };
+    }
+
+    if (session.campaigns.owner_id !== user.id) {
+        return { error: 'Only the campaign owner can save visual summaries' };
+    }
+
+    // Check if a visual summary already exists
+    const { data: existingVisualSummary } = await supabase
+        .from('session_visual_summaries')
+        .select('id')
+        .eq('session_id', sessionId)
+        .single();
+
+    let result;
+    
+    if (existingVisualSummary) {
+        // Update existing visual summary
+        result = await supabase
+            .from('session_visual_summaries')
+            .update({
+                highlights,
+                image_urls: imageUrls,
+                image_prompts: imagePrompts,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', existingVisualSummary.id)
+            .select()
+            .single();
+    } else {
+        // Create new visual summary
+        result = await supabase
+            .from('session_visual_summaries')
+            .insert({
+                session_id: sessionId,
+                summary_id: summaryId,
+                highlights,
+                image_urls: imageUrls,
+                image_prompts: imagePrompts
+            })
+            .select()
+            .single();
+    }
+
+    if (result.error) {
+        return { error: result.error.message };
+    }
+
+    return { success: true, visualSummary: result.data };
+}
+
+// Add a function to fetch visual summary
+export async function fetchVisualSummary(sessionId) {
+    const supabase = createClient();
+
+    const { data, error } = await supabase
+        .from('session_visual_summaries')
+        .select('*')
+        .eq('session_id', sessionId)
+        .single();
+
+    if (error) {
+        return { error: error.message };
+    }
+
+    return { visualSummary: data };
+}
+
+export async function removeCampaignMember(formData) {
+    const supabase = createClient();
+
+    // Get the current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) {
+        return { error: 'Not authenticated' };
+    }
+
+    const campaignId = formData.get('campaignId');
+    const memberId = formData.get('memberId');
+
+    // Check if the user is the campaign owner
+    const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('owner_id')
+        .eq('id', campaignId)
+        .single();
+
+    if (!campaign || campaign.owner_id !== user.id) {
+        return { error: 'Not authorized to remove members' };
+    }
+
+    // Don't allow removing the owner
+    if (memberId === campaign.owner_id) {
+        return { error: 'Cannot remove the campaign owner' };
+    }
+
+    // Remove the member
+    const { error: deleteError } = await supabase
+        .from('campaign_members')
+        .delete()
+        .eq('campaign_id', campaignId)
+        .eq('user_id', memberId);
+
+    if (deleteError) {
+        console.error('Error removing member:', deleteError);
+        return { error: 'Failed to remove member' };
+    }
+
+    return { success: true };
 }

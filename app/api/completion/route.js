@@ -1,27 +1,33 @@
-import { generateText } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
 
-export async function POST(request) {
-  try {
-    const { prompt } = await request.json();
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
 
-    const { text } = await generateText({
-      model: openai('gpt-4'),
-      system:
-        'You are professional assistant for running a roleplaying campaign set in Dungeons & Dragons 5th Edition.' +
-        'You write content for the campaign in a way that is engaging and interesting for the players.' +
-        'You support the DM in running the campaign by providing helpful information and suggestions.' +
-        'You help players in the campaign by improving their notes and providing helpful information.',
-      prompt,
-    });
-    console.log(text)
-    return NextResponse.json({ text });
-  } catch (error) {
-    console.error('Completion error:', error);
-    return NextResponse.json(
-      { error: 'Failed to process completion request' },
-      { status: 500 }
-    );
-  }
+export async function POST(req) {
+    try {
+        const { prompt } = await req.json();
+
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4",
+            messages: [
+                {
+                    role: "system",
+                    content: "You are a helpful assistant that provides clear, concise responses. When asked to format responses as JSON, ensure the output is valid JSON."
+                },
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ],
+            temperature: 0.7,
+            max_tokens: 500,
+        });
+
+        return NextResponse.json({ text: completion.choices[0].message.content });
+    } catch (error) {
+        console.error('Error in completion route:', error);
+        return NextResponse.json({ error: 'Failed to generate completion' }, { status: 500 });
+    }
 }
