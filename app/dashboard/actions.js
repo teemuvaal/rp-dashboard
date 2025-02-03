@@ -1512,72 +1512,61 @@ export async function fetchAsset(assetId) {
     }
 }
 
-export async function saveVisualSummary({ sessionId, summaryId, highlights, imageUrls, imagePrompts }) {
+export async function saveVisualSummary({ 
+    sessionId, 
+    summaryId, 
+    highlights, 
+    imageUrls, 
+    imagePrompts,
+    narrativeContent = null
+}) {
     const supabase = createClient();
-
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError) {
-        return { error: 'Authentication error' };
-    }
-
-    // Check if the user is the campaign owner
-    const { data: session, error: sessionError } = await supabase
-        .from('sessions')
-        .select('campaign_id, campaigns!inner(owner_id)')
-        .eq('id', sessionId)
-        .single();
-
-    if (sessionError) {
-        return { error: 'Session not found' };
-    }
-
-    if (session.campaigns.owner_id !== user.id) {
-        return { error: 'Only the campaign owner can save visual summaries' };
-    }
-
-    // Check if a visual summary already exists
-    const { data: existingVisualSummary } = await supabase
-        .from('session_visual_summaries')
-        .select('id')
-        .eq('session_id', sessionId)
-        .single();
-
-    let result;
     
-    if (existingVisualSummary) {
-        // Update existing visual summary
-        result = await supabase
+    try {
+        const { data, error } = await supabase
             .from('session_visual_summaries')
-            .update({
-                highlights,
-                image_urls: imageUrls,
-                image_prompts: imagePrompts,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', existingVisualSummary.id)
-            .select()
-            .single();
-    } else {
-        // Create new visual summary
-        result = await supabase
-            .from('session_visual_summaries')
-            .insert({
+            .upsert({
                 session_id: sessionId,
                 summary_id: summaryId,
                 highlights,
                 image_urls: imageUrls,
-                image_prompts: imagePrompts
+                image_prompts: imagePrompts,
+                narrative_content: narrativeContent,
+                updated_at: new Date().toISOString(),
             })
             .select()
             .single();
-    }
 
-    if (result.error) {
-        return { error: result.error.message };
-    }
+        if (error) throw error;
 
-    return { success: true, visualSummary: result.data };
+        return { success: true, data };
+    } catch (error) {
+        console.error('Error saving visual summary:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+export async function updateNarrativeContent({ sessionId, narrativeContent }) {
+    const supabase = createClient();
+    
+    try {
+        const { data, error } = await supabase
+            .from('session_visual_summaries')
+            .update({ 
+                narrative_content: narrativeContent,
+                updated_at: new Date().toISOString()
+            })
+            .eq('session_id', sessionId)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        return { success: true, data };
+    } catch (error) {
+        console.error('Error updating narrative content:', error);
+        return { success: false, error: error.message };
+    }
 }
 
 // Add a function to fetch visual summary
@@ -1638,4 +1627,47 @@ export async function removeCampaignMember(formData) {
     }
 
     return { success: true };
+}
+
+export async function saveNarrativeSummary({ sessionId, summaryId, content }) {
+    const supabase = createClient();
+    
+    try {
+        const { data, error } = await supabase
+            .from('narrative_summaries')
+            .upsert({
+                session_id: sessionId,
+                summary_id: summaryId,
+                content: content,
+                updated_at: new Date().toISOString(),
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        return { success: true, data };
+    } catch (error) {
+        console.error('Error saving narrative summary:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+export async function fetchNarrativeSummary(sessionId) {
+    const supabase = createClient();
+    
+    try {
+        const { data, error } = await supabase
+            .from('narrative_summaries')
+            .select('*')
+            .eq('session_id', sessionId)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+
+        return { success: true, narrativeSummary: data };
+    } catch (error) {
+        console.error('Error fetching narrative summary:', error);
+        return { success: false, error: error.message };
+    }
 }

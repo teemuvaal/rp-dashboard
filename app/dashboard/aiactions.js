@@ -279,3 +279,60 @@ async function uploadSessionImage(formData) {
         return { error: error.message || 'Failed to upload image' };
     }
 }
+
+export async function generateNarrativeSummary(summaryContent, sessionId) {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/completion`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                prompt: `Transform this RPG session summary into an engaging narrative from a storyteller's perspective. 
+                Use rich, descriptive language and a captivating tone that would work well for voice narration.
+                Focus on creating a flowing narrative that maintains dramatic tension and emphasizes the emotional weight of key moments.
+                Write in a style similar to how a professional dungeon master would recount the tale to an audience.
+                
+                Guidelines:
+                - Use present tense to create immediacy
+                - Include atmospheric details and sensory descriptions
+                - Maintain dramatic pacing and tension
+                - Emphasize character emotions and reactions
+                - Use natural transitions between scenes
+                - Keep the tone appropriate for the genre and setting
+                - Make it suitable for audio narration (clear sentence structure, good flow)
+                - Break into clear paragraphs for better pacing
+                
+                Here's the session summary to transform:
+                ${summaryContent}`
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to generate narrative summary');
+        }
+
+        const data = await response.json();
+        
+        // Update the visual summary with the narrative content
+        const { success: updateSuccess, error: updateError } = await updateNarrativeContent({
+            sessionId,
+            narrativeContent: data.content
+        });
+
+        if (!updateSuccess) {
+            throw new Error(updateError || 'Failed to save narrative content');
+        }
+
+        return {
+            success: true,
+            content: data.content,
+        };
+    } catch (error) {
+        console.error('Error generating narrative summary:', error);
+        return {
+            success: false,
+            error: error.message,
+        };
+    }
+}
