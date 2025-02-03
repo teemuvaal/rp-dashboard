@@ -783,36 +783,25 @@ export async function fetchNotes(campaignId) {
 }
 
 export async function fetchSessionNotes(sessionId) {
-  const supabase = createClient()
+    const supabase = createClient();
+    
+    try {
+        const { data: notes, error } = await supabase
+            .from('notes')
+            .select('*')
+            .eq('session_id', sessionId)
+            .order('created_at', { ascending: true });
 
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
+        if (error) {
+            console.error('Error fetching session notes:', error);
+            return { notes: [], error: error.message };
+        }
 
-  if (userError) {
-    return { error: 'Authentication error' }
-  }
-
-  // Fetch notes linked to this session
-  const { data: notes, error } = await supabase
-    .from('notes')
-    .select('title, content')
-    .eq('session_id', sessionId)
-    .order('created_at', { ascending: true })
-
-  if (error) {
-    console.error('Error fetching notes:', error)
-    return { error: 'Error fetching notes' }
-  }
-
-  if (!notes || notes.length === 0) {
-    return { error: 'No notes found for this session' }
-  }
-
-  // Combine all notes into a single text chunk
-  const combinedNotes = notes.map(note => (
-    `Note: ${note.title}\n${note.content}`
-  )).join('\n\n---\n\n')
-
-  return { notes: combinedNotes }
+        return { notes: notes || [] };
+    } catch (error) {
+        console.error('Error in fetchSessionNotes:', error);
+        return { notes: [], error: error.message };
+    }
 }
 
 

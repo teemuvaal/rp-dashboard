@@ -336,3 +336,94 @@ export async function generateNarrativeSummary(summaryContent, sessionId) {
         };
     }
 }
+
+export async function generateNarrationAudio(text) {
+    try {
+        const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/JBFqnCBsd6RMkjVDRZzb', {
+            method: 'POST',
+            headers: {
+                'Accept': 'audio/mpeg',
+                'Content-Type': 'application/json',
+                'xi-api-key': process.env.ELEVENLABS_API_KEY
+            },
+            body: JSON.stringify({
+                text: text,
+                model_id: "eleven_turbo_v2",
+                voice_settings: {
+                    stability: 0.5,
+                    similarity_boost: 0.75
+                }
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail?.message || 'Failed to generate audio');
+        }
+
+        // Get the audio data as a blob
+        const audioBlob = await response.blob();
+        
+        // Upload to Supabase storage
+        const supabase = createClient();
+        const fileName = `narration-${Date.now()}.mp3`;
+        const { data: uploadData, error: uploadError } = await supabase
+            .storage
+            .from('session-audio')
+            .upload(`narrations/${fileName}`, audioBlob, {
+                contentType: 'audio/mpeg',
+                cacheControl: '3600'
+            });
+
+        if (uploadError) throw new Error('Failed to upload audio file');
+
+        // Get the public URL
+        const { data: { publicUrl } } = supabase
+            .storage
+            .from('session-audio')
+            .getPublicUrl(`narrations/${fileName}`);
+
+        return {
+            success: true,
+            audioUrl: publicUrl
+        };
+    } catch (error) {
+        console.error('Error generating audio narration:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+export async function generateSummary(sessionId) {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/completion`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                prompt: `Create a concise but detailed summary of these session notes. Focus on key events, important decisions, and significant character moments. Format the summary into clear paragraphs.
+
+                Session ID: ${sessionId}`
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to generate summary');
+        }
+
+        const data = await response.json();
+        return {
+            success: true,
+            summary: data.content,
+        };
+    } catch (error) {
+        console.error('Error generating summary:', error);
+        return {
+            success: false,
+            error: error.message,
+        };
+    }
+}
