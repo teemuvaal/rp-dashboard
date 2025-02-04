@@ -1268,25 +1268,18 @@ export async function fetchSessions(campaignId) {
   }
 }
 
-export async function saveSummary({ sessionId, content, narrativeContent = null }) {
+export async function saveSummary({ sessionId, content }) {
     const supabase = createClient();
     
     try {
-        const updateData = {
-            content,
-            updated_at: new Date().toISOString()
-        };
-
-        // If narrativeContent is provided, add it to the update
-        if (narrativeContent) {
-            updateData.narrative_content = narrativeContent;
-        }
-
         const { data, error } = await supabase
             .from('session_summaries')
             .upsert({
                 session_id: sessionId,
-                ...updateData
+                content,
+                updated_at: new Date().toISOString()
+            }, {
+                onConflict: 'session_id'
             })
             .select()
             .single();
