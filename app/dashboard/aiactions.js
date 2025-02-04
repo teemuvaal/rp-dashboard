@@ -494,7 +494,24 @@ export async function handleGenerateVisualSummary(sessionId, summaryId, summaryC
         };
     }
 
+    const supabase = createClient();
+
     try {
+        // First, get the correct summary ID from the database
+        const { data: summary, error: summaryError } = await supabase
+            .from('session_summaries')
+            .select('id')
+            .eq('session_id', sessionId)
+            .single();
+
+        if (summaryError) {
+            console.error('Error fetching summary:', summaryError);
+            return {
+                success: false,
+                error: 'Failed to fetch session summary'
+            };
+        }
+
         console.log('Step 1: Extracting highlights...');
         const { success: highlightSuccess, highlights, error: highlightError } = 
             await extractSummaryHighlights(summaryContent);
@@ -531,7 +548,7 @@ export async function handleGenerateVisualSummary(sessionId, summaryId, summaryC
         console.log('Step 5: Saving all data...');
         const { success: saveSuccess, error: saveError, data: savedData } = await saveVisualSummary({
             sessionId,
-            summaryId,
+            summaryId: summary.id, // Use the correct summary ID from the database
             highlights,
             imageUrls,
             imagePrompts: prompts,
