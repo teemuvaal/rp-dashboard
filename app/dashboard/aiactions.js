@@ -51,7 +51,6 @@ export async function createSummary({notes}) {
                        `Format the summary in markdown with proper headings, sections, and formatting. `
             }),
         });
-        console.log(notes)
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
