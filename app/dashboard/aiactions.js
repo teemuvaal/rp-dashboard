@@ -1,6 +1,6 @@
 'use server'
 
-import { uploadCampaignImage, createAsset } from './actions';
+import { uploadCampaignImage, createAsset, saveNarrativeContent } from './actions';
 import { createClient } from '@/utils/supabase/server';
 
 // Cleans up a note and returns a cleaned up version
@@ -51,6 +51,7 @@ export async function createSummary({notes}) {
                        `Format the summary in markdown with proper headings, sections, and formatting. `
             }),
         });
+        console.log(notes)
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -314,14 +315,14 @@ export async function generateNarrativeSummary(summaryContent, sessionId) {
 
         const data = await response.json();
         
-        // Update the visual summary with the narrative content
-        const { success: updateSuccess, error: updateError } = await updateNarrativeContent({
+        // Save the narrative content to session_visual_summaries
+        const { success: saveSuccess, error: saveError } = await saveNarrativeContent({
             sessionId,
             narrativeContent: data.content
         });
 
-        if (!updateSuccess) {
-            throw new Error(updateError || 'Failed to save narrative content');
+        if (!saveSuccess) {
+            throw new Error(saveError || 'Failed to save narrative content');
         }
 
         return {

@@ -4,98 +4,128 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { generateNarrativeSummary, generateNarrationAudio, createSummary } from "@/app/dashboard/aiactions";
-import { fetchSessionNotes, saveSummary } from "@/app/dashboard/actions";
-import { useToast } from "@/hooks/use-toast"
-import { Sparkles, Volume2 } from "lucide-react";
-import VisualSummary from "@/components/Dashboard/VisualSummary";
+import { fetchSessionNotes, saveSummary, fetchSummary } from "@/app/dashboard/actions";
+import { useToast } from "@/hooks/use-toast";
+import { Sparkles, Volume2, Edit, X, Check } from "lucide-react";
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
+import VisualSummary from "@/components/Dashboard/VisualSummary";
+import ReactMarkdown from 'react-markdown';
 
 export default function SessionSummary({ session }) {
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
-    const [summary, setSummary] = useState(session?.summary || '');
-    const [narrativeSummary, setNarrativeSummary] = useState(session?.narrative_summary || '');
-    const [audioUrl, setAudioUrl] = useState(session?.audio_url || '');
+    const [summary, setSummary] = useState('');
+    const [editedSummary, setEditedSummary] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
+    const [narrativeSummary, setNarrativeSummary] = useState('');
+    const [audioUrl, setAudioUrl] = useState('');
     const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+    const [error, setError] = useState(null);
     const router = useRouter();
 
-    if (!session?.id) {
-        return <div>Error: Invalid session data</div>;
-    }
-
-    // Load existing summary when component mounts
     useEffect(() => {
-        const supabase = createClient();
-        const loadExistingSummary = async () => {
-            try {
-                const { data: summaryData, error } = await supabase
-                    .from('session_summaries')
-                    .select('content')
-                    .eq('session_id', session.id)
-                    .single();
-
-                if (!error && summaryData) {
-                    setSummary(summaryData.content);
-                }
-            } catch (error) {
-                console.error('Error loading summary:', error);
+        const loadSummary = async () => {
+            const result = await fetchSummary(session.id);
+            if (!result.error && result.summary?.content) {
+                setSummary(result.summary.content);
+                setEditedSummary(result.summary.content);
             }
         };
-
-        if (session.id) {
-            loadExistingSummary();
+        if (session?.id) {
+            loadSummary();
         }
-    }, [session.id]);
+    }, [session?.id]);
 
     const handleGenerateSummary = async () => {
         setLoading(true);
+        setError(null);
+
         try {
-            // Fetch all notes for this session
-            const { notes } = await fetchSessionNotes(session.id);
+            // Fetch notes linked to this session
+            const result = await fetchSessionNotes(session.id);
             
-            if (!notes || !Array.isArray(notes) || notes.length === 0) {
-                throw new Error('No notes found for this session');
+            if (result.error) {
+                setError(result.error);
+                return;
             }
 
-            // Combine all note contents
-            const combinedNotes = notes.map(note => note.content || '').join('\n\n');
-
-            // Generate summary using AI
-            const { success, cleanedNote: generatedSummary, error: aiError } = 
-                await createSummary({ notes: combinedNotes });
-
-            if (!success || !generatedSummary) {
-                throw new Error(aiError || 'Failed to generate summary');
+            if (!result.notes || result.notes.length === 0) {
+                setError('No notes found for this session');
+                return;
             }
 
-            // Save the summary
-            const { success: saveSuccess, error: saveError } = 
-                await saveSummary({ sessionId: session.id, content: generatedSummary });
+            // Extract just the note contents
+            const noteContents = result.notes.reduce((acc, note) => {
+                return acc + note.content + '\n\n';
+            }, '');
 
-            if (!saveSuccess) {
-                throw new Error(saveError || 'Failed to save summary');
+            // Create a summary from the notes
+            const summaryResult = await createSummary({ notes: noteContents });
+            
+            if (summaryResult.error) {
+                setError(summaryResult.error);
+                return;
             }
 
-            // Update local state
-            setSummary(generatedSummary);
+            // Save the summary to the database
+            const saveResult = await saveSummary({
+                sessionId: session.id,
+                content: summaryResult.cleanedNote
+            });
+
+            if (saveResult.error) {
+                setError(saveResult.error);
+                return;
+            }
+
+            // Update local state immediately
+            setSummary(summaryResult.cleanedNote);
+            setEditedSummary(summaryResult.cleanedNote);
+            
+            // Refresh both the current page and the sessions route
+            router.refresh();
+            router.push(`/dashboard/${session.campaign_id}/sessions/${session.id}`);
+
+        } catch (err) {
+            setError('Failed to generate summary');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSaveSummary = async () => {
+        try {
+            const saveResult = await saveSummary({
+                sessionId: session.id,
+                content: editedSummary
+            });
+
+            if (!saveResult.success) {
+                throw new Error(saveResult.error || 'Failed to save summary');
+            }
+
+            setSummary(editedSummary);
+            setIsEditing(false);
             
             toast({
-                title: "Summary generated",
-                description: "The session summary has been created successfully.",
+                title: "Success",
+                description: "Summary saved successfully.",
             });
 
             router.refresh();
         } catch (err) {
-            console.error('Error generating summary:', err);
+            console.error('Error saving summary:', err);
             toast({
                 variant: "destructive",
                 title: "Error",
-                description: err.message || "Failed to generate summary. Please try again.",
+                description: err.message || "Failed to save summary",
             });
-        } finally {
-            setLoading(false);
         }
+    };
+
+    const handleCancelEdit = () => {
+        setEditedSummary(summary);
+        setIsEditing(false);
     };
 
     const handleGenerateNarrative = async () => {
@@ -111,15 +141,14 @@ export default function SessionSummary({ session }) {
         setLoading(true);
         try {
             const result = await generateNarrativeSummary(summary, session.id);
-            if (result.error) {
-                toast({
-                    title: "Error",
-                    description: `Error generating narrative: ${result.error}`,
-                    variant: "destructive",
-                });
-                return;
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to generate narrative summary');
             }
             setNarrativeSummary(result.content);
+            toast({
+                title: "Success",
+                description: "Narrative summary generated successfully",
+            });
         } catch (error) {
             toast({
                 title: "Error",
@@ -144,15 +173,14 @@ export default function SessionSummary({ session }) {
         setIsGeneratingAudio(true);
         try {
             const result = await generateNarrationAudio(narrativeSummary);
-            if (result.error) {
-                toast({
-                    title: "Error",
-                    description: `Error generating audio: ${result.error}`,
-                    variant: "destructive",
-                });
-                return;
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to generate audio');
             }
             setAudioUrl(result.audioUrl);
+            toast({
+                title: "Success",
+                description: "Audio generated successfully",
+            });
         } catch (error) {
             toast({
                 title: "Error",
@@ -170,28 +198,78 @@ export default function SessionSummary({ session }) {
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                         <span>Session Summary</span>
-                        <Button 
-                            onClick={handleGenerateSummary} 
-                            disabled={loading}
-                            size="sm"
-                        >
-                            <Sparkles className="h-4 w-4 mr-2" />
-                            {loading ? "Generating..." : (summary ? "Regenerate Summary" : "Generate Summary")}
-                        </Button>
+                        <div className="flex gap-2">
+                            {isEditing ? (
+                                <>
+                                    <Button 
+                                        onClick={handleSaveSummary} 
+                                        size="sm"
+                                        className="gap-2"
+                                    >
+                                        <Check className="h-4 w-4" />
+                                        Save
+                                    </Button>
+                                    <Button 
+                                        onClick={handleCancelEdit}
+                                        variant="outline" 
+                                        size="sm"
+                                        className="gap-2"
+                                    >
+                                        <X className="h-4 w-4" />
+                                        Cancel
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    {summary && (
+                                        <Button
+                                            onClick={() => setIsEditing(true)}
+                                            variant="outline"
+                                            size="sm"
+                                            className="gap-2"
+                                        >
+                                            <Edit className="h-4 w-4" />
+                                            Edit
+                                        </Button>
+                                    )}
+                                    <Button 
+                                        onClick={handleGenerateSummary} 
+                                        disabled={loading}
+                                        size="sm"
+                                        className="gap-2"
+                                    >
+                                        <Sparkles className="h-4 w-4" />
+                                        {loading ? "Generating..." : (summary ? "Regenerate Summary" : "Generate Summary")}
+                                    </Button>
+                                </>
+                            )}
+                        </div>
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {summary ? (
+                    {error && (
+                        <p className="text-destructive mb-4">{error}</p>
+                    )}
+                    {isEditing ? (
+                        <textarea
+                            value={editedSummary}
+                            onChange={(e) => setEditedSummary(e.target.value)}
+                            className="w-full min-h-[200px] p-4 rounded-md border"
+                        />
+                    ) : summary ? (
                         <div className="space-y-4">
-                            <p className="whitespace-pre-wrap">{summary}</p>
+                            <div className="prose prose-sm max-w-none dark:prose-invert">
+                                <ReactMarkdown>{summary}</ReactMarkdown>
+                            </div>
                             <div className="flex justify-end">
                                 <Button
                                     onClick={handleGenerateNarrative}
                                     disabled={loading}
                                     variant="outline"
                                     size="sm"
+                                    className="gap-2"
                                 >
-                                    <Sparkles className="h-4 w-4 mr-2" />
+                                    <Sparkles className="h-4 w-4" />
                                     {loading ? "Generating..." : "Generate Narrative Version"}
                                 </Button>
                             </div>
@@ -211,14 +289,17 @@ export default function SessionSummary({ session }) {
                                 onClick={handleGenerateAudio}
                                 disabled={isGeneratingAudio}
                                 size="sm"
+                                className="gap-2"
                             >
-                                <Volume2 className="h-4 w-4 mr-2" />
+                                <Volume2 className="h-4 w-4" />
                                 {isGeneratingAudio ? "Generating..." : "Generate Audio"}
                             </Button>
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <p className="whitespace-pre-wrap">{narrativeSummary}</p>
+                        <div className="prose prose-sm max-w-none dark:prose-invert">
+                            <ReactMarkdown>{narrativeSummary}</ReactMarkdown>
+                        </div>
                         {audioUrl && (
                             <div className="mt-4">
                                 <audio controls className="w-full">
