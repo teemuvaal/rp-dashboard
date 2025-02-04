@@ -281,6 +281,13 @@ async function uploadSessionImage(formData) {
 }
 
 export async function generateNarrativeSummary(summaryContent, sessionId) {
+    if (!summaryContent || typeof summaryContent !== 'string' || summaryContent.trim().length === 0) {
+        return {
+            success: false,
+            error: 'Summary content is required'
+        };
+    }
+
     try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/completion`, {
             method: 'POST',
@@ -304,7 +311,7 @@ export async function generateNarrativeSummary(summaryContent, sessionId) {
                 - Break into clear paragraphs for better pacing
                 
                 Here's the session summary to transform:
-                ${summaryContent}`
+                ${summaryContent.trim()}`
             }),
         });
 
@@ -314,84 +321,61 @@ export async function generateNarrativeSummary(summaryContent, sessionId) {
 
         const data = await response.json();
         
-        // Save the narrative content to session_visual_summaries
-        const { success: saveSuccess, error: saveError } = await saveNarrativeContent({
-            sessionId,
-            narrativeContent: data.content
-        });
-
-        if (!saveSuccess) {
-            throw new Error(saveError || 'Failed to save narrative content');
+        if (!data.text || typeof data.text !== 'string' || data.text.trim().length === 0) {
+            throw new Error('Generated narrative is empty or invalid');
         }
 
+        // Don't save the narrative content here - it will be saved with all other data later
         return {
             success: true,
-            content: data.content,
+            content: data.text.trim()
         };
     } catch (error) {
         console.error('Error generating narrative summary:', error);
         return {
             success: false,
-            error: error.message,
+            error: error.message || 'Failed to generate narrative summary'
         };
     }
 }
 
 export async function generateNarrationAudio(text) {
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+        return {
+            success: false,
+            error: 'Text is required for audio narration'
+        };
+    }
+
     try {
-        const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/JBFqnCBsd6RMkjVDRZzb', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/generate-audio`, {
             method: 'POST',
             headers: {
-                'Accept': 'audio/mpeg',
                 'Content-Type': 'application/json',
-                'xi-api-key': process.env.ELEVENLABS_API_KEY
             },
             body: JSON.stringify({
-                text: text,
-                model_id: "eleven_turbo_v2",
-                voice_settings: {
-                    stability: 0.5,
-                    similarity_boost: 0.75
-                }
-            })
+                text: text.trim(),
+                modelId: "eleven_multilingual_v2",
+                voiceId: "JBFqnCBsd6RMkjVDRZzb",
+                outputFormat: "mp3_44100_128"
+            }),
         });
 
+        const data = await response.json();
+
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail?.message || 'Failed to generate audio');
+            throw new Error(data.error || 'Failed to generate audio');
         }
-
-        // Get the audio data as a blob
-        const audioBlob = await response.blob();
-        
-        // Upload to Supabase storage
-        const supabase = createClient();
-        const fileName = `narration-${Date.now()}.mp3`;
-        const { data: uploadData, error: uploadError } = await supabase
-            .storage
-            .from('session-audio')
-            .upload(`narrations/${fileName}`, audioBlob, {
-                contentType: 'audio/mpeg',
-                cacheControl: '3600'
-            });
-
-        if (uploadError) throw new Error('Failed to upload audio file');
-
-        // Get the public URL
-        const { data: { publicUrl } } = supabase
-            .storage
-            .from('session-audio')
-            .getPublicUrl(`narrations/${fileName}`);
 
         return {
             success: true,
-            audioUrl: publicUrl
+            audioUrl: data.audioUrl
         };
     } catch (error) {
-        console.error('Error generating audio narration:', error);
+        console.error('Error in generateNarrationAudio:', error);
         return {
             success: false,
-            error: error.message
+            error: error.message || 'Failed to generate audio'
         };
     }
 }
@@ -424,6 +408,157 @@ export async function generateSummary(sessionId) {
         return {
             success: false,
             error: error.message,
+        };
+    }
+}
+
+export async function saveVisualSummary({ 
+    sessionId, 
+    summaryId, 
+    highlights, 
+    imageUrls, 
+    imagePrompts,
+    narrativeContent,
+    audioUrl
+}) {
+    const supabase = createClient();
+    
+    try {
+        // Validate required fields
+        if (!sessionId) throw new Error('Session ID is required');
+        if (!highlights || !Array.isArray(highlights) || highlights.length === 0) {
+            throw new Error('Highlights are required');
+        }
+        if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
+            throw new Error('Image URLs are required');
+        }
+        if (!narrativeContent) throw new Error('Narrative content is required');
+        if (!audioUrl) throw new Error('Audio URL is required');
+
+        // First check if a record exists
+        const { data: existingRecord } = await supabase
+            .from('session_visual_summaries')
+            .select('id')
+            .eq('session_id', sessionId)
+            .single();
+
+        const visualSummaryData = {
+            session_id: sessionId,
+            summary_id: summaryId,
+            highlights,
+            image_urls: imageUrls,
+            image_prompts: imagePrompts,
+            narrative_content: narrativeContent,
+            audio_url: audioUrl,
+            updated_at: new Date().toISOString(),
+        };
+
+        let result;
+        if (existingRecord) {
+            // Update existing record
+            result = await supabase
+                .from('session_visual_summaries')
+                .update(visualSummaryData)
+                .eq('id', existingRecord.id)
+                .select()
+                .single();
+        } else {
+            // Insert new record
+            result = await supabase
+                .from('session_visual_summaries')
+                .insert(visualSummaryData)
+                .select()
+                .single();
+        }
+
+        if (result.error) throw result.error;
+
+        return { 
+            success: true, 
+            data: result.data 
+        };
+    } catch (error) {
+        console.error('Error saving visual summary:', error);
+        return { 
+            success: false, 
+            error: error.message || 'Failed to save visual summary' 
+        };
+    }
+}
+
+export async function handleGenerateVisualSummary(sessionId, summaryId, summaryContent, selectedStyle) {
+    if (!summaryContent || typeof summaryContent !== 'string' || summaryContent.trim().length === 0) {
+        return {
+            success: false,
+            error: 'Summary content is required'
+        };
+    }
+
+    try {
+        console.log('Step 1: Extracting highlights...');
+        const { success: highlightSuccess, highlights, error: highlightError } = 
+            await extractSummaryHighlights(summaryContent);
+        
+        if (!highlightSuccess || !highlights) {
+            throw new Error(highlightError || 'Failed to extract highlights');
+        }
+
+        console.log('Step 2: Generating images...');
+        const { success: imageSuccess, imageUrls, prompts, error: imageError } = 
+            await generateHighlightImages(highlights, sessionId, selectedStyle);
+        
+        if (!imageSuccess) {
+            throw new Error(imageError || 'Failed to generate images');
+        }
+
+        console.log('Step 3: Generating narrative...');
+        const { success: narrativeSuccess, content: narrativeContent, error: narrativeError } = 
+            await generateNarrativeSummary(summaryContent, sessionId);
+        
+        if (!narrativeSuccess || !narrativeContent) {
+            console.error('Narrative generation failed:', narrativeError);
+            throw new Error(narrativeError || 'Failed to generate narrative');
+        }
+
+        console.log('Step 4: Generating audio...');
+        const { success: audioSuccess, audioUrl, error: audioError } = 
+            await generateNarrationAudio(narrativeContent);
+        
+        if (!audioSuccess) {
+            throw new Error(audioError || 'Failed to generate audio');
+        }
+
+        console.log('Step 5: Saving all data...');
+        const { success: saveSuccess, error: saveError, data: savedData } = await saveVisualSummary({
+            sessionId,
+            summaryId,
+            highlights,
+            imageUrls,
+            imagePrompts: prompts,
+            narrativeContent,
+            audioUrl
+        });
+
+        if (!saveSuccess) {
+            throw new Error(saveError || 'Failed to save visual summary');
+        }
+
+        console.log('Visual summary generation completed successfully');
+        return {
+            success: true,
+            data: savedData || {
+                highlights,
+                imageUrls,
+                imagePrompts: prompts,
+                narrativeContent,
+                audioUrl
+            }
+        };
+    } catch (error) {
+        console.error('Error in handleGenerateVisualSummary:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to generate visual summary'
         };
     }
 }

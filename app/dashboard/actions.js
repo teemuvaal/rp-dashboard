@@ -1472,31 +1472,74 @@ export async function saveVisualSummary({
     highlights, 
     imageUrls, 
     imagePrompts,
-    narrativeContent = null
+    narrativeContent,
+    audioUrl
 }) {
     const supabase = createClient();
     
     try {
+        // Validate all required fields before attempting to save
+        if (!sessionId) throw new Error('Session ID is required');
+        if (!highlights || !Array.isArray(highlights) || highlights.length === 0) {
+            throw new Error('Highlights are required and must be an array');
+        }
+        if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
+            throw new Error('Image URLs are required and must be an array');
+        }
+        if (!narrativeContent || typeof narrativeContent !== 'string' || narrativeContent.trim().length === 0) {
+            throw new Error('Narrative content is required');
+        }
+        if (!audioUrl || typeof audioUrl !== 'string' || audioUrl.trim().length === 0) {
+            throw new Error('Audio URL is required');
+        }
+
+        // First, verify that the summary exists
+        if (summaryId) {
+            const { data: existingSummary, error: summaryError } = await supabase
+                .from('session_summaries')
+                .select('id')
+                .eq('id', summaryId)
+                .single();
+
+            if (summaryError) {
+                console.log('Summary not found, will save without summary_id');
+                summaryId = null;
+            }
+        }
+
+        const visualSummaryData = {
+            session_id: sessionId,
+            summary_id: summaryId, // This will be null if summary doesn't exist
+            highlights,
+            image_urls: imageUrls,
+            image_prompts: imagePrompts,
+            narrative_content: narrativeContent.trim(),
+            audio_url: audioUrl.trim(),
+            updated_at: new Date().toISOString(),
+        };
+
+        // Use upsert to either update existing record or create new one
         const { data, error } = await supabase
             .from('session_visual_summaries')
-            .upsert({
-                session_id: sessionId,
-                summary_id: summaryId,
-                highlights,
-                image_urls: imageUrls,
-                image_prompts: imagePrompts,
-                narrative_content: narrativeContent,
-                updated_at: new Date().toISOString(),
+            .upsert(visualSummaryData, {
+                onConflict: 'session_id',
+                returning: 'representation'
             })
             .select()
             .single();
 
         if (error) throw error;
 
-        return { success: true, data };
+        return { 
+            success: true, 
+            data 
+        };
     } catch (error) {
         console.error('Error saving visual summary:', error);
-        return { success: false, error: error.message };
+        return { 
+            success: false, 
+            error: error.message || 'Failed to save visual summary' 
+        };
     }
 }
 

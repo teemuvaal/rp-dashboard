@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/accordion"
 import SessionSummary from "@/components/Dashboard/SessionSummary"
 
+import TestAudioNarration from '@/components/Dashboard/TestAudioNarration';
+
 export default async function SessionPage({ params }) {
     const sessionId = params.sessionId;
     const campaignId = params.id;
@@ -110,6 +112,7 @@ export default async function SessionPage({ params }) {
                         <div>
                             <CardTitle className="text-2xl">{session.name}</CardTitle>
                             <CardDescription>{session.description}</CardDescription>
+                            <TestAudioNarration sessionId={sessionId} />
                         </div>
                         {isOwner && (
                             <div className="flex items-center gap-4">

@@ -2,10 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Wand2 } from "lucide-react";
-import { extractSummaryHighlights, generateHighlightImages } from "@/app/dashboard/aiactions";
+import { Wand2, Play, X } from "lucide-react";
+import { 
+    extractSummaryHighlights, 
+    generateHighlightImages, 
+    generateNarrativeSummary, 
+    generateNarrationAudio,
+    handleGenerateVisualSummary as generateVisualSummaryData
+} from "@/app/dashboard/aiactions";
 import { saveVisualSummary, fetchVisualSummary } from "@/app/dashboard/actions";
 import { useRouter } from 'next/navigation';
 import {
@@ -15,6 +21,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown from 'react-markdown';
 
 const artStyles = [
     { value: "80s fantasy book cover", label: "80s Fantasy Book Cover" },
@@ -30,8 +38,12 @@ export default function VisualSummary({ session, sessionSummary }) {
     const [highlights, setHighlights] = useState([]);
     const [generatedImages, setGeneratedImages] = useState([]);
     const [imagePrompts, setImagePrompts] = useState([]);
-    const [currentStep, setCurrentStep] = useState('initial'); // 'initial', 'extracting', 'generating', 'complete'
+    const [narrativeContent, setNarrativeContent] = useState('');
+    const [audioUrl, setAudioUrl] = useState('');
+    const [currentStep, setCurrentStep] = useState('initial');
     const [selectedStyle, setSelectedStyle] = useState("fantasy");
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
     const { toast } = useToast();
     const router = useRouter();
 
@@ -42,13 +54,15 @@ export default function VisualSummary({ session, sessionSummary }) {
                 setHighlights(visualSummary.highlights || []);
                 setGeneratedImages(visualSummary.image_urls || []);
                 setImagePrompts(visualSummary.image_prompts || []);
+                setNarrativeContent(visualSummary.narrative_content || '');
+                setAudioUrl(visualSummary.audio_url || '');
                 setCurrentStep('complete');
             }
         };
         loadVisualSummary();
     }, [session.id]);
 
-    const handleGenerateVisualSummary = async () => {
+    const handleGenerateClick = async () => {
         if (!sessionSummary?.content) {
             toast({
                 variant: "destructive",
@@ -62,59 +76,36 @@ export default function VisualSummary({ session, sessionSummary }) {
         setCurrentStep('extracting');
         
         try {
-            // Step 1: Extract highlights from the summary
-            const { success, highlights: extractedHighlights, error } = await extractSummaryHighlights(sessionSummary.content);
-            
-            if (!success || !extractedHighlights) {
-                throw new Error(error || 'Failed to extract highlights');
+            const { success, data, error } = await generateVisualSummaryData(
+                session.id,
+                sessionSummary.id,
+                sessionSummary.content,
+                selectedStyle
+            );
+
+            if (!success) {
+                throw new Error(error);
             }
 
-            setHighlights(extractedHighlights);
-            
-            toast({
-                title: "Highlights extracted",
-                description: "Generating images from the highlights...",
-            });
-
-            // Step 2: Generate images from highlights with selected style
-            setCurrentStep('generating');
-            const { success: imageSuccess, imageUrls, prompts, error: imageError } = 
-                await generateHighlightImages(extractedHighlights, session.id, selectedStyle);
-
-            if (!imageSuccess) {
-                throw new Error(imageError || 'Failed to generate images');
-            }
-
-            setGeneratedImages(imageUrls);
-            setImagePrompts(prompts);
+            setHighlights(data.highlights);
+            setGeneratedImages(data.imageUrls);
+            setImagePrompts(data.imagePrompts);
+            setNarrativeContent(data.narrativeContent);
+            setAudioUrl(data.audioUrl);
             setCurrentStep('complete');
 
-            // Save the visual summary
-            const { success: saveSuccess, error: saveError } = await saveVisualSummary({
-                sessionId: session.id,
-                summaryId: sessionSummary.id,
-                highlights: extractedHighlights,
-                imageUrls,
-                imagePrompts: prompts.map(prompt => typeof prompt === 'string' ? prompt : JSON.stringify(prompt))
-            });
-
-            if (!saveSuccess) {
-                throw new Error(saveError || 'Failed to save visual summary');
-            }
-
             toast({
-                title: "Visual summary ready",
-                description: "Images have been generated and saved successfully.",
+                title: "Success",
+                description: "Your story has been created successfully.",
             });
 
             router.refresh();
-
         } catch (error) {
             console.error('Error generating visual summary:', error);
             toast({
                 variant: "destructive",
                 title: "Error",
-                description: error.message || "Failed to generate visual summary. Please try again.",
+                description: error.message || "Failed to generate visual summary",
             });
             setCurrentStep('initial');
         } finally {
@@ -122,80 +113,130 @@ export default function VisualSummary({ session, sessionSummary }) {
         }
     };
 
+    const handlePlayPause = () => {
+        setIsPlaying(!isPlaying);
+    };
+
+    const handleClose = () => {
+        setIsPlaying(false);
+        setCurrentSlideIndex(0);
+    };
+
+    // Auto-advance slides based on highlights length
+    useEffect(() => {
+        if (!isPlaying || !audioUrl) return;
+
+        const interval = 8000; // 8 seconds per slide
+        const timer = setInterval(() => {
+            setCurrentSlideIndex(prev => {
+                if (prev < highlights.length - 1) return prev + 1;
+                setIsPlaying(false);
+                return prev;
+            });
+        }, interval);
+
+        return () => clearInterval(timer);
+    }, [isPlaying, highlights.length, audioUrl]);
+
     return (
-        <Card className="mt-6">
-            <CardHeader>
-                <div className="flex justify-between items-start">
-                    <div>
-                        <CardTitle>Visual Summary</CardTitle>
-                        <CardDescription>
-                            {highlights.length > 0 
-                                ? 'Visual representation of key moments'
-                                : 'Generate visual representations of key moments'}
-                        </CardDescription>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <Select
-                            value={selectedStyle}
-                            onValueChange={setSelectedStyle}
-                            disabled={isGenerating}
-                        >
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Select art style" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {artStyles.map((style) => (
-                                    <SelectItem key={style.value} value={style.value}>
-                                        {style.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+        <div className="space-y-6">
+            <div className="flex justify-between items-start">
+                <div>
+                    <Select
+                        value={selectedStyle}
+                        onValueChange={setSelectedStyle}
+                        disabled={isGenerating || isPlaying}
+                    >
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Select art style" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {artStyles.map((style) => (
+                                <SelectItem key={style.value} value={style.value}>
+                                    {style.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="flex gap-4">
+                    {currentStep === 'complete' && !isPlaying && (
                         <Button
                             variant="outline"
-                            onClick={handleGenerateVisualSummary}
-                            disabled={isGenerating || !sessionSummary?.content}
+                            onClick={handlePlayPause}
                             className="gap-2"
                         >
-                            <Wand2 className="h-4 w-4" />
-                            {isGenerating ? (
-                                currentStep === 'extracting' ? 'Extracting highlights...' :
-                                currentStep === 'generating' ? 'Generating images...' :
-                                'Processing...'
-                            ) : highlights.length > 0 ? 'Regenerate Visual Summary' : 'Generate Visual Summary'}
+                            <Play className="h-4 w-4" />
+                            Play Story
                         </Button>
-                    </div>
+                    )}
+                    <Button
+                        variant="outline"
+                        onClick={handleGenerateClick}
+                        disabled={isGenerating || !sessionSummary?.content || isPlaying}
+                        className="gap-2"
+                    >
+                        <Wand2 className="h-4 w-4" />
+                        {isGenerating ? (
+                            currentStep === 'extracting' ? 'Extracting highlights...' :
+                            currentStep === 'generating' ? 'Generating images...' :
+                            currentStep === 'narrating' ? 'Creating narrative...' :
+                            'Processing...'
+                        ) : highlights.length > 0 ? 'Regenerate Story' : 'Generate Story'}
+                    </Button>
                 </div>
-            </CardHeader>
-            <CardContent>
-                {/* Display highlights and generated images */}
-                {highlights.length > 0 && (
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-1 gap-6">
-                            {highlights.map((highlight, index) => (
-                                <div key={index} className="space-y-2">
-                                    <p className="text-sm text-muted-foreground">{highlight}</p>
-                                    {generatedImages[index] && (
-                                        <div className="relative aspect-video w-full overflow-hidden rounded-lg">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img
-                                                src={generatedImages[index]}
-                                                alt={`Generated scene ${index + 1}`}
-                                                className="object-cover w-full h-full"
-                                            />
-                                        </div>
-                                    )}
-                                    {imagePrompts[index] && (
-                                        <p className="text-xs text-muted-foreground">
-                                            Prompt: {imagePrompts[index]}
-                                        </p>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
+            </div>
+
+            {isPlaying && currentStep === 'complete' && (
+                <div className="fixed inset-0 z-50 bg-black">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-4 right-4 text-white hover:text-white/80"
+                        onClick={handleClose}
+                    >
+                        <X className="h-6 w-6" />
+                    </Button>
+                    
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={currentSlideIndex}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 1 }}
+                            className="relative w-full h-full"
+                        >
+                            <div 
+                                className="absolute inset-0 bg-cover bg-center"
+                                style={{ backgroundImage: `url(${generatedImages[currentSlideIndex]})` }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                            <div className="absolute bottom-0 left-0 right-0 p-8">
+                                <motion.div
+                                    initial={{ y: 20, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ delay: 0.5 }}
+                                    className="prose prose-invert prose-lg max-w-3xl mx-auto"
+                                >
+                                    <ReactMarkdown>
+                                        {highlights[currentSlideIndex]}
+                                    </ReactMarkdown>
+                                </motion.div>
+                            </div>
+                            
+                            {audioUrl && (
+                                <audio
+                                    src={audioUrl}
+                                    autoPlay={isPlaying}
+                                    onEnded={() => setIsPlaying(false)}
+                                    className="hidden"
+                                />
+                            )}
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
+            )}
+        </div>
     );
 } 
