@@ -1,6 +1,5 @@
 import { ElevenLabsClient } from "elevenlabs";
 import { NextResponse } from 'next/server';
-import { Readable } from 'stream';
 
 export async function POST(request) {
     try {
@@ -17,22 +16,17 @@ export async function POST(request) {
             apiKey: process.env.ELEVEN_LABS_API_KEY
         });
 
-        // Get the stream response
-        const audioStream = await client.textToSpeech.convert(voiceId, {
+        // Get the audio as ArrayBuffer
+        const audioResponse = await client.textToSpeech.convert(voiceId, {
             text,
             model_id: modelId,
             output_format: outputFormat
         });
 
-        // Convert stream to buffer
-        const chunks = [];
-        const readable = Readable.from(audioStream);
+        // Convert ArrayBuffer to Buffer
+        const buffer = Buffer.from(await audioResponse.arrayBuffer());
         
-        for await (const chunk of readable) {
-            chunks.push(chunk);
-        }
-        
-        const buffer = Buffer.concat(chunks);
+        // Convert to base64
         const base64Audio = buffer.toString('base64');
         const audioUrl = `data:audio/mp3;base64,${base64Audio}`;
 

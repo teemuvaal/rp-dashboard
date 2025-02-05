@@ -46,7 +46,7 @@ export async function createSummary({notes}) {
                        `Create a narrative summary that captures the key events, encounters, and moments from the session. ` +
                        `Format the summary in markdown with proper headings, sections, and formatting. ` +
                        `Focus on the most important events and their outcomes. ` +
-                       `Use an engaging, narrative style suitable for a D&D campaign summary.` +
+                       `Use an engaging, narrative style suitable for a tabletop roleplaying campaign summary.` +
                        `The summary should be in the same language as the notes.` +
                        `Format the summary in markdown with proper headings, sections, and formatting. `
             }),
@@ -295,28 +295,20 @@ export async function generateNarrativeSummary(summaryContent, sessionId) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                prompt: `Transform this RPG session summary into an engaging narrative from a storyteller's perspective. 
-                Use rich, descriptive language and a captivating tone that would work well for voice narration.
-                Focus on creating a flowing narrative that maintains dramatic tension and emphasizes the emotional weight of key moments.
-                Write in a style similar to how a professional dungeon master would recount the tale to an audience.
-                
-                Guidelines:
-                - Use present tense to create immediacy
-                - Include atmospheric details and sensory descriptions
-                - Maintain dramatic pacing and tension
-                - Emphasize character emotions and reactions
-                - Use natural transitions between scenes
-                - Keep the tone appropriate for the genre and setting
-                - Make it suitable for audio narration (clear sentence structure, good flow)
-                - Break into clear paragraphs for better pacing
+                prompt: `Transform this RPG session summary into a flowing narrative story, as if being told by a master storyteller around a campfire.
+                Make it engaging and dramatic, perfect for being read aloud as a single continuous tale.
+                Focus on creating a seamless narrative that maintains dramatic tension and emphasizes the emotional weight of key moments.
+                Write in a style similar to how a professional game master would recount the tale to an audience.
+                The story should flow naturally from beginning to end, maintaining continuity throughout.
+                Do not break it into separate scenes or sections - create one cohesive narrative.
                 
                 Here's the session summary to transform:
-                ${summaryContent.trim()}`
+                ${summaryContent}`
             }),
         });
 
         if (!response.ok) {
-            throw new Error('Failed to generate narrative summary');
+            throw new Error('Failed to generate narrative');
         }
 
         const data = await response.json();
@@ -325,16 +317,25 @@ export async function generateNarrativeSummary(summaryContent, sessionId) {
             throw new Error('Generated narrative is empty or invalid');
         }
 
-        // Don't save the narrative content here - it will be saved with all other data later
+        // Save the narrative content
+        const result = await saveNarrativeContent({
+            sessionId,
+            narrativeContent: data.text.trim()
+        });
+
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to save narrative content');
+        }
+
         return {
             success: true,
-            content: data.text.trim()
+            text: data.text.trim()
         };
     } catch (error) {
-        console.error('Error generating narrative summary:', error);
+        console.error('Error generating narrative:', error);
         return {
             success: false,
-            error: error.message || 'Failed to generate narrative summary'
+            error: error.message || 'Failed to generate narrative'
         };
     }
 }
@@ -355,7 +356,7 @@ export async function generateNarrationAudio(text) {
             },
             body: JSON.stringify({
                 text: text.trim(),
-                modelId: "eleven_multilingual_v2",
+                modelId: "eleven_flash_v2_5",
                 voiceId: "JBFqnCBsd6RMkjVDRZzb",
                 outputFormat: "mp3_44100_128"
             }),
@@ -529,7 +530,7 @@ export async function handleGenerateVisualSummary(sessionId, summaryId, summaryC
         }
 
         console.log('Step 3: Generating narrative...');
-        const { success: narrativeSuccess, content: narrativeContent, error: narrativeError } = 
+        const { success: narrativeSuccess, text: narrativeContent, error: narrativeError } = 
             await generateNarrativeSummary(summaryContent, sessionId);
         
         if (!narrativeSuccess || !narrativeContent) {
