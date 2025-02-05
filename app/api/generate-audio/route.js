@@ -16,15 +16,21 @@ export async function POST(request) {
             apiKey: process.env.ELEVEN_LABS_API_KEY
         });
 
-        // Get the audio as ArrayBuffer
-        const audioResponse = await client.textToSpeech.convert(voiceId, {
+        // Get the audio response as a stream
+        const audioStream = await client.textToSpeech.convert(voiceId, {
             text,
             model_id: modelId,
             output_format: outputFormat
         });
 
-        // Convert ArrayBuffer to Buffer
-        const buffer = Buffer.from(await audioResponse.arrayBuffer());
+        // Read the stream into chunks
+        const chunks = [];
+        for await (const chunk of audioStream) {
+            chunks.push(chunk);
+        }
+
+        // Concatenate all chunks into a single buffer
+        const buffer = Buffer.concat(chunks);
         
         // Convert to base64
         const base64Audio = buffer.toString('base64');
