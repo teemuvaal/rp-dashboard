@@ -2,13 +2,27 @@
 
 Adventure Hub is a web app for DMs and players to create and share their adventures.
 
+Built with:
+
+- Next.js 14
+- Supabase (auth, db, storage)
+- TailwindCSS (styling)
+- AI SDK
+- Shadcn UI (components)
+- OpenAI (AI text)
+- Replicate (AI image)
+- ElevenLabs (AI voice)
+- Resend (email)
+- PostHog (analytics)
+
 ## Notes
 
-This is about building a functioning product with a focus on AI tools and realtime collaboration. Migration to Next.js 15 / React 19 is currently difficult due to the use of Supabase Auth Helpers ReactQuill no working with React 19.
+This is about building a functioning product with a focus on AI tools and realtime collaboration. Migration to Next.js 15 / React 19 is currently difficult due to the use of Supabase Auth Helpers, but hopefully soon ok.
+
+App has basic support for subscriptions and tiers of subscriptions to control access to features. Before launch, need to implement proper access control to features based on owner and subscription tier.
+First version of visual summary is complete, but needs to be cleaned up and optimized.
 
 Need to do prover provider for user to avoid refetching user id on some pages.
-
-Need to fix the AI cleanup note function.
 
 ## Tech Stack
 
@@ -61,5 +75,10 @@ Below is a list of features that are complete or in progress and should be compl
   - [x] Asset types
   - [x] Asset management
   - [x] Asset library
+- [ ] Setup app wide RAG for notes and assets
+  - [ ] RAG for notes
+  - [ ] RAG for assets
+  - [ ] RAG to Chat
+  - [ ] RAG to summaries
 - [ ] Proper Roles and Permissions System
 - [ ] Import assets between campaigns
