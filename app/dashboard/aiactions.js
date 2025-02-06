@@ -580,3 +580,99 @@ export async function handleGenerateVisualSummary(sessionId, summaryId, summaryC
         };
     }
 }
+
+export async function handleGenerateBasicVisualSummary(sessionId, summaryId, summaryContent, selectedStyle) {
+    if (!summaryContent || typeof summaryContent !== 'string' || summaryContent.trim().length === 0) {
+        return {
+            success: false,
+            error: 'Summary content is required'
+        };
+    }
+
+    const supabase = createClient();
+
+    try {
+        // First, get the correct summary ID from the database
+        const { data: summary, error: summaryError } = await supabase
+            .from('session_summaries')
+            .select('id')
+            .eq('session_id', sessionId)
+            .single();
+
+        if (summaryError) {
+            console.error('Error fetching summary:', summaryError);
+            return {
+                success: false,
+                error: 'Failed to fetch session summary'
+            };
+        }
+
+        console.log('Step 1: Extracting highlights...');
+        const { success: highlightSuccess, highlights, error: highlightError } = 
+            await extractSummaryHighlights(summaryContent);
+        
+        if (!highlightSuccess || !highlights) {
+            return {
+                success: false,
+                error: highlightError || 'Failed to extract highlights'
+            };
+        }
+
+        console.log('Step 2: Generating images...');
+        const { success: imageSuccess, imageUrls, imagePrompts, error: imageError } = 
+            await generateHighlightImages(highlights, sessionId, selectedStyle);
+
+        if (!imageSuccess) {
+            return {
+                success: false,
+                error: imageError || 'Failed to generate images'
+            };
+        }
+
+        console.log('Step 3: Generating narrative...');
+        const { success: narrativeSuccess, content: narrativeContent, error: narrativeError } = 
+            await generateNarrativeSummary(summaryContent, sessionId);
+
+        if (!narrativeSuccess) {
+            return {
+                success: false,
+                error: narrativeError || 'Failed to generate narrative'
+            };
+        }
+
+        // Save the visual summary without audio
+        const { success: saveSuccess, error: saveError } = await saveVisualSummary({
+            sessionId,
+            summaryId: summary.id,
+            highlights,
+            imageUrls,
+            imagePrompts,
+            narrativeContent,
+            audioUrl: null // No audio for basic version
+        });
+
+        if (!saveSuccess) {
+            return {
+                success: false,
+                error: saveError || 'Failed to save visual summary'
+            };
+        }
+
+        return {
+            success: true,
+            data: {
+                highlights,
+                imageUrls,
+                imagePrompts,
+                narrativeContent,
+                audioUrl: null
+            }
+        };
+    } catch (error) {
+        console.error('Error in handleGenerateBasicVisualSummary:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to generate visual summary'
+        };
+    }
+}

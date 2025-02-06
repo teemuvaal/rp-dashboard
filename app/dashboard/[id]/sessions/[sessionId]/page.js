@@ -34,6 +34,10 @@ export default async function SessionPage({ params }) {
         redirect('/login');
     }
 
+    // Check if user has audio access
+    const { data: hasAudioAccess } = await supabase
+        .rpc('user_has_audio_narration', { user_id: user.id });
+
     // Fetch session with campaign info
     const { data: session, error } = await supabase
         .from('sessions')
@@ -157,7 +161,7 @@ export default async function SessionPage({ params }) {
                     </div>
                 </CardContent>
             </Card>
-            <SessionSummary session={session} />
+            <SessionSummary session={session} hasAudioAccess={hasAudioAccess} />
 
             {/* Notes Section */}
             <Card>

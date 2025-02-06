@@ -3,8 +3,11 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Wand2 } from "lucide-react";
-import { handleGenerateVisualSummary as generateVisualSummaryData } from "@/app/dashboard/aiactions";
+import { Wand2, Lock } from "lucide-react";
+import { 
+    handleGenerateVisualSummary as generateVisualSummaryData,
+    handleGenerateBasicVisualSummary as generateBasicVisualSummaryData
+} from "@/app/dashboard/aiactions";
 import { fetchVisualSummary } from "@/app/dashboard/actions";
 import { useRouter } from 'next/navigation';
 import StoryViewer from './StoryViewer';
@@ -15,6 +18,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import {
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 const artStyles = [
     { value: "80s fantasy book cover", label: "80s Fantasy Book Cover" },
@@ -25,7 +33,7 @@ const artStyles = [
     { value: "pixel-art", label: "Pixel Art" },
 ];
 
-export default function VisualSummary({ session, sessionSummary }) {
+export default function VisualSummary({ session, sessionSummary, hasAudioAccess = false }) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [currentStep, setCurrentStep] = useState('initial');
     const [selectedStyle, setSelectedStyle] = useState("fantasy");
@@ -58,7 +66,8 @@ export default function VisualSummary({ session, sessionSummary }) {
         setCurrentStep('extracting');
         
         try {
-            const { success, data, error } = await generateVisualSummaryData(
+            const generateFunction = hasAudioAccess ? generateVisualSummaryData : generateBasicVisualSummaryData;
+            const { success, data, error } = await generateFunction(
                 session.id,
                 sessionSummary.id,
                 sessionSummary.content,
@@ -94,7 +103,7 @@ export default function VisualSummary({ session, sessionSummary }) {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-start">
-                <div>
+                <div className="flex items-center gap-4">
                     <Select
                         value={selectedStyle}
                         onValueChange={setSelectedStyle}
@@ -111,7 +120,27 @@ export default function VisualSummary({ session, sessionSummary }) {
                             ))}
                         </SelectContent>
                     </Select>
+
+                    {!hasAudioAccess && (
+                        <HoverCard>
+                            <HoverCardTrigger>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Lock className="h-4 w-4" />
+                                    <span>Audio Narration Locked</span>
+                                </div>
+                            </HoverCardTrigger>
+                            <HoverCardContent>
+                                <div className="text-sm">
+                                    <p>Upgrade to Pro to unlock audio narration for your stories!</p>
+                                    <p className="text-muted-foreground mt-1">
+                                        Free users can still generate visual summaries without narration.
+                                    </p>
+                                </div>
+                            </HoverCardContent>
+                        </HoverCard>
+                    )}
                 </div>
+
                 <Button
                     variant="outline"
                     onClick={handleGenerateClick}

@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import VisualSummary from "@/components/Dashboard/VisualSummary";
 import ReactMarkdown from 'react-markdown';
 
-export default function SessionSummary({ session }) {
+export default function SessionSummary({ session, hasAudioAccess = false }) {
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
     const [summary, setSummary] = useState('');
@@ -321,6 +321,7 @@ export default function SessionSummary({ session }) {
                         <VisualSummary 
                             session={session}
                             sessionSummary={{ id: session.id, content: summary }}
+                            hasAudioAccess={hasAudioAccess}
                         />
                     </CardContent>
                 </Card>

@@ -1721,3 +1721,48 @@ export async function saveNarrativeContent({ sessionId, narrativeContent }) {
         return { success: false, error: error.message };
     }
 }
+
+export async function fetchUserSubscription() {
+    const supabase = createClient();
+    
+    try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError) throw new Error('Not authenticated');
+
+        const { data, error } = await supabase
+            .from('user_subscriptions')
+            .select(`
+                *,
+                subscription_plans (
+                    name,
+                    description,
+                    features
+                )
+            `)
+            .eq('user_id', user.id)
+            .single();
+
+        if (error) throw error;
+
+        const isActive = data.status === 'active' && 
+            new Date(data.current_period_end) > new Date();
+
+        return {
+            success: true,
+            subscription: {
+                status: data.status,
+                planName: data.subscription_plans.name,
+                planDescription: data.subscription_plans.description,
+                features: data.subscription_plans.features,
+                currentPeriodEnd: data.current_period_end,
+                isActive
+            }
+        };
+    } catch (error) {
+        console.error('Error fetching user subscription:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}

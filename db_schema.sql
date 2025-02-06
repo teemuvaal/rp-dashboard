@@ -214,12 +214,108 @@ create table public.users (
   constraint users_pkey primary key (id),
   constraint users_id_fkey foreign KEY (id) references auth.users (id),
   constraint users_username_check check ((length(username) < 20))
-) TAcreate table public.users (
-  id uuid not null,
-  email text null,
-  username text null,
-  profile_picture text null,
-  constraint users_pkey primary key (id),
-  constraint users_id_fkey foreign KEY (id) references auth.users (id),
-  constraint users_username_check check ((length(username) < 20))
-) TABLESPACE pg_default;BLESPACE pg_default;
+) TABLESPACE pg_default;
+
+-- Subscription Plans (Reference table for available plans)
+create table public.subscription_plans (
+    id uuid not null default gen_random_uuid(),
+    name text not null,
+    description text,
+    features jsonb not null default '{}',
+    is_active boolean not null default true,
+    created_at timestamp with time zone not null default now(),
+    updated_at timestamp with time zone not null default now(),
+    constraint subscription_plans_pkey primary key (id)
+) tablespace pg_default;
+
+-- Add default plans
+insert into public.subscription_plans (name, description, features) values
+    ('free', 'Free tier with basic features', '{"has_audio_narration": false, "max_campaigns": 1}'),
+    ('pro', 'Pro tier with advanced features', '{"has_audio_narration": true, "max_campaigns": -1}');
+
+-- User Subscriptions
+create table public.user_subscriptions (
+    id uuid not null default gen_random_uuid(),
+    user_id uuid not null references auth.users(id) on delete cascade,
+    plan_id uuid not null references subscription_plans(id),
+    status text not null default 'active',
+    current_period_start timestamp with time zone not null default now(),
+    current_period_end timestamp with time zone,
+    created_at timestamp with time zone not null default now(),
+    updated_at timestamp with time zone not null default now(),
+    constraint user_subscriptions_pkey primary key (id),
+    constraint user_subscriptions_user_id_key unique (user_id),
+    constraint user_subscriptions_status_check check (status in ('active', 'inactive', 'cancelled'))
+) tablespace pg_default;
+
+-- Create index for faster lookups
+create index idx_user_subscriptions_user_id on public.user_subscriptions(user_id);
+create index idx_user_subscriptions_plan_id on public.user_subscriptions(plan_id);
+
+-- RLS Policies to protect subscription data
+alter table public.subscription_plans enable row level security;
+alter table public.user_subscriptions enable row level security;
+
+-- Policies for subscription_plans
+create policy "Allow read access to subscription_plans for all authenticated users"
+    on public.subscription_plans for select
+    to authenticated
+    using (true);
+
+-- Policies for user_subscriptions
+create policy "Allow users to read only their own subscription"
+    on public.user_subscriptions for select
+    to authenticated
+    using (auth.uid() = user_id);
+
+-- Need to IMPLEMENT THE SUPERADMIN ROLE
+create policy "Only allow superadmin to insert/update/delete subscriptions"
+    on public.user_subscriptions for all
+    to superadmin
+    using (true)
+    with check (true);
+
+-- Function to automatically create a free subscription for new users
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+    free_plan_id uuid;
+begin
+    -- Get the ID of the free plan
+    select id into free_plan_id from subscription_plans where name = 'free' limit 1;
+    
+    -- Create a subscription for the new user
+    insert into public.user_subscriptions (user_id, plan_id, current_period_end)
+    values (new.id, free_plan_id, now() + interval '100 years');
+    
+    return new;
+end;
+$$;
+
+-- Trigger to create free subscription when a new user is created
+create trigger on_auth_user_created
+    after insert on auth.users
+    for each row execute procedure public.handle_new_user();
+
+-- Helper function to check if a user has audio narration access
+create or replace function public.user_has_audio_narration(user_id uuid)
+returns boolean
+language plpgsql
+security definer
+as $$
+declare
+    has_access boolean;
+begin
+    select (features->>'has_audio_narration')::boolean into has_access
+    from public.user_subscriptions us
+    join public.subscription_plans sp on us.plan_id = sp.id
+    where us.user_id = user_has_audio_narration.user_id
+    and us.status = 'active'
+    and current_timestamp between us.current_period_start and us.current_period_end;
+    
+    return coalesce(has_access, false);
+end;
+$$;
