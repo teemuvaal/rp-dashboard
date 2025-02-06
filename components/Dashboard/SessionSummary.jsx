@@ -1,26 +1,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
-import { Wand2, Save, X } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { generateNarrativeSummary, generateNarrationAudio, createSummary } from "@/app/dashboard/aiactions";
 import { fetchSessionNotes, saveSummary, fetchSummary } from "@/app/dashboard/actions";
-import { createSummary } from "@/app/dashboard/aiactions";
+import { useToast } from "@/hooks/use-toast";
+import { Sparkles, Volume2, Edit, X, Check } from "lucide-react";
 import { useRouter } from 'next/navigation';
-import { ForwardRefEditor } from '@/utils/mdxeditor/ForwardRefEditor';
+import VisualSummary from "@/components/Dashboard/VisualSummary";
+import ReactMarkdown from 'react-markdown';
 
-export default function SessionSummary({ session }) {
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [error, setError] = useState(null);
-    const [summary, setSummary] = useState(null);
+export default function SessionSummary({ session, hasAudioAccess = false }) {
+    const { toast } = useToast();
+    const [loading, setLoading] = useState(false);
+    const [summary, setSummary] = useState('');
+    const [editedSummary, setEditedSummary] = useState('');
     const [isEditing, setIsEditing] = useState(false);
-    const [editedSummary, setEditedSummary] = useState(null);
+    const [narrativeSummary, setNarrativeSummary] = useState('');
+    const [audioUrl, setAudioUrl] = useState('');
+    const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+    const [error, setError] = useState(null);
     const router = useRouter();
 
     useEffect(() => {
@@ -31,11 +31,13 @@ export default function SessionSummary({ session }) {
                 setEditedSummary(result.summary.content);
             }
         };
-        loadSummary();
-    }, [session.id]);
+        if (session?.id) {
+            loadSummary();
+        }
+    }, [session?.id]);
 
     const handleGenerateSummary = async () => {
-        setIsGenerating(true);
+        setLoading(true);
         setError(null);
 
         try {
@@ -52,8 +54,13 @@ export default function SessionSummary({ session }) {
                 return;
             }
 
+            // Extract just the note contents
+            const noteContents = result.notes.reduce((acc, note) => {
+                return acc + note.content + '\n\n';
+            }, '');
+
             // Create a summary from the notes
-            const summaryResult = await createSummary({ notes: result.notes });
+            const summaryResult = await createSummary({ notes: noteContents });
             
             if (summaryResult.error) {
                 setError(summaryResult.error);
@@ -82,7 +89,7 @@ export default function SessionSummary({ session }) {
         } catch (err) {
             setError('Failed to generate summary');
         } finally {
-            setIsGenerating(false);
+            setLoading(false);
         }
     };
 
@@ -93,19 +100,26 @@ export default function SessionSummary({ session }) {
                 content: editedSummary
             });
 
-            if (saveResult.error) {
-                setError(saveResult.error);
-                return;
+            if (!saveResult.success) {
+                throw new Error(saveResult.error || 'Failed to save summary');
             }
 
             setSummary(editedSummary);
             setIsEditing(false);
             
-            // Refresh both routes
+            toast({
+                title: "Success",
+                description: "Summary saved successfully.",
+            });
+
             router.refresh();
-            router.push(`/dashboard/${session.campaign_id}/sessions/${session.id}`);
         } catch (err) {
-            setError('Failed to save summary');
+            console.error('Error saving summary:', err);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: err.message || "Failed to save summary",
+            });
         }
     };
 
@@ -114,76 +128,204 @@ export default function SessionSummary({ session }) {
         setIsEditing(false);
     };
 
+    const handleGenerateNarrative = async () => {
+        if (!summary) {
+            toast({
+                title: "Error",
+                description: "Please generate a summary first",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const result = await generateNarrativeSummary(summary, session.id);
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to generate narrative summary');
+            }
+            setNarrativeSummary(result.content);
+            toast({
+                title: "Success",
+                description: "Narrative summary generated successfully",
+            });
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: `Error generating narrative: ${error.message}`,
+                variant: "destructive",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGenerateAudio = async () => {
+        if (!narrativeSummary) {
+            toast({
+                title: "Error",
+                description: "Please generate a narrative summary first",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setIsGeneratingAudio(true);
+        try {
+            const result = await generateNarrationAudio(narrativeSummary);
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to generate audio');
+            }
+            setAudioUrl(result.audioUrl);
+            toast({
+                title: "Success",
+                description: "Audio generated successfully",
+            });
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: `Error generating audio: ${error.message}`,
+                variant: "destructive",
+            });
+        } finally {
+            setIsGeneratingAudio(false);
+        }
+    };
+
     return (
-        <Card>
-            <CardHeader>
-                <div className="flex justify-between items-start">
-                    <div>
-                        <CardTitle>Session Summary</CardTitle>
-                        <CardDescription>
-                            {summary ? 'View and edit the summary for this session' : 'Generate a summary from all notes linked to this session'}
-                        </CardDescription>
-                    </div>
-                    <div className="flex gap-2">
-                        {summary && !isEditing && (
-                            <Button
-                                variant="outline"
-                                onClick={() => setIsEditing(true)}
-                            >
-                                Edit
-                            </Button>
-                        )}
-                        <Button
-                            variant="outline"
-                            onClick={handleGenerateSummary}
-                            disabled={isGenerating}
-                            className="gap-2"
-                        >
-                            <Wand2 className="h-4 w-4" />
-                            {isGenerating ? 'Generating...' : 'Generate Summary'}
-                        </Button>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent>
-                {error && (
-                    <p className="text-sm text-red-500 mb-4">{error}</p>
-                )}
-                {summary ? (
-                    <div className="space-y-4">
-                        <div className="prose dark:prose-invert max-w-none">
-                            <ForwardRefEditor
-                                markdown={isEditing ? editedSummary : summary}
-                                onChange={isEditing ? setEditedSummary : undefined}
-                                readOnly={!isEditing}
-                            />
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                        <span>Session Summary</span>
+                        <div className="flex gap-2">
+                            {isEditing ? (
+                                <>
+                                    <Button 
+                                        onClick={handleSaveSummary} 
+                                        size="sm"
+                                        className="gap-2"
+                                    >
+                                        <Check className="h-4 w-4" />
+                                        Save
+                                    </Button>
+                                    <Button 
+                                        onClick={handleCancelEdit}
+                                        variant="outline" 
+                                        size="sm"
+                                        className="gap-2"
+                                    >
+                                        <X className="h-4 w-4" />
+                                        Cancel
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    {summary && (
+                                        <Button
+                                            onClick={() => setIsEditing(true)}
+                                            variant="outline"
+                                            size="sm"
+                                            className="gap-2"
+                                        >
+                                            <Edit className="h-4 w-4" />
+                                            Edit
+                                        </Button>
+                                    )}
+                                    <Button 
+                                        onClick={handleGenerateSummary} 
+                                        disabled={loading}
+                                        size="sm"
+                                        className="gap-2"
+                                    >
+                                        <Sparkles className="h-4 w-4" />
+                                        {loading ? "Generating..." : (summary ? "Regenerate Summary" : "Generate Summary")}
+                                    </Button>
+                                </>
+                            )}
                         </div>
-                        {isEditing && (
-                            <div className="flex justify-end gap-2">
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {error && (
+                        <p className="text-destructive mb-4">{error}</p>
+                    )}
+                    {isEditing ? (
+                        <textarea
+                            value={editedSummary}
+                            onChange={(e) => setEditedSummary(e.target.value)}
+                            className="w-full min-h-[200px] p-4 rounded-md border"
+                        />
+                    ) : summary ? (
+                        <div className="space-y-4">
+                            <div className="prose prose-sm max-w-none dark:prose-invert">
+                                <ReactMarkdown>{summary}</ReactMarkdown>
+                            </div>
+                            <div className="flex justify-end">
                                 <Button
+                                    onClick={handleGenerateNarrative}
+                                    disabled={loading}
                                     variant="outline"
-                                    onClick={handleCancelEdit}
+                                    size="sm"
                                     className="gap-2"
                                 >
-                                    <X className="h-4 w-4" />
-                                    Cancel
-                                </Button>
-                                <Button
-                                    onClick={handleSaveSummary}
-                                    className="gap-2"
-                                >
-                                    <Save className="h-4 w-4" />
-                                    Save Changes
+                                    <Sparkles className="h-4 w-4" />
+                                    {loading ? "Generating..." : "Generate Narrative Version"}
                                 </Button>
                             </div>
+                        </div>
+                    ) : (
+                        <p className="text-muted-foreground">No summary generated yet.</p>
+                    )}
+                </CardContent>
+            </Card>
+
+            {narrativeSummary && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                            <span>Narrative Summary</span>
+                            <Button
+                                onClick={handleGenerateAudio}
+                                disabled={isGeneratingAudio}
+                                size="sm"
+                                className="gap-2"
+                            >
+                                <Volume2 className="h-4 w-4" />
+                                {isGeneratingAudio ? "Generating..." : "Generate Audio"}
+                            </Button>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="prose prose-sm max-w-none dark:prose-invert">
+                            <ReactMarkdown>{narrativeSummary}</ReactMarkdown>
+                        </div>
+                        {audioUrl && (
+                            <div className="mt-4">
+                                <audio controls className="w-full">
+                                    <source src={audioUrl} type="audio/mpeg" />
+                                    Your browser does not support the audio element.
+                                </audio>
+                            </div>
                         )}
-                    </div>
-                ) : (
-                    <p className="text-sm text-muted-foreground">
-                        Click the button above to generate a summary from all notes linked to this session.
-                    </p>
-                )}
-            </CardContent>
-        </Card>
+                    </CardContent>
+                </Card>
+            )}
+
+            {summary && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Visual Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <VisualSummary 
+                            session={session}
+                            sessionSummary={{ id: session.id, content: summary }}
+                            hasAudioAccess={hasAudioAccess}
+                        />
+                    </CardContent>
+                </Card>
+            )}
+        </div>
     );
 }

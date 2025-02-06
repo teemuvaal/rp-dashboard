@@ -1,6 +1,6 @@
 import Feed from "@/components/Dashboard/DashboardFeed";
 import { createClient } from '@/utils/supabase/server'
-import { fetchFeedItems, createPost, getPolls } from '../actions'
+import { fetchFeedItems, createPost, getPolls, fetchCampaignDetails } from '../actions'
 
 export default async function CampaignFeed({ params }) {
     const supabase = createClient()
@@ -21,6 +21,8 @@ export default async function CampaignFeed({ params }) {
     // Fetch feed items
     const feedItems = await fetchFeedItems(params.id)
 
+    const campaign = await fetchCampaignDetails(params.id)
+
     // Fetch calendar events
     const sessions = await fetchSessions(params.id)
 
@@ -28,7 +30,7 @@ export default async function CampaignFeed({ params }) {
     const polls = await getPolls(params.id)
 
     return (
-        <div>
+        <div>          
             <Feed 
                 feedItems={feedItems} 
                 sessions={sessions} 
@@ -36,6 +38,7 @@ export default async function CampaignFeed({ params }) {
                 campaignId={params.id}
                 createPost={createPost}
                 polls={polls || []}
+                campaign={campaign}
             />
         </div>
     );

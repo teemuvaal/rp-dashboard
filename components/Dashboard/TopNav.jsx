@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button"
 import DarkModeToggle from "@/components/Dashboard/DarkModeToggle"
 import { User } from "lucide-react"
 
+// Deprecated top navigation
+// Replaced with sidebar navigation
+
 export default function TopNav({ user }) {
     return (
         <div className="w-full py-2 px-2 flex flex-row justify-between">

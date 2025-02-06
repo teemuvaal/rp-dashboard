@@ -27,6 +27,8 @@ import {
 
 
 // TODO: REFACTOR EACH MENU ITEM TO BE A COMPONENT
+// Deprecated app menu navigation
+// Replaced with sidebar navigation
 
 export default function AppMenu({params, isOwner}) {
     return (

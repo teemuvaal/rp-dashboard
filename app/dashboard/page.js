@@ -14,6 +14,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import SubscriptionStatus from "@/components/Dashboard/SubscriptionStatus";
 
 export default async function Dashboard() {
     const supabase = createClient();
@@ -118,7 +119,7 @@ export default async function Dashboard() {
                                         </div>
                                         <div>
                                             <p className="font-medium">{userData?.username}</p>
-                                            <p className="text-sm text-muted-foreground">Free Plan</p>
+                                            <SubscriptionStatus />
                                         </div>
                                     </div>
                                     <div className="pt-4">
