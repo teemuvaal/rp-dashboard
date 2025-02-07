@@ -57,29 +57,6 @@ export default function Feed({ feedItems = [], sessions = [], polls = [], isOwne
                         </div>
                     </div>
                     <section className="space-y-4">
-                        {/* Active Polls Section */}
-                        {activePolls.length > 0 && (
-                            <div className="mb-8">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-lg font-semibold">Active Polls</h2>
-                                    <p className="text-sm text-gray-500">
-                                        {activePolls.length} active poll{activePolls.length !== 1 ? 's' : ''}
-                                    </p>
-                                </div>
-                                <div className="space-y-4">
-                                    {activePolls.map((poll) => (
-                                        <PollCard 
-                                            key={poll.id}
-                                            poll={poll}
-                                            campaignId={campaignId}
-                                            isOwner={isOwner}
-                                        />
-                                    ))}
-                                </div>
-                                <Separator className="my-6" />
-                            </div>
-                        )}
-                        
                         {/* Feed Items */}
                         <div className="space-y-4">
                             <div className="flex justify-between items-center mb-4">
@@ -103,8 +80,30 @@ export default function Feed({ feedItems = [], sessions = [], polls = [], isOwne
                         </div>
                     </section>
                 </div>
-                <div className="w-full lg:w-1/3 p-2 sm:p-4">
+                <div className="w-full lg:w-1/3 p-2 sm:p-4 space-y-6">
                     <CalendarTile sessions={sessions} />
+                    
+                    {/* Active Polls Section */}
+                    {activePolls.length > 0 && (
+                        <div className="mt-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-lg font-semibold">Active Polls</h2>
+                                <p className="text-sm text-gray-500">
+                                    {activePolls.length} active poll{activePolls.length !== 1 ? 's' : ''}
+                                </p>
+                            </div>
+                            <div className="space-y-4">
+                                {activePolls.map((poll) => (
+                                    <PollCard 
+                                        key={poll.id}
+                                        poll={poll}
+                                        campaignId={campaignId}
+                                        isOwner={isOwner}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </Card>  

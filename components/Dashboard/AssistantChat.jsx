@@ -134,7 +134,7 @@ export default function Chat({ campaignId }) {
                   : "bg-muted"
               )}
             >
-              <div className="prose dark:prose-invert max-w-none">
+              <div className="prose dark:prose-invert max-w-none mb-6">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   rehypePlugins={[rehypeHighlight]}
@@ -143,14 +143,14 @@ export default function Chat({ campaignId }) {
                 </ReactMarkdown>
               </div>
               {message.role === 'assistant' && (
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute bottom-2 right-2 flex gap-1 bg-background/50 backdrop-blur-sm rounded-md p-1">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6"
+                          className="h-6 w-6 hover:bg-background"
                           onClick={() => saveAsNote(message)}
                         >
                           <NotebookPen className="h-4 w-4" />
@@ -166,7 +166,7 @@ export default function Chat({ campaignId }) {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6"
+                          className="h-6 w-6 hover:bg-background"
                           onClick={() => saveAsAsset(message)}
                         >
                           <Library className="h-4 w-4" />

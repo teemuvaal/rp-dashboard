@@ -82,3 +82,7 @@ Below is a list of features that are complete or in progress and should be compl
   - [ ] RAG to summaries
 - [ ] Proper Roles and Permissions System
 - [ ] Import assets between campaigns
+- [ ] Setup proper product analytics
+- [ ] Setup Stripe and payments
+- [ ] Setup domain
+- [ ] Setup emails
