@@ -2,6 +2,7 @@
 
 import { uploadCampaignImage, createAsset, saveNarrativeContent } from './actions';
 import { createClient } from '@/utils/supabase/server';
+import { createPost } from './actions';
 
 // Cleans up a note and returns a cleaned up version
 export async function cleanUpNote(note) {
@@ -470,6 +471,35 @@ export async function saveVisualSummary({
                 .insert(visualSummaryData)
                 .select()
                 .single();
+
+            // Get session and campaign info for the post
+            const { data: session } = await supabase
+                .from('sessions')
+                .select('campaign_id, name')
+                .eq('id', sessionId)
+                .single();
+
+            if (session && result.data) {
+                // Create a post for the new visual summary
+                const { data: post, error: postError } = await supabase
+                    .from('posts')
+                    .insert({
+                        campaign_id: session.campaign_id,
+                        user_id: (await supabase.auth.getUser()).data.user.id,
+                        title: `Visual Summary: ${session.name}`,
+                        content: `A new visual summary has been created for session "${session.name}".`,
+                        session_id: sessionId,
+                        visual_summary_id: result.data.id,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .select()
+                    .single();
+
+                if (postError) {
+                    console.error('Error creating post for visual summary:', postError);
+                }
+            }
         }
 
         if (result.error) throw result.error;

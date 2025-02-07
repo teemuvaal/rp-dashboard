@@ -130,13 +130,15 @@ create table public.posts (
   content text not null,
   session_id uuid null,
   note_id uuid null,
+  visual_summary_id uuid null,
   created_at timestamp with time zone null default CURRENT_TIMESTAMP,
   updated_at timestamp with time zone null default CURRENT_TIMESTAMP,
   constraint posts_pkey primary key (id),
   constraint posts_campaign_id_fkey foreign KEY (campaign_id) references campaigns (id),
   constraint posts_note_id_fkey foreign KEY (note_id) references notes (id),
   constraint posts_session_id_fkey foreign KEY (session_id) references sessions (id),
-  constraint posts_user_id_fkey1 foreign KEY (user_id) references users (id)
+  constraint posts_user_id_fkey1 foreign KEY (user_id) references users (id),
+  constraint posts_visual_summary_id_fkey foreign KEY (visual_summary_id) references session_visual_summaries (id)
 ) TABLESPACE pg_default;
 
 create index IF not exists idx_posts_campaign_id on public.posts using btree (campaign_id) TABLESPACE pg_default;
@@ -146,6 +148,8 @@ create index IF not exists idx_posts_note_id on public.posts using btree (note_i
 create index IF not exists idx_posts_session_id on public.posts using btree (session_id) TABLESPACE pg_default;
 
 create index IF not exists idx_posts_user_id on public.posts using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_posts_visual_summary_id on public.posts using btree (visual_summary_id) TABLESPACE pg_default;
 
 -- Session Summaries
 create table public.session_summaries (
