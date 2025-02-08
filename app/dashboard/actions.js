@@ -3,8 +3,11 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import Ajv from 'ajv'
+import addFormats from 'ajv-formats'
 
-
+const ajv = new Ajv({ allErrors: true })
+addFormats(ajv)
 
 export async function createCampaign(formData) {
   const supabase = createClient()
@@ -1920,15 +1923,19 @@ export async function deleteCharacterTemplate(formData) {
 
 export async function createCharacter(formData) {
     const supabase = createClient();
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError) return { error: 'Not authenticated' };
+    
+    // Get the current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        return { error: 'Not authenticated' };
+    }
 
     const campaignId = formData.get('campaignId');
     const templateId = formData.get('templateId');
     const characterData = JSON.parse(formData.get('data'));
+    const portrait = formData.get('portrait');
 
-    // Verify campaign membership
+    // Check if user is a member of the campaign
     const { data: membership } = await supabase
         .from('campaign_members')
         .select('role')
@@ -1937,33 +1944,69 @@ export async function createCharacter(formData) {
         .single();
 
     if (!membership) {
-        return { error: 'Not a campaign member' };
+        return { error: 'Not a member of this campaign' };
     }
 
-    // Verify template exists and belongs to campaign
+    // Get the template and validate the data against its schema
     const { data: template } = await supabase
         .from('character_templates')
-        .select('schema')
+        .select('*')
         .eq('id', templateId)
         .eq('campaign_id', campaignId)
         .single();
 
     if (!template) {
-        return { error: 'Invalid template' };
+        return { error: 'Template not found' };
     }
 
     // Validate character data against template schema
-    // TODO: Add more thorough validation using JSON Schema validator
+    const validate = ajv.compile(template.schema);
+    const valid = validate(characterData);
+    
+    if (!valid) {
+        return { 
+            error: 'Invalid character data',
+            details: validate.errors
+        };
+    }
 
+    let portraitUrl = null;
+
+    // Handle portrait upload if provided
+    if (portrait) {
+        const fileExt = portrait.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+        const { data: uploadData, error: uploadError } = await supabase
+            .storage
+            .from('character-portraits')
+            .upload(fileName, portrait, {
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        if (uploadError) {
+            return { error: 'Failed to upload portrait' };
+        }
+
+        // Get the public URL for the uploaded image
+        const { data: { publicUrl } } = supabase
+            .storage
+            .from('character-portraits')
+            .getPublicUrl(fileName);
+
+        portraitUrl = publicUrl;
+    }
+
+    // Create the character
     const { data: character, error } = await supabase
         .from('characters')
         .insert({
             campaign_id: campaignId,
             user_id: user.id,
             template_id: templateId,
-            name: characterData.name || 'Unnamed Character',
             data: characterData,
-            is_active: true,
+            portrait_url: portraitUrl,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
         })
@@ -1971,9 +2014,9 @@ export async function createCharacter(formData) {
         .single();
 
     if (error) {
-        console.error('Error creating character:', error);
-        return { error: error.message };
+        return { error: 'Failed to create character' };
     }
 
-    return { success: true, character };
+    revalidatePath(`/dashboard/${campaignId}/characters`);
+    return { character };
 }

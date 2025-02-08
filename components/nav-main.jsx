@@ -16,7 +16,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
-import { ChevronRight, Home } from "lucide-react"
+import { ChevronRight, Home, Users } from "lucide-react"
 import AddNoteButton from "@/components/Dashboard/AddNoteButton"
 import NavNotes from "@/components/nav-notes"
 import NavAssets from "@/components/nav-assets"
@@ -51,6 +51,15 @@ export function NavMain({ items, params }) {
             <Link href={`/dashboard/${params.id}`}>
               <Home className="h-4 w-4" />
               <span>Feed</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <Separator className="my-2" />
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild>
+            <Link href={`/dashboard/${params.id}/characters`}>
+              <Users className="h-4 w-4" />
+              <span>Characters</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
