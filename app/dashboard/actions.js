@@ -1766,3 +1766,214 @@ export async function fetchUserSubscription() {
         };
     }
 }
+
+export async function createCharacterTemplate(formData) {
+    const supabase = createClient();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) return { error: 'Not authenticated' };
+
+    const campaignId = formData.get('campaignId');
+    const name = formData.get('name');
+    const description = formData.get('description');
+    const schema = JSON.parse(formData.get('schema'));
+    const uiSchema = JSON.parse(formData.get('ui_schema'));
+
+    // Verify campaign ownership
+    const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('owner_id')
+        .eq('id', campaignId)
+        .single();
+
+    if (!campaign || campaign.owner_id !== user.id) {
+        return { error: 'Not authorized to create templates' };
+    }
+
+    const { data, error } = await supabase
+        .from('character_templates')
+        .insert({
+            campaign_id: campaignId,
+            name,
+            description,
+            schema,
+            ui_schema: uiSchema
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error creating template:', error);
+        return { error: error.message };
+    }
+
+    return { success: true, template: data };
+}
+
+export async function updateCharacterTemplate(formData) {
+    const supabase = createClient();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) return { error: 'Not authenticated' };
+
+    const templateId = formData.get('templateId');
+    const name = formData.get('name');
+    const description = formData.get('description');
+    const schema = JSON.parse(formData.get('schema'));
+    const uiSchema = JSON.parse(formData.get('ui_schema'));
+
+    // Verify template ownership
+    const { data: template } = await supabase
+        .from('character_templates')
+        .select('campaign_id')
+        .eq('id', templateId)
+        .single();
+
+    if (!template) {
+        return { error: 'Template not found' };
+    }
+
+    // Verify campaign ownership
+    const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('owner_id')
+        .eq('id', template.campaign_id)
+        .single();
+
+    if (!campaign || campaign.owner_id !== user.id) {
+        return { error: 'Not authorized to update template' };
+    }
+
+    const { data, error } = await supabase
+        .from('character_templates')
+        .update({
+            name,
+            description,
+            schema,
+            ui_schema: uiSchema,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', templateId)
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error updating template:', error);
+        return { error: error.message };
+    }
+
+    return { success: true, template: data };
+}
+
+export async function deleteCharacterTemplate(formData) {
+    const supabase = createClient();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) return { error: 'Not authenticated' };
+
+    const templateId = formData.get('templateId');
+
+    // Verify template ownership
+    const { data: template } = await supabase
+        .from('character_templates')
+        .select('campaign_id')
+        .eq('id', templateId)
+        .single();
+
+    if (!template) {
+        return { error: 'Template not found' };
+    }
+
+    // Verify campaign ownership
+    const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('owner_id')
+        .eq('id', template.campaign_id)
+        .single();
+
+    if (!campaign || campaign.owner_id !== user.id) {
+        return { error: 'Not authorized to delete template' };
+    }
+
+    // Check if template has any characters
+    const { count } = await supabase
+        .from('characters')
+        .select('id', { count: 'exact' })
+        .eq('template_id', templateId);
+
+    if (count > 0) {
+        return { error: 'Cannot delete template with existing characters' };
+    }
+
+    const { error } = await supabase
+        .from('character_templates')
+        .delete()
+        .eq('id', templateId);
+
+    if (error) {
+        console.error('Error deleting template:', error);
+        return { error: error.message };
+    }
+
+    return { success: true };
+}
+
+export async function createCharacter(formData) {
+    const supabase = createClient();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) return { error: 'Not authenticated' };
+
+    const campaignId = formData.get('campaignId');
+    const templateId = formData.get('templateId');
+    const characterData = JSON.parse(formData.get('data'));
+
+    // Verify campaign membership
+    const { data: membership } = await supabase
+        .from('campaign_members')
+        .select('role')
+        .eq('campaign_id', campaignId)
+        .eq('user_id', user.id)
+        .single();
+
+    if (!membership) {
+        return { error: 'Not a campaign member' };
+    }
+
+    // Verify template exists and belongs to campaign
+    const { data: template } = await supabase
+        .from('character_templates')
+        .select('schema')
+        .eq('id', templateId)
+        .eq('campaign_id', campaignId)
+        .single();
+
+    if (!template) {
+        return { error: 'Invalid template' };
+    }
+
+    // Validate character data against template schema
+    // TODO: Add more thorough validation using JSON Schema validator
+
+    const { data: character, error } = await supabase
+        .from('characters')
+        .insert({
+            campaign_id: campaignId,
+            user_id: user.id,
+            template_id: templateId,
+            name: characterData.name || 'Unnamed Character',
+            data: characterData,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error creating character:', error);
+        return { error: error.message };
+    }
+
+    return { success: true, character };
+}
