@@ -2020,3 +2020,59 @@ export async function createCharacter(formData) {
     revalidatePath(`/dashboard/${campaignId}/characters`);
     return { character };
 }
+
+export async function updateCharacter(formData) {
+    const supabase = createClient();
+
+    try {
+        // Get the current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return { error: 'Not authenticated' };
+        }
+
+        const characterId = formData.get('characterId');
+        const data = JSON.parse(formData.get('data'));
+
+        // Fetch the character to check ownership
+        const { data: character, error: fetchError } = await supabase
+            .from('characters')
+            .select(`
+                *,
+                campaigns (
+                    owner_id
+                )
+            `)
+            .eq('id', characterId)
+            .single();
+
+        if (fetchError) {
+            throw fetchError;
+        }
+
+        // Check if user is character owner or campaign owner
+        if (character.user_id !== user.id && character.campaigns.owner_id !== user.id) {
+            return { error: 'Not authorized to update this character' };
+        }
+
+        // Update the character
+        const { data: updatedCharacter, error: updateError } = await supabase
+            .from('characters')
+            .update({
+                data,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', characterId)
+            .select()
+            .single();
+
+        if (updateError) {
+            throw updateError;
+        }
+
+        return { character: updatedCharacter };
+    } catch (error) {
+        console.error('Error updating character:', error);
+        return { error: error.message };
+    }
+}
