@@ -1924,101 +1924,132 @@ export async function deleteCharacterTemplate(formData) {
 export async function createCharacter(formData) {
     const supabase = createClient();
     
-    // Get the current user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-        return { error: 'Not authenticated' };
-    }
-
-    const campaignId = formData.get('campaignId');
-    const templateId = formData.get('templateId');
-    const characterData = JSON.parse(formData.get('data'));
-    const portrait = formData.get('portrait');
-
-    // Check if user is a member of the campaign
-    const { data: membership } = await supabase
-        .from('campaign_members')
-        .select('role')
-        .eq('campaign_id', campaignId)
-        .eq('user_id', user.id)
-        .single();
-
-    if (!membership) {
-        return { error: 'Not a member of this campaign' };
-    }
-
-    // Get the template and validate the data against its schema
-    const { data: template } = await supabase
-        .from('character_templates')
-        .select('*')
-        .eq('id', templateId)
-        .eq('campaign_id', campaignId)
-        .single();
-
-    if (!template) {
-        return { error: 'Template not found' };
-    }
-
-    // Validate character data against template schema
-    const validate = ajv.compile(template.schema);
-    const valid = validate(characterData);
-    
-    if (!valid) {
-        return { 
-            error: 'Invalid character data',
-            details: validate.errors
-        };
-    }
-
-    let portraitUrl = null;
-
-    // Handle portrait upload if provided
-    if (portrait) {
-        const fileExt = portrait.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-
-        const { data: uploadData, error: uploadError } = await supabase
-            .storage
-            .from('character-portraits')
-            .upload(fileName, portrait, {
-                cacheControl: '3600',
-                upsert: false
-            });
-
-        if (uploadError) {
-            return { error: 'Failed to upload portrait' };
+    try {
+        // Get the current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return { error: 'Not authenticated' };
         }
 
-        // Get the public URL for the uploaded image
-        const { data: { publicUrl } } = supabase
-            .storage
-            .from('character-portraits')
-            .getPublicUrl(fileName);
+        const campaignId = formData.get('campaignId');
+        const templateId = formData.get('templateId');
+        const characterDataStr = formData.get('data');
+        const portrait = formData.get('portrait');
 
-        portraitUrl = publicUrl;
+        if (!campaignId || !templateId || !characterDataStr) {
+            return { error: 'Missing required fields' };
+        }
+
+        let characterData;
+        try {
+            characterData = JSON.parse(characterDataStr);
+        } catch (e) {
+            return { error: 'Invalid character data format' };
+        }
+
+        // Extract character name from the data
+        const characterName = characterData.name || 'Unnamed Character';
+        if (!characterData.name) {
+            console.warn('No name provided for character, using default');
+        }
+
+        // Check if user is a member of the campaign
+        const { data: membership, error: membershipError } = await supabase
+            .from('campaign_members')
+            .select('role')
+            .eq('campaign_id', campaignId)
+            .eq('user_id', user.id)
+            .single();
+
+        if (membershipError || !membership) {
+            return { error: 'Not a member of this campaign' };
+        }
+
+        // Get the template and validate the data against its schema
+        const { data: template, error: templateError } = await supabase
+            .from('character_templates')
+            .select('*')
+            .eq('id', templateId)
+            .eq('campaign_id', campaignId)
+            .single();
+
+        if (templateError || !template) {
+            return { error: 'Template not found' };
+        }
+
+        // Validate character data against template schema
+        const validate = ajv.compile(template.schema);
+        const valid = validate(characterData);
+        
+        if (!valid) {
+            return { 
+                error: 'Invalid character data',
+                details: validate.errors
+            };
+        }
+
+        let portraitUrl = null;
+
+        // Handle portrait upload if provided
+        if (portrait) {
+            try {
+                const fileExt = portrait.name.split('.').pop();
+                const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+                const { error: uploadError } = await supabase
+                    .storage
+                    .from('character-portraits')
+                    .upload(fileName, portrait, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (uploadError) {
+                    console.error('Portrait upload error:', uploadError);
+                    return { error: 'Failed to upload portrait' };
+                }
+
+                // Get the public URL for the uploaded image
+                const { data: { publicUrl } } = supabase
+                    .storage
+                    .from('character-portraits')
+                    .getPublicUrl(fileName);
+
+                portraitUrl = publicUrl;
+            } catch (uploadError) {
+                console.error('Portrait upload error:', uploadError);
+                return { error: 'Failed to process portrait upload' };
+            }
+        }
+
+        // Create the character
+        const { data: character, error: insertError } = await supabase
+            .from('characters')
+            .insert({
+                campaign_id: campaignId,
+                template_id: templateId,
+                user_id: user.id,
+                name: characterName,
+                data: characterData,
+                portrait_url: portraitUrl
+            })
+            .select()
+            .single();
+
+        if (insertError) {
+            console.error('Insert error:', insertError);
+            return { error: 'Failed to create character in database' };
+        }
+
+        if (!character) {
+            return { error: 'Character created but no data returned' };
+        }
+
+        return { character };
+    } catch (error) {
+        console.error('Create character error:', error);
+        return { error: 'Failed to create character: ' + error.message };
     }
-
-    // Create the character
-    const { data: character, error } = await supabase
-        .from('characters')
-        .insert({
-            campaign_id: campaignId,
-            user_id: user.id,
-            template_id: templateId,
-            data: characterData,
-            portrait_url: portraitUrl,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-    if (error) {
-        return { error: 'Failed to create character' };
-    }
-
-    revalidatePath(`/dashboard/${campaignId}/characters`);
-    return { character };
 }
 
 export async function updateCharacter(formData) {

@@ -27,10 +27,10 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { GripVertical, Plus, Save, Trash2 } from 'lucide-react';
 
 const FIELD_TYPES = [
-    { id: 'text', label: 'Text', defaultProps: {} },
+    { id: 'string', label: 'Text', defaultProps: {} },
     { id: 'number', label: 'Number', defaultProps: { minimum: 0 } },
-    { id: 'textarea', label: 'Text Area', defaultProps: {} },
-    { id: 'select', label: 'Select', defaultProps: { options: [] } },
+    { id: 'string', label: 'Text Area', defaultProps: { format: 'textarea' } },
+    { id: 'string', label: 'Select', defaultProps: { enum: [] } },
     { id: 'boolean', label: 'Checkbox', defaultProps: {} },
 ];
 
@@ -102,8 +102,9 @@ export default function TemplateEditor({ template, campaignId }) {
                     type: field.type,
                     title: field.title,
                     description: field.description,
-                    ...(field.type === 'select' ? { enum: field.options } : {}),
-                    ...(field.type === 'number' ? { minimum: field.minimum, maximum: field.maximum } : {})
+                    ...(field.type === 'string' && field.options ? { enum: field.options } : {}),
+                    ...(field.type === 'number' ? { minimum: field.minimum, maximum: field.maximum } : {}),
+                    ...(field.type === 'string' && field.format === 'textarea' ? { format: 'textarea' } : {})
                 };
 
                 if (field.required) {
@@ -111,7 +112,7 @@ export default function TemplateEditor({ template, campaignId }) {
                 }
 
                 // Add UI specific configurations
-                if (field.type === 'textarea') {
+                if (field.type === 'string' && field.format === 'textarea') {
                     uiSchema[field.id] = { 'ui:widget': 'textarea' };
                 }
             });
@@ -161,7 +162,11 @@ export default function TemplateEditor({ template, campaignId }) {
                         <DragDropContext onDragEnd={handleDragEnd}>
                             <Droppable droppableId="fields">
                                 {(provided) => (
-                                    <div {...provided.droppableProps} ref={provided.innerRef}>
+                                    <ul 
+                                        className="space-y-4"
+                                        {...provided.droppableProps} 
+                                        ref={provided.innerRef}
+                                    >
                                         {fields.map((field, index) => (
                                             <Draggable 
                                                 key={field.id} 
@@ -169,113 +174,115 @@ export default function TemplateEditor({ template, campaignId }) {
                                                 index={index}
                                             >
                                                 {(provided) => (
-                                                    <Card 
-                                                        className="mb-4" 
-                                                        ref={provided.innerRef}
-                                                        {...provided.draggableProps}
-                                                    >
-                                                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                                            <div {...provided.dragHandleProps}>
-                                                                <GripVertical className="w-4 h-4 text-gray-400" />
-                                                            </div>
-                                                            <CardTitle className="text-sm font-medium">
-                                                                Field {index + 1}
-                                                            </CardTitle>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => handleRemoveField(index)}
-                                                            >
-                                                                <Trash2 className="w-4 h-4" />
-                                                            </Button>
-                                                        </CardHeader>
-                                                        <CardContent className="space-y-4">
-                                                            <div className="grid gap-4">
-                                                                <div className="grid gap-2">
-                                                                    <Label>Field Label</Label>
-                                                                    <Input
-                                                                        value={field.title || ''}
-                                                                        onChange={(e) => handleFieldChange(index, { title: e.target.value })}
-                                                                        placeholder="Enter field label"
-                                                                    />
+                                                    <li>
+                                                        <Card 
+                                                            className="mb-4" 
+                                                            ref={provided.innerRef}
+                                                            {...provided.draggableProps}
+                                                        >
+                                                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                                                <div {...provided.dragHandleProps}>
+                                                                    <GripVertical className="w-4 h-4 text-gray-400" />
                                                                 </div>
-                                                                <div className="grid gap-2">
-                                                                    <Label>Field Type</Label>
-                                                                    <Select
-                                                                        value={field.type}
-                                                                        onValueChange={(value) => handleFieldChange(index, { type: value })}
-                                                                    >
-                                                                        <SelectTrigger>
-                                                                            <SelectValue placeholder="Select field type" />
-                                                                        </SelectTrigger>
-                                                                        <SelectContent>
-                                                                            {FIELD_TYPES.map((type) => (
-                                                                                <SelectItem key={type.id} value={type.id}>
-                                                                                    {type.label}
-                                                                                </SelectItem>
-                                                                            ))}
-                                                                        </SelectContent>
-                                                                    </Select>
-                                                                </div>
-                                                                <div className="grid gap-2">
-                                                                    <Label>Description</Label>
-                                                                    <Textarea
-                                                                        value={field.description || ''}
-                                                                        onChange={(e) => handleFieldChange(index, { description: e.target.value })}
-                                                                        placeholder="Enter field description"
-                                                                    />
-                                                                </div>
-                                                                <div className="flex items-center space-x-2">
-                                                                    <Switch
-                                                                        checked={field.required}
-                                                                        onCheckedChange={(checked) => handleFieldChange(index, { required: checked })}
-                                                                    />
-                                                                    <Label>Required Field</Label>
-                                                                </div>
-                                                                {field.type === 'select' && (
+                                                                <CardTitle className="text-sm font-medium">
+                                                                    Field {index + 1}
+                                                                </CardTitle>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => handleRemoveField(index)}
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </Button>
+                                                            </CardHeader>
+                                                            <CardContent className="space-y-4">
+                                                                <div className="grid gap-4">
                                                                     <div className="grid gap-2">
-                                                                        <Label>Options (one per line)</Label>
-                                                                        <Textarea
-                                                                            value={(field.options || []).join('\n')}
-                                                                            onChange={(e) => handleFieldChange(index, { 
-                                                                                options: e.target.value.split('\n').filter(Boolean)
-                                                                            })}
-                                                                            placeholder="Enter options"
+                                                                        <Label>Field Label</Label>
+                                                                        <Input
+                                                                            value={field.title || ''}
+                                                                            onChange={(e) => handleFieldChange(index, { title: e.target.value })}
+                                                                            placeholder="Enter field label"
                                                                         />
                                                                     </div>
-                                                                )}
-                                                                {field.type === 'number' && (
-                                                                    <div className="grid grid-cols-2 gap-4">
-                                                                        <div className="grid gap-2">
-                                                                            <Label>Minimum</Label>
-                                                                            <Input
-                                                                                type="number"
-                                                                                value={field.minimum || ''}
-                                                                                onChange={(e) => handleFieldChange(index, { 
-                                                                                    minimum: parseInt(e.target.value) 
-                                                                                })}
-                                                                            />
-                                                                        </div>
-                                                                        <div className="grid gap-2">
-                                                                            <Label>Maximum</Label>
-                                                                            <Input
-                                                                                type="number"
-                                                                                value={field.maximum || ''}
-                                                                                onChange={(e) => handleFieldChange(index, { 
-                                                                                    maximum: parseInt(e.target.value) 
-                                                                                })}
-                                                                            />
-                                                                        </div>
+                                                                    <div className="grid gap-2">
+                                                                        <Label>Field Type</Label>
+                                                                        <Select
+                                                                            value={field.type}
+                                                                            onValueChange={(value) => handleFieldChange(index, { type: value })}
+                                                                        >
+                                                                            <SelectTrigger>
+                                                                                <SelectValue placeholder="Select field type" />
+                                                                            </SelectTrigger>
+                                                                            <SelectContent>
+                                                                                {FIELD_TYPES.map((type) => (
+                                                                                    <SelectItem key={type.id} value={type.id}>
+                                                                                        {type.label}
+                                                                                    </SelectItem>
+                                                                                ))}
+                                                                            </SelectContent>
+                                                                        </Select>
                                                                     </div>
-                                                                )}
-                                                            </div>
-                                                        </CardContent>
-                                                    </Card>
+                                                                    <div className="grid gap-2">
+                                                                        <Label>Description</Label>
+                                                                        <Textarea
+                                                                            value={field.description || ''}
+                                                                            onChange={(e) => handleFieldChange(index, { description: e.target.value })}
+                                                                            placeholder="Enter field description"
+                                                                        />
+                                                                    </div>
+                                                                    <div className="flex items-center space-x-2">
+                                                                        <Switch
+                                                                            checked={field.required}
+                                                                            onCheckedChange={(checked) => handleFieldChange(index, { required: checked })}
+                                                                        />
+                                                                        <Label>Required Field</Label>
+                                                                    </div>
+                                                                    {field.type === 'select' && (
+                                                                        <div className="grid gap-2">
+                                                                            <Label>Options (one per line)</Label>
+                                                                            <Textarea
+                                                                                value={(field.options || []).join('\n')}
+                                                                                onChange={(e) => handleFieldChange(index, { 
+                                                                                    options: e.target.value.split('\n').filter(Boolean)
+                                                                                })}
+                                                                                placeholder="Enter options"
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                    {field.type === 'number' && (
+                                                                        <div className="grid grid-cols-2 gap-4">
+                                                                            <div className="grid gap-2">
+                                                                                <Label>Minimum</Label>
+                                                                                <Input
+                                                                                    type="number"
+                                                                                    value={field.minimum || ''}
+                                                                                    onChange={(e) => handleFieldChange(index, { 
+                                                                                        minimum: parseInt(e.target.value) 
+                                                                                    })}
+                                                                                />
+                                                                            </div>
+                                                                            <div className="grid gap-2">
+                                                                                <Label>Maximum</Label>
+                                                                                <Input
+                                                                                    type="number"
+                                                                                    value={field.maximum || ''}
+                                                                                    onChange={(e) => handleFieldChange(index, { 
+                                                                                        maximum: parseInt(e.target.value) 
+                                                                                    })}
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </CardContent>
+                                                        </Card>
+                                                    </li>
                                                 )}
                                             </Draggable>
                                         ))}
                                         {provided.placeholder}
-                                    </div>
+                                    </ul>
                                 )}
                             </Droppable>
                         </DragDropContext>

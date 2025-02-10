@@ -41,20 +41,30 @@ export default function CharacterForm({ templates, campaignId }) {
     };
 
     const validateFormData = (data, schema) => {
-        const validate = ajv.compile(schema);
-        const valid = validate(data);
-        
-        if (!valid) {
-            const newErrors = {};
-            validate.errors.forEach(error => {
-                // Convert JSON pointer to field name
-                const field = error.instancePath.replace('/', '');
-                newErrors[field] = error.message;
-            });
-            return newErrors;
+        try {
+            // Log validation inputs
+            console.log('Validating data:', data);
+            console.log('Against schema:', schema);
+
+            const validate = ajv.compile(schema);
+            const valid = validate(data);
+            
+            if (!valid) {
+                console.error('Validation errors:', validate.errors);
+                const newErrors = {};
+                validate.errors.forEach(error => {
+                    // Convert JSON pointer to field name
+                    const field = error.instancePath.replace(/^\//, '') || error.params.missingProperty;
+                    newErrors[field] = `${error.message}${error.params ? ` (${JSON.stringify(error.params)})` : ''}`;
+                });
+                return newErrors;
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('Schema validation error:', error);
+            return { _schema: 'Invalid schema format' };
         }
-        
-        return null;
     };
 
     const handlePortraitChange = (file) => {
@@ -76,18 +86,40 @@ export default function CharacterForm({ templates, campaignId }) {
         setLoading(true);
 
         try {
+            // Log the form data and schema for debugging
+            console.log('Form Data:', formData);
+            console.log('Template Schema:', selectedTemplate.schema);
+
             // Validate form data against JSON schema
             const validationErrors = validateFormData(formData, selectedTemplate.schema);
             if (validationErrors) {
+                console.error('Validation Errors:', validationErrors);
                 setErrors(validationErrors);
                 setLoading(false);
                 return;
             }
 
+            // Convert form data to match schema types
+            const processedData = Object.entries(formData).reduce((acc, [key, value]) => {
+                const fieldSchema = selectedTemplate.schema.properties[key];
+                if (fieldSchema) {
+                    if (fieldSchema.type === 'number') {
+                        acc[key] = value === '' ? null : Number(value);
+                    } else if (fieldSchema.type === 'boolean') {
+                        acc[key] = Boolean(value);
+                    } else {
+                        acc[key] = value === '' ? null : value;
+                    }
+                }
+                return acc;
+            }, {});
+
+            console.log('Processed Data:', processedData);
+
             const submitData = new FormData();
             submitData.append('campaignId', campaignId);
             submitData.append('templateId', selectedTemplate.id);
-            submitData.append('data', JSON.stringify(formData));
+            submitData.append('data', JSON.stringify(processedData));
             
             // Add portrait if one was selected
             if (portrait) {
@@ -95,28 +127,41 @@ export default function CharacterForm({ templates, campaignId }) {
             }
 
             const result = await createCharacter(submitData);
+            console.log('Create Character Result:', result);
+
             if (result.error) {
                 throw new Error(result.error);
+            }
+
+            if (!result.character?.id) {
+                throw new Error('No character ID returned from server');
             }
 
             router.push(`/dashboard/${campaignId}/characters/${result.character.id}`);
         } catch (error) {
             console.error('Error creating character:', error);
-            setErrors({ submit: error.message });
+            setErrors({ 
+                submit: error.message || 'Failed to create character. Please try again.' 
+            });
         } finally {
             setLoading(false);
         }
     };
 
+    // Add debug output for template data
+    console.log('Selected Template:', selectedTemplate);
+
     const renderField = (id, field) => {
-        const value = formData[id] || '';
+        const value = formData[id] ?? '';  // Use nullish coalescing to handle 0 values
         const error = errors[id];
         const commonProps = {
             id: id,
+            name: id,  // Add name prop for form field identification
             value: value,
             onChange: (e) => {
                 const newValue = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-                setFormData({ ...formData, [id]: newValue });
+                const updatedData = { ...formData, [id]: newValue };
+                setFormData(updatedData);
                 if (errors[id]) {
                     const newErrors = { ...errors };
                     delete newErrors[id];
@@ -136,9 +181,16 @@ export default function CharacterForm({ templates, campaignId }) {
                 
                 {field.type === 'string' && !field.enum && (
                     field.format === 'textarea' ? (
-                        <Textarea {...commonProps} placeholder={field.description} />
+                        <Textarea 
+                            {...commonProps} 
+                            placeholder={field.description || 'Enter text here'}
+                        />
                     ) : (
-                        <Input {...commonProps} type="text" placeholder={field.description} />
+                        <Input 
+                            {...commonProps} 
+                            type="text" 
+                            placeholder={field.description || 'Enter text here'}
+                        />
                     )
                 )}
 
@@ -148,7 +200,8 @@ export default function CharacterForm({ templates, campaignId }) {
                         type="number"
                         min={field.minimum}
                         max={field.maximum}
-                        placeholder={field.description}
+                        placeholder={field.description || 'Enter a number'}
+                        value={value.toString()}  // Ensure number is converted to string
                     />
                 )}
 
@@ -156,17 +209,26 @@ export default function CharacterForm({ templates, campaignId }) {
                     <div className="flex items-center space-x-2">
                         <Switch 
                             {...commonProps}
+                            id={id}
                             checked={!!value}
+                            onCheckedChange={(checked) => {
+                                setFormData({ ...formData, [id]: checked });
+                                if (errors[id]) {
+                                    const newErrors = { ...errors };
+                                    delete newErrors[id];
+                                    setErrors(newErrors);
+                                }
+                            }}
                         />
-                        <Label htmlFor={id}>{field.description}</Label>
+                        <Label htmlFor={id}>{field.description || 'Toggle'}</Label>
                     </div>
                 )}
 
-                {field.enum && (
+                {field.type === 'string' && field.enum && (
                     <Select
-                        value={value}
-                        onValueChange={(value) => {
-                            setFormData({ ...formData, [id]: value });
+                        value={value || ''}
+                        onValueChange={(newValue) => {
+                            setFormData({ ...formData, [id]: newValue });
                             if (errors[id]) {
                                 const newErrors = { ...errors };
                                 delete newErrors[id];
@@ -174,8 +236,8 @@ export default function CharacterForm({ templates, campaignId }) {
                             }
                         }}
                     >
-                        <SelectTrigger>
-                            <SelectValue placeholder={field.description} />
+                        <SelectTrigger id={id}>
+                            <SelectValue placeholder={field.description || 'Select an option'} />
                         </SelectTrigger>
                         <SelectContent>
                             {field.enum.map((option) => (
