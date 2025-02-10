@@ -58,16 +58,16 @@ export default async function CharactersPage({ params }) {
         
         const isOwner = campaign?.owner_id === user?.id;
 
-        // Fetch characters for this campaign with proper foreign key relationships
+        // Fetch characters for this campaign
         const { data: characters, error: charactersError } = await supabase
             .from('characters')
             .select(`
                 *,
-                user:user_id (
+                users:user_id (
                     username,
                     profile_picture
                 ),
-                template:template_id (
+                character_templates:template_id (
                     name,
                     description
                 )
@@ -82,13 +82,6 @@ export default async function CharactersPage({ params }) {
 
         console.log('Characters fetched:', characters?.length || 0);
 
-        // Transform the data to match the expected format
-        const transformedCharacters = characters?.map(char => ({
-            ...char,
-            users: char.user,
-            character_templates: char.template
-        })) || [];
-
         return (
             <div className="space-y-4">
                 <div className="flex justify-between items-center">
@@ -101,7 +94,7 @@ export default async function CharactersPage({ params }) {
 
                 <Card className="p-4">
                     <CharactersList 
-                        characters={transformedCharacters} 
+                        characters={characters || []} 
                         campaignId={params.id}
                         isOwner={isOwner}
                     />
@@ -110,6 +103,5 @@ export default async function CharactersPage({ params }) {
         );
     } catch (error) {
         console.error('Error in CharactersPage:', error);
-        notFound();
     }
 } 

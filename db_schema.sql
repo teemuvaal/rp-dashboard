@@ -220,6 +220,29 @@ create table public.users (
   constraint users_username_check check ((length(username) < 20))
 ) TABLESPACE pg_default;
 
+create table public.characters (
+  id uuid not null default gen_random_uuid (),
+  campaign_id uuid not null,
+  user_id uuid not null,
+  template_id uuid not null,
+  name text not null,
+  data jsonb not null,
+  is_active boolean not null default true,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  portrait_url text null,
+  constraint characters_pkey primary key (id),
+  constraint characters_campaign_id_fkey foreign KEY (campaign_id) references campaigns (id) on delete CASCADE,
+  constraint characters_template_id_fkey foreign KEY (template_id) references character_templates (id) on delete RESTRICT,
+  constraint characters_user_id_fkey foreign KEY (user_id) references auth.users (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_characters_campaign_id on public.characters using btree (campaign_id) TABLESPACE pg_default;
+
+create index IF not exists idx_characters_user_id on public.characters using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_characters_template_id on public.characters using btree (template_id) TABLESPACE pg_default;
+
 -- Subscription Plans (Reference table for available plans)
 create table public.subscription_plans (
     id uuid not null default gen_random_uuid(),

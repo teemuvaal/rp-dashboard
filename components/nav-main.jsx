@@ -67,7 +67,6 @@ export function NavMain({ items, params }) {
         {items.filter(item => item.title !== "Feed").map((item) => (
           <Collapsible
             key={item.title}
-            asChild
             defaultOpen={item.isActive || pathname.startsWith(item.url)}
             className="group/collapsible"
           >
