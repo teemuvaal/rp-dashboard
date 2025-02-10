@@ -19,7 +19,10 @@ export async function POST(request) {
       "black-forest-labs/flux-schnell",
       {
         input: {
-          prompt: `A cover photo for a roleplaying campaign set in Dungeons & Dragons 5th Edition. In the style of 80s fantasy book cover. DO NOT INCLUDE ANY TEXT IN THE IMAGE. The campaign summary is: ${prompt}`,
+          aspect_ratio: "16:9",
+          num_inference_steps: 4,
+          megapixels: "1",
+          prompt: `A large cover photo for a roleplaying campaign. In the style of 80s fantasy book cover. The campaign summary is: ${prompt}`,
         }
       }
     );

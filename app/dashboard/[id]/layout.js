@@ -9,6 +9,7 @@ import {
   } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Toaster } from "@/components/ui/toaster";
+import DashboardBreadcrumb from "@/components/Dashboard/DashboardBreadcrumb";
 
 
 export default async function CampaignLayout({ children, params }) {
@@ -58,6 +59,7 @@ export default async function CampaignLayout({ children, params }) {
                     <main className="flex-1">
                         <SidebarTrigger />
                         <div className="px-2 lg:px-4">                          
+                            <DashboardBreadcrumb campaign={campaign} />                          
                             {children}
                             <Toaster />
                         </div>

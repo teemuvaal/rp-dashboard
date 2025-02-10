@@ -3,8 +3,11 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import Ajv from 'ajv'
+import addFormats from 'ajv-formats'
 
-
+const ajv = new Ajv({ allErrors: true })
+addFormats(ajv)
 
 export async function createCampaign(formData) {
   const supabase = createClient()
@@ -1764,5 +1767,343 @@ export async function fetchUserSubscription() {
             success: false,
             error: error.message
         };
+    }
+}
+
+export async function createCharacterTemplate(formData) {
+    const supabase = createClient();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) return { error: 'Not authenticated' };
+
+    const campaignId = formData.get('campaignId');
+    const name = formData.get('name');
+    const description = formData.get('description');
+    const schema = JSON.parse(formData.get('schema'));
+    const uiSchema = JSON.parse(formData.get('ui_schema'));
+
+    // Verify campaign ownership
+    const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('owner_id')
+        .eq('id', campaignId)
+        .single();
+
+    if (!campaign || campaign.owner_id !== user.id) {
+        return { error: 'Not authorized to create templates' };
+    }
+
+    const { data, error } = await supabase
+        .from('character_templates')
+        .insert({
+            campaign_id: campaignId,
+            name,
+            description,
+            schema,
+            ui_schema: uiSchema
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error creating template:', error);
+        return { error: error.message };
+    }
+
+    return { success: true, template: data };
+}
+
+export async function updateCharacterTemplate(formData) {
+    const supabase = createClient();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) return { error: 'Not authenticated' };
+
+    const templateId = formData.get('templateId');
+    const name = formData.get('name');
+    const description = formData.get('description');
+    const schema = JSON.parse(formData.get('schema'));
+    const uiSchema = JSON.parse(formData.get('ui_schema'));
+
+    // Verify template ownership
+    const { data: template } = await supabase
+        .from('character_templates')
+        .select('campaign_id')
+        .eq('id', templateId)
+        .single();
+
+    if (!template) {
+        return { error: 'Template not found' };
+    }
+
+    // Verify campaign ownership
+    const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('owner_id')
+        .eq('id', template.campaign_id)
+        .single();
+
+    if (!campaign || campaign.owner_id !== user.id) {
+        return { error: 'Not authorized to update template' };
+    }
+
+    const { data, error } = await supabase
+        .from('character_templates')
+        .update({
+            name,
+            description,
+            schema,
+            ui_schema: uiSchema,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', templateId)
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error updating template:', error);
+        return { error: error.message };
+    }
+
+    return { success: true, template: data };
+}
+
+export async function deleteCharacterTemplate(formData) {
+    const supabase = createClient();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) return { error: 'Not authenticated' };
+
+    const templateId = formData.get('templateId');
+
+    // Verify template ownership
+    const { data: template } = await supabase
+        .from('character_templates')
+        .select('campaign_id')
+        .eq('id', templateId)
+        .single();
+
+    if (!template) {
+        return { error: 'Template not found' };
+    }
+
+    // Verify campaign ownership
+    const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('owner_id')
+        .eq('id', template.campaign_id)
+        .single();
+
+    if (!campaign || campaign.owner_id !== user.id) {
+        return { error: 'Not authorized to delete template' };
+    }
+
+    // Check if template has any characters
+    const { count } = await supabase
+        .from('characters')
+        .select('id', { count: 'exact' })
+        .eq('template_id', templateId);
+
+    if (count > 0) {
+        return { error: 'Cannot delete template with existing characters' };
+    }
+
+    const { error } = await supabase
+        .from('character_templates')
+        .delete()
+        .eq('id', templateId);
+
+    if (error) {
+        console.error('Error deleting template:', error);
+        return { error: error.message };
+    }
+
+    return { success: true };
+}
+
+export async function createCharacter(formData) {
+    const supabase = createClient();
+    
+    try {
+        // Get the current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return { error: 'Not authenticated' };
+        }
+
+        const campaignId = formData.get('campaignId');
+        const templateId = formData.get('templateId');
+        const characterDataStr = formData.get('data');
+        const portrait = formData.get('portrait');
+
+        if (!campaignId || !templateId || !characterDataStr) {
+            return { error: 'Missing required fields' };
+        }
+
+        let characterData;
+        try {
+            characterData = JSON.parse(characterDataStr);
+        } catch (e) {
+            return { error: 'Invalid character data format' };
+        }
+
+        // Extract character name from the data
+        const characterName = characterData.name || 'Unnamed Character';
+        if (!characterData.name) {
+            console.warn('No name provided for character, using default');
+        }
+
+        // Check if user is a member of the campaign
+        const { data: membership, error: membershipError } = await supabase
+            .from('campaign_members')
+            .select('role')
+            .eq('campaign_id', campaignId)
+            .eq('user_id', user.id)
+            .single();
+
+        if (membershipError || !membership) {
+            return { error: 'Not a member of this campaign' };
+        }
+
+        // Get the template and validate the data against its schema
+        const { data: template, error: templateError } = await supabase
+            .from('character_templates')
+            .select('*')
+            .eq('id', templateId)
+            .eq('campaign_id', campaignId)
+            .single();
+
+        if (templateError || !template) {
+            return { error: 'Template not found' };
+        }
+
+        // Validate character data against template schema
+        const validate = ajv.compile(template.schema);
+        const valid = validate(characterData);
+        
+        if (!valid) {
+            return { 
+                error: 'Invalid character data',
+                details: validate.errors
+            };
+        }
+
+        let portraitUrl = null;
+
+        // Handle portrait upload if provided
+        if (portrait) {
+            try {
+                const fileExt = portrait.name.split('.').pop();
+                const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+                const { error: uploadError } = await supabase
+                    .storage
+                    .from('character-portraits')
+                    .upload(fileName, portrait, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (uploadError) {
+                    console.error('Portrait upload error:', uploadError);
+                    return { error: 'Failed to upload portrait' };
+                }
+
+                // Get the public URL for the uploaded image
+                const { data: { publicUrl } } = supabase
+                    .storage
+                    .from('character-portraits')
+                    .getPublicUrl(fileName);
+
+                portraitUrl = publicUrl;
+            } catch (uploadError) {
+                console.error('Portrait upload error:', uploadError);
+                return { error: 'Failed to process portrait upload' };
+            }
+        }
+
+        // Create the character
+        const { data: character, error: insertError } = await supabase
+            .from('characters')
+            .insert({
+                campaign_id: campaignId,
+                template_id: templateId,
+                user_id: user.id,
+                name: characterName,
+                data: characterData,
+                portrait_url: portraitUrl
+            })
+            .select()
+            .single();
+
+        if (insertError) {
+            console.error('Insert error:', insertError);
+            return { error: 'Failed to create character in database' };
+        }
+
+        if (!character) {
+            return { error: 'Character created but no data returned' };
+        }
+
+        return { character };
+    } catch (error) {
+        console.error('Create character error:', error);
+        return { error: 'Failed to create character: ' + error.message };
+    }
+}
+
+export async function updateCharacter(formData) {
+    const supabase = createClient();
+
+    try {
+        // Get the current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            return { error: 'Not authenticated' };
+        }
+
+        const characterId = formData.get('characterId');
+        const data = JSON.parse(formData.get('data'));
+
+        // Fetch the character to check ownership
+        const { data: character, error: fetchError } = await supabase
+            .from('characters')
+            .select(`
+                *,
+                campaigns (
+                    owner_id
+                )
+            `)
+            .eq('id', characterId)
+            .single();
+
+        if (fetchError) {
+            throw fetchError;
+        }
+
+        // Check if user is character owner or campaign owner
+        if (character.user_id !== user.id && character.campaigns.owner_id !== user.id) {
+            return { error: 'Not authorized to update this character' };
+        }
+
+        // Update the character
+        const { data: updatedCharacter, error: updateError } = await supabase
+            .from('characters')
+            .update({
+                data,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', characterId)
+            .select()
+            .single();
+
+        if (updateError) {
+            throw updateError;
+        }
+
+        return { character: updatedCharacter };
+    } catch (error) {
+        console.error('Error updating character:', error);
+        return { error: error.message };
     }
 }
