@@ -47,7 +47,8 @@ export function TeamSwitcher({
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
               <div
-                className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gray-800 text-sidebar-primary-foreground">
+                  {campaign.name.charAt(0).toUpperCase()}
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">
@@ -75,6 +76,7 @@ export function TeamSwitcher({
                 }}
               >
                 <div className="flex size-6 items-center justify-center rounded-sm border">
+                  {campaign.name.charAt(0).toUpperCase()}
                 </div>
                 {campaign.name}
               </DropdownMenuItem>
