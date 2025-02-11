@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -13,6 +14,17 @@ import {
 
 export default function DashboardBreadcrumb({ campaign }) {
     const pathname = usePathname();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    // Don't render anything until mounted to prevent hydration mismatch
+    if (!mounted) {
+        return null;
+    }
+
     const segments = pathname.split('/').filter(Boolean);
 
     // Map segments to readable names

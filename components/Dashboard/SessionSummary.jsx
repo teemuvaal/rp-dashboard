@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import VisualSummary from "@/components/Dashboard/VisualSummary";
 import ReactMarkdown from 'react-markdown';
 
-export default function SessionSummary({ session, hasAudioAccess = false }) {
+export default function SessionSummary({ session, hasAudioAccess = false, isOwner = false }) {
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
     const [summary, setSummary] = useState('');
@@ -232,15 +232,17 @@ export default function SessionSummary({ session, hasAudioAccess = false }) {
                                             Edit
                                         </Button>
                                     )}
-                                    <Button 
-                                        onClick={handleGenerateSummary} 
-                                        disabled={loading}
+                                    {isOwner && (
+                                        <Button 
+                                            onClick={handleGenerateSummary} 
+                                            disabled={loading}
                                         size="sm"
                                         className="gap-2"
                                     >
                                         <Sparkles className="h-4 w-4" />
-                                        {loading ? "Generating..." : (summary ? "Regenerate Summary" : "Generate Summary")}
-                                    </Button>
+                                            {loading ? "Generating..." : (summary ? "Regenerate Summary" : "Generate Summary")}
+                                        </Button>
+                                    )}
                                 </>
                             )}
                         </div>

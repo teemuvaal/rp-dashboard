@@ -159,7 +159,7 @@ export default async function SessionPage({ params }) {
                     </div>
                 </CardContent>
             </Card>
-            <SessionSummary session={session} hasAudioAccess={hasAudioAccess} />
+            <SessionSummary session={session} hasAudioAccess={hasAudioAccess} isOwner={isOwner} />
 
             {/* Notes Section */}
             <Card>
