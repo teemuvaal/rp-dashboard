@@ -104,7 +104,7 @@ export async function createSession(formData) {
   // Check if data exists and has at least one item before accessing its id
   const sessionId = data && data.length > 0 ? data[0].id : null;
 
-  
+  return { success: true, sessionId, data: data[0] };
 }
 
 export async function updateSessionStatus(formData) {

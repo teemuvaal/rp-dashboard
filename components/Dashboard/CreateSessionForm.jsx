@@ -14,20 +14,27 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createSession } from "@/app/dashboard/actions";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 const CreateSessionForm = ({ campaignId, buttonStyle }) => {
   const [open, setOpen] = useState(false);
   const router = useRouter();
-
+  const { toast } = useToast();
   const handleSubmit = async (formData) => {
     formData.append("campaignId", campaignId);
     const result = await createSession(formData);
-    if (result.error) {
-      console.error(result.error);
+    if (result?.error) {
+      toast({
+        title: "Error",
+        description: result.error,
+      });
       // Handle error (e.g., show an error message to the user)
-    } else {
+    } else if (result?.success) {
       // Handle success
-      console.log("Session created successfully", result);
+      toast({
+        title: "Success",
+        description: "Session created successfully",
+      });
       setOpen(false); // Close the dialog
       router.refresh(); // Refresh the page to show the new session
     }
