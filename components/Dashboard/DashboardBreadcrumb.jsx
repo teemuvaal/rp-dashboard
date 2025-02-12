@@ -33,34 +33,36 @@ export default function DashboardBreadcrumb({ campaign }) {
         return segment.charAt(0).toUpperCase() + segment.slice(1);
     };
 
-    // Build breadcrumb items
-    const items = segments.map((segment, index) => {
-        const path = `/${segments.slice(0, index + 1).join('/')}`;
-        const isLast = index === segments.length - 1;
-
-        // Skip the campaign ID in the breadcrumb text
-        if (segment === campaign.id) return null;
-
-        return (
-            <BreadcrumbItem key={path}>
-                {isLast ? (
-                    <BreadcrumbPage>{getSegmentName(segment)}</BreadcrumbPage>
-                ) : (
-                    <>
-                        <BreadcrumbLink asChild>
-                            <Link href={path}>{getSegmentName(segment)}</Link>
-                        </BreadcrumbLink>
-                        <BreadcrumbSeparator />
-                    </>
-                )}
-            </BreadcrumbItem>
-        );
-    }).filter(Boolean); // Remove null items
+    const breadcrumbItems = segments
+        .map((segment, index) => {
+            if (segment === campaign.id) return null;
+            
+            const path = `/${segments.slice(0, index + 1).join('/')}`;
+            const isLast = index === segments.length - 1;
+            
+            return {
+                segment,
+                path,
+                isLast
+            };
+        })
+        .filter(Boolean);
 
     return (
         <Breadcrumb className="py-2">
             <BreadcrumbList>
-                {items}
+                {breadcrumbItems.map((item, index) => (
+                    <BreadcrumbItem key={item.path}>
+                        {item.isLast ? (
+                            <BreadcrumbPage>{getSegmentName(item.segment)}</BreadcrumbPage>
+                        ) : (
+                            <BreadcrumbLink asChild>
+                                <Link href={item.path}>{getSegmentName(item.segment)}</Link>
+                            </BreadcrumbLink>
+                        )}
+                        {!item.isLast && <BreadcrumbSeparator />}
+                    </BreadcrumbItem>
+                ))}
             </BreadcrumbList>
         </Breadcrumb>
     );
