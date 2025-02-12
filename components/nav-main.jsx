@@ -23,6 +23,7 @@ import NavAssets from "@/components/nav-assets"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import AiChatOpen from "@/components/Dashboard/AiChatOpen"
+import ShinyText from "@/components/ui/shiny-text"
 
 const DynamicComponent = ({ type, component, props }) => {
   switch (component) {
