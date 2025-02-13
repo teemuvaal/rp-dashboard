@@ -27,8 +27,8 @@ export default function CalendarTile({ sessions, campaignId }) {
                 </CardHeader>
                 <CardContent>
                 {upcomingSessions.slice(0, 3).map((session, index) => (
-                    <Link href={`/dashboard/${campaignId}/sessions/${session.id}`}>
-                    <div key={index} className="flex items-center space-x-2 p-4 rounded-md shadow-sm my-2 border border-transparent hover:border-gray-300 transition-colors">
+                    <Link key={index} href={`/dashboard/${campaignId}/sessions/${session.id}`}>
+                    <div className="flex items-center space-x-2 p-4 rounded-md shadow-sm my-2 border border-transparent hover:border-gray-300 transition-colors">
                     <div className={`w-2 h-2 rounded-full ${isSameDay(new Date(session.scheduled_date), new Date()) ? 'bg-green-500' : 'bg-blue-500'}`}></div>
                     <div className="flex-grow">
                         <p className="text-sm font-medium">{session.title}</p>
@@ -45,8 +45,8 @@ export default function CalendarTile({ sessions, campaignId }) {
             className="text-sm font-medium mt-4"
             >Previous Sessions</p>
             {pastSessions.slice(0, 2).map((session, index) => (
-                <Link href={`/dashboard/${campaignId}/sessions/${session.id}`}>
-                <div key={index} className="flex items-center space-x-2 p-4 rounded-md shadow-sm my-2 border border-transparent hover:border-gray-300 transition-colors">
+                <Link key={index} href={`/dashboard/${campaignId}/sessions/${session.id}`}>
+                <div className="flex items-center space-x-2 p-4 rounded-md shadow-sm my-2 border border-transparent hover:border-gray-300 transition-colors">
                     <div className={`w-2 h-2 rounded-full bg-red-500`}></div>
                     <div className="flex-grow">
                         <p className="text-sm font-medium">{session.title}</p>
