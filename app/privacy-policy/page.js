@@ -1,5 +1,3 @@
-import { Metadata } from 'next'
-
 export const metadata = {
   title: 'Privacy Policy - AdventureHub',
   description: 'Privacy Policy for AdventureHub - Your Tabletop RPG Campaign Management Tool',
@@ -10,7 +8,7 @@ export default function PrivacyPolicy() {
     <div className="container mx-auto px-4 py-8 max-w-3xl">
       <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
       <div className="prose dark:prose-invert max-w-none">
-        <p className="text-sm text-gray-500">Last Updated: December 14, 2023</p>
+        <p className="text-sm text-gray-500">Last Updated: February 13, 2025</p>
         
         <h2>1. Introduction</h2>
         <p>
@@ -87,7 +85,7 @@ export default function PrivacyPolicy() {
         <hr className="my-8" />
         
         <p className="text-sm text-gray-500">
-          This privacy policy is effective as of December 14, 2023 and will remain in effect except 
+          This privacy policy is effective as of February 13, 2025 and will remain in effect except 
           with respect to any changes in its provisions in the future, which will be in effect 
           immediately after being posted on this page.
         </p>
