@@ -81,7 +81,7 @@ export default function Feed({ feedItems = [], sessions = [], polls = [], isOwne
                     </section>
                 </div>
                 <div className="w-full lg:w-1/3 p-2 sm:p-4 space-y-6">
-                    <CalendarTile sessions={sessions} />
+                    <CalendarTile sessions={sessions} campaignId={campaignId} />
                     
                     {/* Active Polls Section */}
                     {activePolls.length > 0 && (
