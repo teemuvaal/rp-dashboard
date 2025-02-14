@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button"
 import AssistantChat from "@/components/Dashboard/AssistantChat"
 import { Bot } from "lucide-react"
+import ShinyText from "@/components/ui/shiny-text"
 
 export default function AiChatOpen({ params }) {
     return (
@@ -16,11 +17,11 @@ export default function AiChatOpen({ params }) {
             <SheetTrigger asChild>
                 <Button
                     variant="ghost"
-                    size="sm"
+                    size="lg"
                     className="w-full justify-start"
                 >
                     <Bot className="h-4 w-4 mr-2" />
-                    AI Assistant
+                    <ShinyText text="AI Assistant" speed={10} className="" />
                 </Button>
             </SheetTrigger>
             <SheetContent className="w-[600px] sm:w-[800px]" side="right">

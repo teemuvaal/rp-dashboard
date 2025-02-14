@@ -22,7 +22,7 @@ This is about building a functioning product with a focus on AI tools and realti
 App has basic support for subscriptions and tiers of subscriptions to control access to features. Before launch, need to implement proper access control to features based on owner and subscription tier.
 First version of visual summary is complete, but needs to be cleaned up and optimized.
 
-Need to do prover provider for user to avoid refetching user id on some pages.
+Need to do proper provider for user to avoid refetching user id on some pages.
 
 ## Tech Stack
 
@@ -33,15 +33,15 @@ Need to do prover provider for user to avoid refetching user id on some pages.
 - Resend (email)
 - OpenAI (AI text)
 - Replicate (AI image)
+- ElevenLabs (AI voice)
 - Upstash (rate limiting)
 
 ## Features
 
-- Login with Discord
+- Login with Discord, Google or Email
 - Campaign Management (Sessions, Notes, Assets, etc.)
 - Craft campaign details: characters, locations, items, etc.
-- AI enhanced Session Summaries (OpenAI)
-- Create session recaps and stories with images (Replicate)
+- AI enhanced Session Summaries (OpenAI, Replicate and Elevenlabs)
 - Polls to vote for session times or details
 - Archive past adventures
 
@@ -65,16 +65,19 @@ Below is a list of features that are complete or in progress and should be compl
   - [ ] Collab editing (might be too difficult to implement)
   - [x] AI Cleanup
   - [x] Link to session
-- [ ] Characters
-  - [ ] DND Template
-  - [ ] Scrape from DND Beyond?
-  - [ ] Image-to-Text
+- [x] Characters
+  - [x] Create template
+  - [x] Create character from a template
 - [ ] Setup RLS
 - [x] Create Polls
 - [x] Assets
   - [x] Asset types
   - [x] Asset management
   - [x] Asset library
+- [ ] Maps
+  - [ ] Add map
+  - [ ] Generate map
+  - [ ] Add markers to map
 - [ ] Setup app wide RAG for notes and assets
   - [ ] RAG for notes
   - [ ] RAG for assets
@@ -86,3 +89,4 @@ Below is a list of features that are complete or in progress and should be compl
 - [ ] Setup Stripe and payments
 - [ ] Setup domain
 - [ ] Setup emails
+- [ ] Move images from public to supabase storage

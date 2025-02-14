@@ -25,7 +25,7 @@ function formatDate(dateString) {
 
 function SessionCard({ session, onDelete, isDeleting, campaignId }) {
     return (
-        <Card key={session.id}>
+        <Card key={session.id} className="my-2">
             <CardHeader>
                 <CardTitle>{session.name}</CardTitle>
                 <CardDescription>

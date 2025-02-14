@@ -27,10 +27,10 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { GripVertical, Plus, Save, Trash2 } from 'lucide-react';
 
 const FIELD_TYPES = [
-    { id: 'string', label: 'Text', defaultProps: {} },
+    { id: 'text', label: 'Text', defaultProps: {} },
     { id: 'number', label: 'Number', defaultProps: { minimum: 0 } },
-    { id: 'string', label: 'Text Area', defaultProps: { format: 'textarea' } },
-    { id: 'string', label: 'Select', defaultProps: { enum: [] } },
+    { id: 'textarea', label: 'Text Area', defaultProps: { format: 'textarea' } },
+    { id: 'select', label: 'Select', defaultProps: { enum: [] } },
     { id: 'boolean', label: 'Checkbox', defaultProps: {} },
 ];
 
@@ -98,21 +98,45 @@ export default function TemplateEditor({ template, campaignId }) {
             };
 
             fields.forEach(field => {
-                schema.properties[field.id] = {
-                    type: field.type,
+                const baseSchema = {
                     title: field.title,
                     description: field.description,
-                    ...(field.type === 'string' && field.options ? { enum: field.options } : {}),
-                    ...(field.type === 'number' ? { minimum: field.minimum, maximum: field.maximum } : {}),
-                    ...(field.type === 'string' && field.format === 'textarea' ? { format: 'textarea' } : {})
                 };
+
+                // Set the type and additional properties based on the field type
+                switch (field.id) {
+                    case 'text':
+                    case 'textarea':
+                    case 'select':
+                        schema.properties[field.id] = {
+                            ...baseSchema,
+                            type: 'string',
+                            ...(field.id === 'textarea' ? { format: 'textarea' } : {}),
+                            ...(field.id === 'select' && field.options ? { enum: field.options } : {})
+                        };
+                        break;
+                    case 'number':
+                        schema.properties[field.id] = {
+                            ...baseSchema,
+                            type: 'number',
+                            ...(field.minimum !== undefined ? { minimum: field.minimum } : {}),
+                            ...(field.maximum !== undefined ? { maximum: field.maximum } : {})
+                        };
+                        break;
+                    case 'boolean':
+                        schema.properties[field.id] = {
+                            ...baseSchema,
+                            type: 'boolean'
+                        };
+                        break;
+                }
 
                 if (field.required) {
                     schema.required.push(field.id);
                 }
 
                 // Add UI specific configurations
-                if (field.type === 'string' && field.format === 'textarea') {
+                if (field.id === 'textarea') {
                     uiSchema[field.id] = { 'ui:widget': 'textarea' };
                 }
             });
@@ -300,13 +324,13 @@ export default function TemplateEditor({ template, campaignId }) {
                                 {fields.map((field) => (
                                     <div key={field.id} className="grid gap-2">
                                         <Label>{field.title}</Label>
-                                        {field.type === 'text' && (
+                                        {field.id === 'text' && (
                                             <Input placeholder={field.description} disabled />
                                         )}
-                                        {field.type === 'textarea' && (
+                                        {field.id === 'textarea' && (
                                             <Textarea placeholder={field.description} disabled />
                                         )}
-                                        {field.type === 'number' && (
+                                        {field.id === 'number' && (
                                             <Input 
                                                 type="number" 
                                                 placeholder={field.description}
@@ -315,7 +339,7 @@ export default function TemplateEditor({ template, campaignId }) {
                                                 disabled 
                                             />
                                         )}
-                                        {field.type === 'select' && (
+                                        {field.id === 'select' && (
                                             <Select disabled>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder={field.description} />
@@ -329,7 +353,7 @@ export default function TemplateEditor({ template, campaignId }) {
                                                 </SelectContent>
                                             </Select>
                                         )}
-                                        {field.type === 'boolean' && (
+                                        {field.id === 'boolean' && (
                                             <Switch disabled />
                                         )}
                                         {field.description && (

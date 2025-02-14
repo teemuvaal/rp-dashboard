@@ -34,7 +34,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning className={cn("antialiased", inter.variable, baskerville.variable, DepartureMono.variable)}>
-      <CSPostHogProvider>
+
       <body
         className={cn(
           "min-h-screen bg-background antialiased"
@@ -43,17 +43,18 @@ export default function RootLayout({ children }) {
           fontFamily: 'var(--font-sans)'
         }}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-          storageKey="theme-preference"
+        <CSPostHogProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+            storageKey="theme-preference"
         > 
           {children}
         </ThemeProvider>
-      </body>
-      </CSPostHogProvider>
+        </CSPostHogProvider>
+      </body>          
     </html>
   );
 }
