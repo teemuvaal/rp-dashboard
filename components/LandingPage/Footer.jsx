@@ -17,16 +17,16 @@ const footerLinks = [
         title: "Resources",
         links: [
             { label: "Documentation", href: "#" },
-            { label: "Privacy Policy", href: "#" },
-            { label: "Terms of Service", href: "#" },
+            { label: "Privacy Policy", href: "/privacy-policy" },
+            { label: "Terms of Service", href: "/tos" },
         ]
     },
     {
         title: "Community",
         links: [
-            { label: "Discord", href: "#", icon: <Twitter className="h-4 w-4" /> },
-            { label: "Twitter", href: "#", icon: <Twitter className="h-4 w-4" /> },
-            { label: "GitHub", href: "#", icon: <Github className="h-4 w-4" /> },
+            { label: "Discord", href: "https://discord.gg/Udb2peTM", icon: <img src="https://qxvovctfjcxifcngajlq.supabase.co/storage/v1/object/public/general-assets/icon_clyde_blurple_RGB.png" className="h-4 w-4" /> },
+            { label: "Twitter", href: "https://x.com/flipsku", icon: <Twitter className="h-4 w-4" /> },
+/*             { label: "GitHub", href: "#", icon: <Github className="h-4 w-4" /> }, */
         ]
     }
 ];
