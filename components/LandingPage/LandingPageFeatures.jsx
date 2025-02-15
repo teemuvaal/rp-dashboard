@@ -42,7 +42,7 @@ export default function LandingPageFeatures() {
         <div className="flex flex-col col-span-2 items-center justify-center" id="features">
             <h2
             style={{ fontFamily: 'var(--font-departure-mono)' }}
-            className="text-2xl md:text-4xl text-white mb-6"
+            className="text-2xl md:text-4xl text-foreground mb-6"
             >Features</h2>
             <div className="flex flex-col items-center justify-center">
                 {features.map((feature, index) => (

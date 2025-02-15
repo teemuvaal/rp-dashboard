@@ -3,7 +3,7 @@ export default function DashboardHero({ name, description, image }) {
 
     return (
         <div 
-            className="w-full h-40 sm:h-96 relative bg-cover bg-center"
+            className="w-full h-40 sm:h-96 relative bg-cover bg-center mb-4 rounded-lg"
             style={{ backgroundImage: `url(${backgroundImage})` }}
         >
             <div className="absolute bottom-0 left-0 w-full p-2 sm:p-4 bg-black bg-opacity-50">
