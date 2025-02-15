@@ -42,6 +42,21 @@ export const getMainNavigation = (params) => [
         ]
     },
     {
+        title: "Maps",
+        url: `/dashboard/${params.id}/maps`,
+        icon: Map,
+        items: [
+            {
+                title: "All Maps",
+                url: `/dashboard/${params.id}/maps`,
+            },
+            {
+                title: "Create Map",
+                url: `/dashboard/${params.id}/maps/new`,
+            }
+        ]
+    },
+    {
         title: "Sessions",
         url: `/dashboard/${params.id}/sessions`,
         icon: Bot,

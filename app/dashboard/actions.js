@@ -2107,3 +2107,268 @@ export async function updateCharacter(formData) {
         return { error: error.message };
     }
 }
+
+// Map Actions
+export async function createMap(formData) {
+    const supabase = createClient();
+    
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) return { error: 'Not authenticated' };
+
+    const campaignId = formData.get('campaignId');
+    const title = formData.get('title');
+    const description = formData.get('description');
+    const file = formData.get('file');
+    const isPublic = formData.get('isPublic') === 'true';
+
+    if (!file || !campaignId || !title) {
+        return { error: 'Missing required fields' };
+    }
+
+    // Upload the map image
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${campaignId}/${Date.now()}.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage
+        .from('campaign-maps')
+        .upload(fileName, file);
+
+    if (uploadError) {
+        return { error: 'Failed to upload map image' };
+    }
+
+    // Get the public URL
+    const { data: { publicUrl } } = supabase.storage
+        .from('campaign-maps')
+        .getPublicUrl(fileName);
+
+    // Create the map record
+    const { data: map, error: mapError } = await supabase
+        .from('maps')
+        .insert({
+            campaign_id: campaignId,
+            user_id: user.id,
+            title,
+            description,
+            image_url: publicUrl,
+            is_public: isPublic
+        })
+        .select()
+        .single();
+
+    if (mapError) {
+        return { error: mapError.message };
+    }
+
+    revalidatePath(`/dashboard/${campaignId}/maps`);
+    return { success: true, map };
+}
+
+export async function createHotspot(formData) {
+    const supabase = createClient();
+    
+    const mapId = formData.get('mapId');
+    const title = formData.get('title');
+    const description = formData.get('description');
+    const iconType = formData.get('iconType');
+    const positionX = formData.get('positionX');
+    const positionY = formData.get('positionY');
+
+    const { data: hotspot, error } = await supabase
+        .from('map_hotspots')
+        .insert({
+            map_id: mapId,
+            title,
+            description,
+            icon_type: iconType,
+            position_x: positionX,
+            position_y: positionY
+        })
+        .select()
+        .single();
+
+    if (error) {
+        return { error: error.message };
+    }
+
+    revalidatePath(`/dashboard/${mapId}/maps`);
+    return { success: true, hotspot };
+}
+
+export async function fetchCampaignMaps(campaignId) {
+    const supabase = createClient();
+
+    const { data: maps, error } = await supabase
+        .from('maps')
+        .select(`
+            *,
+            users (
+                username,
+                profile_picture
+            )
+        `)
+        .eq('campaign_id', campaignId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        return { error: error.message };
+    }
+
+    return { maps };
+}
+
+export async function fetchMapDetails(mapId) {
+    const supabase = createClient();
+
+    const { data: map, error: mapError } = await supabase
+        .from('maps')
+        .select(`
+            *,
+            users (
+                username,
+                profile_picture
+            ),
+            map_hotspots (*)
+        `)
+        .eq('id', mapId)
+        .single();
+
+    if (mapError) {
+        return { error: mapError.message };
+    }
+
+    return { map };
+}
+
+export async function updateMap(formData) {
+    const supabase = createClient();
+    
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) return { error: 'Not authenticated' };
+
+    const mapId = formData.get('mapId');
+    const title = formData.get('title');
+    const description = formData.get('description');
+    const isPublic = formData.get('isPublic') === 'true';
+
+    // Verify ownership
+    const { data: existingMap } = await supabase
+        .from('maps')
+        .select('user_id, campaign_id')
+        .eq('id', mapId)
+        .single();
+
+    if (!existingMap || existingMap.user_id !== user.id) {
+        return { error: 'Not authorized to update this map' };
+    }
+
+    const { data: map, error: updateError } = await supabase
+        .from('maps')
+        .update({
+            title,
+            description,
+            is_public: isPublic,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', mapId)
+        .select()
+        .single();
+
+    if (updateError) {
+        return { error: updateError.message };
+    }
+
+    revalidatePath(`/dashboard/${existingMap.campaign_id}/maps/${mapId}`);
+    return { success: true, map };
+}
+
+export async function deleteMap(formData) {
+    const supabase = createClient();
+    
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) return { error: 'Not authenticated' };
+
+    const mapId = formData.get('mapId');
+
+    // Verify ownership
+    const { data: map } = await supabase
+        .from('maps')
+        .select('user_id, campaign_id, image_url')
+        .eq('id', mapId)
+        .single();
+
+    if (!map || map.user_id !== user.id) {
+        return { error: 'Not authorized to delete this map' };
+    }
+
+    // Delete the image from storage
+    const imagePath = map.image_url.split('/').pop();
+    const { error: storageError } = await supabase.storage
+        .from('campaign-maps')
+        .remove([imagePath]);
+
+    if (storageError) {
+        console.error('Error deleting map image:', storageError);
+    }
+
+    // Delete the map record (this will cascade delete hotspots)
+    const { error: deleteError } = await supabase
+        .from('maps')
+        .delete()
+        .eq('id', mapId);
+
+    if (deleteError) {
+        return { error: deleteError.message };
+    }
+
+    revalidatePath(`/dashboard/${map.campaign_id}/maps`);
+    return { success: true };
+}
+
+export async function updateHotspot(formData) {
+    const supabase = createClient();
+    
+    const hotspotId = formData.get('hotspotId');
+    const title = formData.get('title');
+    const description = formData.get('description');
+    const iconType = formData.get('iconType');
+    const positionX = formData.get('positionX');
+    const positionY = formData.get('positionY');
+
+    const { data: hotspot, error } = await supabase
+        .from('map_hotspots')
+        .update({
+            title,
+            description,
+            icon_type: iconType,
+            position_x: positionX,
+            position_y: positionY,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', hotspotId)
+        .select()
+        .single();
+
+    if (error) {
+        return { error: error.message };
+    }
+
+    return { success: true, hotspot };
+}
+
+export async function deleteHotspot(formData) {
+    const supabase = createClient();
+    
+    const hotspotId = formData.get('hotspotId');
+
+    const { error } = await supabase
+        .from('map_hotspots')
+        .delete()
+        .eq('id', hotspotId);
+
+    if (error) {
+        return { error: error.message };
+    }
+
+    return { success: true };
+}
