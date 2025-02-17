@@ -74,10 +74,10 @@ Below is a list of features that are complete or in progress and should be compl
   - [x] Asset types
   - [x] Asset management
   - [x] Asset library
-- [ ] Maps
-  - [ ] Add map
+- [x] Maps
+  - [x] Add map
   - [ ] Generate map
-  - [ ] Add markers to map
+  - [x] Add markers to map
 - [ ] Setup app wide RAG for notes and assets
   - [ ] RAG for notes
   - [ ] RAG for assets

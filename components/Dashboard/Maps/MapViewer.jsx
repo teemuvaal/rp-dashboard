@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,28 +40,38 @@ import {
 
 // Move HOTSPOT_ICONS outside component to prevent recreation
 const HOTSPOT_ICONS = {
-    pin: MapPin,
-    castle: Castle,
-    forest: Trees,
-    settlement: Home,
-    mountain: Mountain,
-    danger: Skull,
-    camp: Tent,
-    port: Ship,
+    location: { icon: MapPin, label: 'Location' },
+    quest: { icon: Skull, label: 'Quest' },
+    danger: { icon: Skull, label: 'Danger' },
+    treasure: { icon: MapPin, label: 'Treasure' },
+    npc: { icon: Home, label: 'NPC' },
+    shop: { icon: Home, label: 'Shop' },
+    temple: { icon: Castle, label: 'Temple' },
+    castle: { icon: Castle, label: 'Castle' },
+    cave: { icon: Mountain, label: 'Cave' },
+    camp: { icon: Tent, label: 'Camp' }
 };
 
-// Memoize the icon options list
-const IconOptionsList = React.memo(({ onSelect }) => {
-    return Object.entries(HOTSPOT_ICONS).map(([key, Icon]) => (
-        <SelectItem key={key} value={key}>
-            <div className="flex items-center">
-                <Icon className="w-4 h-4 mr-2" />
-                {key.charAt(0).toUpperCase() + key.slice(1)}
-            </div>
-        </SelectItem>
-    ));
-});
-IconOptionsList.displayName = 'IconOptionsList';
+// Create a simple component for icon option
+const IconOption = React.memo(({ icon: Icon, label }) => (
+    <div className="flex items-center">
+        <Icon className="w-4 h-4 mr-2" />
+        {label}
+    </div>
+));
+IconOption.displayName = 'IconOption';
+
+// Create a separate component for icon select content
+const IconSelectContent = React.memo(() => (
+    <SelectContent>
+        {Object.entries(HOTSPOT_ICONS).map(([key, { icon: Icon, label }]) => (
+            <SelectItem key={key} value={key}>
+                <IconOption icon={Icon} label={label} />
+            </SelectItem>
+        ))}
+    </SelectContent>
+));
+IconSelectContent.displayName = 'IconSelectContent';
 
 // Create a separate dialog component for hotspot form
 const HotspotFormDialog = React.memo(({ 
@@ -71,6 +81,8 @@ const HotspotFormDialog = React.memo(({
     initialData = null,
     onDelete = null 
 }) => {
+    const [selectedIcon, setSelectedIcon] = useState(initialData?.icon_type || 'location');
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent>
@@ -92,18 +104,30 @@ const HotspotFormDialog = React.memo(({
                         defaultValue={initialData?.description}
                         required
                     />
-                    <Select 
-                        name="iconType" 
-                        defaultValue={initialData?.icon_type || 'pin'}
-                        required
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select an icon" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <IconOptionsList />
-                        </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                        <input 
+                            type="hidden" 
+                            name="iconType" 
+                            value={selectedIcon}
+                        />
+                        <div className="grid grid-cols-5 gap-2">
+                            {Object.entries(HOTSPOT_ICONS).map(([key, { icon: Icon, label }]) => (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    className={`flex flex-col items-center justify-center p-2 rounded-lg border ${
+                                        selectedIcon === key 
+                                            ? 'border-primary bg-primary/10' 
+                                            : 'border-border hover:border-primary/50'
+                                    }`}
+                                    onClick={() => setSelectedIcon(key)}
+                                >
+                                    <Icon className="w-4 h-4 mb-1" />
+                                    <span className="text-xs">{label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                     {initialData ? (
                         <div className="flex justify-between">
                             <Button 
@@ -146,9 +170,15 @@ export default function MapViewer({ map }) {
 
     const handleCreateHotspot = useCallback(async (formData) => {
         try {
+            // Ensure position values are valid numbers
+            if (!newHotspotPosition || typeof newHotspotPosition.x !== 'number' || typeof newHotspotPosition.y !== 'number') {
+                throw new Error('Invalid hotspot position');
+            }
+
+            // Append all form data
             formData.append('mapId', map.id);
-            formData.append('positionX', newHotspotPosition.x);
-            formData.append('positionY', newHotspotPosition.y);
+            formData.append('positionX', newHotspotPosition.x.toString());
+            formData.append('positionY', newHotspotPosition.y.toString());
 
             const result = await createHotspot(formData);
             
@@ -167,7 +197,7 @@ export default function MapViewer({ map }) {
         } catch (error) {
             toast({
                 title: 'Error',
-                description: 'Failed to create hotspot',
+                description: error.message || 'Failed to create hotspot',
                 variant: 'destructive',
             });
         }
@@ -234,7 +264,7 @@ export default function MapViewer({ map }) {
     const renderedHotspots = useMemo(() => (
         <TooltipProvider>
             {hotspots.map((hotspot) => {
-                const Icon = HOTSPOT_ICONS[hotspot.icon_type] || MapPin;
+                const Icon = HOTSPOT_ICONS[hotspot.icon_type]?.icon || MapPin;
                 return (
                     <Tooltip key={hotspot.id}>
                         <TooltipTrigger asChild>

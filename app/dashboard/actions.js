@@ -2171,8 +2171,13 @@ export async function createHotspot(formData) {
     const title = formData.get('title');
     const description = formData.get('description');
     const iconType = formData.get('iconType');
-    const positionX = formData.get('positionX');
-    const positionY = formData.get('positionY');
+    const positionX = parseFloat(formData.get('positionX'));
+    const positionY = parseFloat(formData.get('positionY'));
+
+    // Validate required fields
+    if (!mapId || !title || !description || !iconType || isNaN(positionX) || isNaN(positionY)) {
+        return { error: 'Missing or invalid required fields' };
+    }
 
     const { data: hotspot, error } = await supabase
         .from('map_hotspots')
@@ -2188,6 +2193,7 @@ export async function createHotspot(formData) {
         .single();
 
     if (error) {
+        console.error('Error creating hotspot:', error);
         return { error: error.message };
     }
 
