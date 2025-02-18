@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { deleteAsset, updateAsset } from "@/app/dashboard/actions";
 import { useRouter } from 'next/navigation';
 import { Trash2, Link, FileText, Image as ImageIcon, File, Globe, Lock, ChevronRight } from "lucide-react";
+import { EmbeddingStatus } from "@/components/ui/embedding-status";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -94,7 +95,10 @@ export default function AssetsList({ assets, campaignId, error: listError }) {
                             {typeIcons[asset.type]}
                         </div>
                         <div className="min-w-0">
-                            <h3 className="font-medium truncate">{asset.title}</h3>
+                            <div className="flex items-center gap-2">
+                                <h3 className="font-medium truncate">{asset.title}</h3>
+                                <EmbeddingStatus contentType="asset" contentId={asset.id} />
+                            </div>
                             {asset.description && (
                                 <p className="text-sm text-muted-foreground truncate">
                                     {asset.description}

@@ -57,18 +57,20 @@ export async function searchSimilarContent(query, campaignId, limit = 5, content
  * @returns {Promise<Array>} Array of processed results
  */
 async function processBatch(items) {
+    console.log('processBatch started with', items.length, 'items');
     const supabase = createClient();
 
     try {
-        console.log('Processing batch of', items.length, 'items');
-        
         // Use embedMany for batch processing
+        console.log('Generating embeddings...');
         const embeddings = await Promise.all(items.map(async (item) => {
             try {
+                console.log(`Generating embedding for item ${item.id}...`);
                 const { embedding } = await embed({
                     model: openai.embedding('text-embedding-3-small'),
                     value: item.content_text,
                 });
+                console.log(`Successfully generated embedding for item ${item.id}`);
                 return embedding;
             } catch (error) {
                 console.error(`Error generating embedding for item ${item.id}:`, error);
@@ -79,8 +81,10 @@ async function processBatch(items) {
         console.log('Generated embeddings for', embeddings.length, 'items');
 
         // Update each item with its embedding
+        console.log('Updating items in database...');
         const results = await Promise.all(items.map(async (item, index) => {
             try {
+                console.log(`Updating item ${item.id} with embedding...`);
                 const { error: updateError } = await supabase
                     .from('content_embeddings')
                     .update({
@@ -90,9 +94,12 @@ async function processBatch(items) {
                     })
                     .eq('id', item.id);
 
-                if (updateError) throw updateError;
+                if (updateError) {
+                    console.error(`Error updating item ${item.id}:`, updateError);
+                    throw updateError;
+                }
 
-                console.log(`Successfully updated embedding for item ${item.id}`);
+                console.log(`Successfully updated item ${item.id}`);
                 return {
                     id: item.id,
                     status: 'success'
@@ -100,14 +107,18 @@ async function processBatch(items) {
             } catch (error) {
                 console.error(`Error updating embedding for item ${item.id}:`, error);
                 
-                await supabase
-                    .from('content_embeddings')
-                    .update({
-                        status: 'failed',
-                        error_message: error.message,
-                        last_processed_at: new Date().toISOString(),
-                    })
-                    .eq('id', item.id);
+                try {
+                    await supabase
+                        .from('content_embeddings')
+                        .update({
+                            status: 'failed',
+                            error_message: error.message,
+                            last_processed_at: new Date().toISOString(),
+                        })
+                        .eq('id', item.id);
+                } catch (updateError) {
+                    console.error(`Error updating failure status for item ${item.id}:`, updateError);
+                }
 
                 return {
                     id: item.id,
@@ -117,6 +128,7 @@ async function processBatch(items) {
             }
         }));
 
+        console.log('Batch processing completed');
         return results;
     } catch (error) {
         console.error('Error in batch processing:', error);
@@ -129,11 +141,13 @@ async function processBatch(items) {
  * @returns {Promise<void>}
  */
 export async function processEmbeddingQueue() {
+    console.log('processEmbeddingQueue started');
     const supabase = createClient();
     const BATCH_SIZE = 10;
 
     try {
         // Fetch pending embeddings
+        console.log('Fetching pending embeddings...');
         const { data: pendingEmbeddings, error: fetchError } = await supabase
             .from('content_embeddings')
             .select('*')
@@ -145,14 +159,25 @@ export async function processEmbeddingQueue() {
             throw fetchError;
         }
 
+        console.log(`Found ${pendingEmbeddings?.length || 0} pending embeddings`);
+
         if (!pendingEmbeddings || pendingEmbeddings.length === 0) {
             return { message: 'No pending embeddings to process' };
         }
 
+        // Process the batch
+        console.log('Processing batch...');
         const results = await processBatch(pendingEmbeddings);
+        console.log('Batch processing results:', results);
+
+        // Count successes and failures
+        const successes = results.filter(r => r.status === 'success').length;
+        const failures = results.filter(r => r.status === 'error').length;
 
         return {
             processed: results.length,
+            successes,
+            failures,
             results
         };
     } catch (error) {

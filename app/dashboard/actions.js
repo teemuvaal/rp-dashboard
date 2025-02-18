@@ -1416,6 +1416,21 @@ export async function createAsset(formData) {
         return { error: 'Failed to create asset' }
     }
 
+    // Queue the asset for embedding
+    try {
+        const assetText = `${title}\n\n${description || ''}\n\n${content}`;
+        await queueEmbedding(
+            supabase,
+            'asset',
+            data.id,
+            campaignId,
+            assetText
+        );
+    } catch (embedError) {
+        console.error('Error queueing embedding:', embedError);
+        // Don't fail the asset creation if embedding fails
+    }
+
     return { success: true, data }
 }
 
@@ -1434,6 +1449,18 @@ export async function updateAsset(formData) {
 
     if (!assetId || !title || !content || !type) {
         return { error: 'Missing required fields' }
+    }
+
+    // Get the campaign ID for the asset
+    const { data: existingAsset, error: fetchError } = await supabase
+        .from('assets')
+        .select('campaign_id')
+        .eq('id', assetId)
+        .single()
+
+    if (fetchError) {
+        console.error('Error fetching asset:', fetchError);
+        return { error: 'Failed to update asset' };
     }
 
     const { data, error } = await supabase
@@ -1455,6 +1482,21 @@ export async function updateAsset(formData) {
         return { error: 'Failed to update asset' }
     }
 
+    // Queue the updated asset for embedding
+    try {
+        const assetText = `${title}\n\n${description || ''}\n\n${content}`;
+        await queueEmbedding(
+            supabase,
+            'asset',
+            assetId,
+            existingAsset.campaign_id,
+            assetText
+        );
+    } catch (embedError) {
+        console.error('Error queueing embedding:', embedError);
+        // Don't fail the asset update if embedding fails
+    }
+
     return { success: true, data }
 }
 
@@ -1466,6 +1508,18 @@ export async function deleteAsset(formData) {
 
     const assetId = formData.get('assetId')
     if (!assetId) return { error: 'Asset ID is required' }
+
+    // Delete associated embeddings first
+    try {
+        await supabase
+            .from('content_embeddings')
+            .delete()
+            .eq('content_type', 'asset')
+            .eq('content_id', assetId);
+    } catch (embedError) {
+        console.error('Error deleting embeddings:', embedError);
+        // Continue with asset deletion even if embedding deletion fails
+    }
 
     const { error } = await supabase
         .from('assets')
