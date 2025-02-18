@@ -664,6 +664,55 @@ export async function updateProfile(formData) {
   redirect('/dashboard')
 }
 
+async function queueEmbedding(supabase, contentType, contentId, campaignId, contentText) {
+    console.log('Queueing embedding for:', { contentType, contentId, campaignId });
+    try {
+        // First, queue the embedding
+        const { data, error } = await supabase
+            .from('content_embeddings')
+            .upsert({
+                content_type: contentType,
+                content_id: contentId,
+                campaign_id: campaignId,
+                content_text: contentText,
+                status: 'pending',
+                last_processed_at: new Date().toISOString(),
+            }, {
+                onConflict: 'content_type,content_id',
+            });
+            
+        console.log('Embedding queue result:', { data, error });
+        
+        if (error) {
+            console.error('Error queueing embedding:', error);
+            return { success: false, error };
+        }
+
+        // Then, trigger immediate processing
+        try {
+            const response = await fetch('/api/embeddings/process', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                console.error('Error triggering embedding process:', await response.text());
+            } else {
+                console.log('Embedding process triggered successfully');
+            }
+        } catch (processError) {
+            console.error('Error triggering embedding process:', processError);
+        }
+        
+        return { success: true };
+    } catch (error) {
+        console.error('Error in queueEmbedding:', error);
+        return { success: false, error };
+    }
+}
+
 export async function createNote(formData) {
     const supabase = createClient();
 
@@ -732,6 +781,15 @@ export async function createNote(formData) {
             console.error('Error creating note:', error);
             return { error: error.message };
         }
+
+        // Queue the note for embedding
+        await queueEmbedding(
+            supabase,
+            'note',
+            data.id,
+            campaignId,
+            `${title}\n\n${content}`
+        );
 
         return { 
             success: true, 
@@ -807,66 +865,86 @@ export async function fetchSessionNotes(sessionId) {
     }
 }
 
-
 export async function updateNote(formData) {
-  const supabase = createClient()
+    const supabase = createClient();
 
-  try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    if (userError) {
-      console.error('Authentication error:', userError)
-      return { error: 'Authentication error' }
+        if (userError) {
+            console.error('Authentication error:', userError);
+            return { error: 'Authentication error' };
+        }
+
+        const noteId = formData.get('noteId');
+        const sessionId = formData.get('sessionId');
+
+        // Get the campaign ID for the note
+        const { data: existingNote, error: noteError } = await supabase
+            .from('notes')
+            .select('campaign_id')
+            .eq('id', noteId)
+            .single();
+
+        if (noteError) {
+            console.error('Error fetching note:', noteError);
+            return { error: noteError.message };
+        }
+
+        // If we're just updating the session link, we don't need the other fields
+        if (sessionId !== null && !formData.get('title')) {
+            const { data, error } = await supabase
+                .from('notes')
+                .update({ session_id: sessionId || null })
+                .eq('id', noteId)
+                .eq('user_id', user.id)
+                .select();
+
+            if (error) {
+                console.error('Error updating note:', error);
+                return { error: error.message };
+            }
+
+            return { success: true, note: data[0] };
+        }
+
+        // Otherwise, update all fields
+        const title = formData.get('title');
+        const content = formData.get('content');
+        const isPublic = formData.get('isPublic') === 'true';
+
+        const { data, error } = await supabase
+            .from('notes')
+            .update({
+                title,
+                content,
+                is_public: isPublic,
+                session_id: sessionId || null,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', noteId)
+            .eq('user_id', user.id)
+            .select();
+
+        if (error) {
+            console.error('Error updating note:', error);
+            return { error: error.message };
+        }
+
+        // Queue the updated note for embedding
+        await queueEmbedding(
+            supabase,
+            'note',
+            noteId,
+            existingNote.campaign_id,
+            `${title}\n\n${content}`
+        );
+
+        return { success: true, note: data[0] };
+    } catch (error) {
+        console.error('Unexpected error in updateNote:', error);
+        return { error: 'An unexpected error occurred' };
     }
-
-    const noteId = formData.get('noteId')
-    const sessionId = formData.get('sessionId')
-
-    // If we're just updating the session link, we don't need the other fields
-    if (sessionId !== null && !formData.get('title')) {
-      const { data, error } = await supabase
-        .from('notes')
-        .update({ session_id: sessionId || null })
-        .eq('id', noteId)
-        .eq('user_id', user.id)
-        .select()
-
-      if (error) {
-        console.error('Error updating note:', error)
-        return { error: error.message }
-      }
-
-      return { success: true, note: data[0] }
-    }
-
-    // Otherwise, update all fields
-    const title = formData.get('title')
-    const content = formData.get('content')
-    const isPublic = formData.get('isPublic') === 'true'
-
-    const { data, error } = await supabase
-      .from('notes')
-      .update({
-        title,
-        content,
-        is_public: isPublic,
-        session_id: sessionId || null,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', noteId)
-      .eq('user_id', user.id)
-      .select()
-
-    if (error) {
-      console.error('Error updating note:', error)
-      return { error: error.message }
-    }
-
-    return { success: true, note: data[0] }
-  } catch (error) {
-    console.error('Unexpected error in updateNote:', error)
-    return { error: 'An unexpected error occurred' }
-  }
 }
 
 // Add this new function
