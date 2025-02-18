@@ -665,7 +665,9 @@ export async function updateProfile(formData) {
 }
 
 async function queueEmbedding(supabase, contentType, contentId, campaignId, contentText) {
+    const API_BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     console.log('Queueing embedding for:', { contentType, contentId, campaignId });
+    
     try {
         // First, queue the embedding
         const { data, error } = await supabase
@@ -690,7 +692,7 @@ async function queueEmbedding(supabase, contentType, contentId, campaignId, cont
 
         // Then, trigger immediate processing
         try {
-            const response = await fetch('/api/embeddings/process', {
+            const response = await fetch(`${API_BASE_URL}/api/embeddings/process`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
