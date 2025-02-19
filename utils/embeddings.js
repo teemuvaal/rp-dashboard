@@ -2,6 +2,64 @@ import { openai } from '@ai-sdk/openai';
 import { embed, embedMany } from 'ai';
 import { createClient } from '@/utils/supabase/server';
 
+// Constants for chunking
+const MAX_CHUNK_SIZE = 1000; // Maximum characters per chunk
+const CHUNK_OVERLAP = 100;   // Number of characters to overlap between chunks
+
+/**
+ * Split text into overlapping chunks of roughly equal size
+ * @param {string} text - The text to split into chunks
+ * @param {number} maxChunkSize - Maximum size of each chunk
+ * @param {number} overlap - Number of characters to overlap between chunks
+ * @returns {Array<{text: string, index: number}>} Array of chunks with their index
+ */
+function createTextChunks(text, maxChunkSize = MAX_CHUNK_SIZE, overlap = CHUNK_OVERLAP) {
+    const chunks = [];
+    let index = 0;
+    
+    // If text is shorter than max chunk size, return it as a single chunk
+    if (text.length <= maxChunkSize) {
+        return [{ text, index: 0 }];
+    }
+
+    let startIndex = 0;
+    while (startIndex < text.length) {
+        let endIndex = startIndex + maxChunkSize;
+        
+        // If this isn't the last chunk, try to break at a natural point
+        if (endIndex < text.length) {
+            // Look for natural break points in order of preference
+            const breakPoints = [
+                text.lastIndexOf('. ', endIndex),  // End of sentence
+                text.lastIndexOf('? ', endIndex),
+                text.lastIndexOf('! ', endIndex),
+                text.lastIndexOf('\n', endIndex),  // End of paragraph
+                text.lastIndexOf('. ', endIndex),
+                text.lastIndexOf(' ', endIndex)    // Word boundary
+            ];
+
+            // Find the first valid break point
+            const breakPoint = breakPoints.find(bp => bp > startIndex + maxChunkSize / 2);
+            
+            if (breakPoint !== -1) {
+                endIndex = breakPoint + 1; // Include the punctuation/space
+            }
+        }
+
+        chunks.push({
+            text: text.slice(startIndex, endIndex).trim(),
+            index
+        });
+
+        // Move start index back by overlap amount, but don't go backwards
+        startIndex = Math.min(endIndex - overlap, text.length);
+        if (startIndex < 0) startIndex = 0;
+        index++;
+    }
+
+    return chunks;
+}
+
 /**
  * Search for similar content using embeddings
  * @param {string} query - The search query
@@ -223,21 +281,85 @@ export async function checkEmbeddingStatus(contentType, contentId) {
  */
 export async function retryEmbedding(contentType, contentId) {
     const supabase = createClient();
+    console.log('Server retryEmbedding called for:', { contentType, contentId });
 
     try {
-        // First, update status to pending
-        const { error: updateError } = await supabase
-            .from('content_embeddings')
-            .update({
-                status: 'pending',
-                error_message: null,
-                last_processed_at: new Date().toISOString(),
-            })
-            .eq('content_type', contentType)
-            .eq('content_id', contentId);
+        // First check if the content still exists
+        let contentText;
+        let campaignId;
 
-        if (updateError) {
-            throw updateError;
+        if (contentType === 'note') {
+            const { data: note, error: noteError } = await supabase
+                .from('notes')
+                .select('title, content, campaign_id')
+                .eq('id', contentId)
+                .single();
+                
+            if (noteError) {
+                console.error('Error fetching note:', noteError);
+                throw new Error('Content not found');
+            }
+                
+            if (note) {
+                contentText = `${note.title}\n\n${note.content}`;
+                campaignId = note.campaign_id;
+            }
+        } else if (contentType === 'asset') {
+            const { data: asset, error: assetError } = await supabase
+                .from('assets')
+                .select('title, description, content, campaign_id')
+                .eq('id', contentId)
+                .single();
+                
+            if (assetError) {
+                console.error('Error fetching asset:', assetError);
+                throw new Error('Content not found');
+            }
+                
+            if (asset) {
+                contentText = `${asset.title}\n\n${asset.description || ''}\n\n${asset.content}`;
+                campaignId = asset.campaign_id;
+            }
+        }
+
+        if (!contentText || !campaignId) {
+            throw new Error('Content not found');
+        }
+
+        // Delete existing embeddings
+        const { error: deleteError } = await supabase
+            .from('content_embeddings')
+            .delete()
+            .match({ content_type: contentType, content_id: contentId });
+            
+        if (deleteError) {
+            console.error('Error deleting existing embeddings:', deleteError);
+            throw deleteError;
+        }
+
+        // Create chunks from the content
+        const chunks = createTextChunks(contentText);
+        console.log(`Created ${chunks.length} chunks for content`);
+
+        // Insert new embedding records for each chunk
+        for (const chunk of chunks) {
+            const { error: insertError } = await supabase
+                .from('content_embeddings')
+                .insert({
+                    content_type: contentType,
+                    content_id: contentId,
+                    campaign_id: campaignId,
+                    content_text: chunk.text,
+                    chunk_index: chunk.index,
+                    total_chunks: chunks.length,
+                    status: 'pending',
+                    last_processed_at: new Date().toISOString()
+                });
+
+            if (insertError) {
+                console.error('Error inserting embedding record:', insertError);
+                throw insertError;
+            }
         }
 
         // Trigger immediate processing
@@ -248,7 +370,7 @@ export async function retryEmbedding(contentType, contentId) {
             message: 'Embedding queued for retry'
         };
     } catch (error) {
-        console.error('Error retrying embedding:', error);
+        console.error('Error in retryEmbedding:', error);
         throw error;
     }
 } 

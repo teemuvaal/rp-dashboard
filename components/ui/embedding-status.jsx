@@ -118,9 +118,6 @@ export function EmbeddingStatus({ contentType, contentId }) {
         return <Loader2 className="h-4 w-4 animate-spin text-gray-400" />;
     }
 
-    // Don't render anything if no status (not found in DB)
-    if (!status || status === 'not_found') return null;
-
     const isRateLimited = rateLimitReset && Date.now() < rateLimitReset;
 
     return (
@@ -134,7 +131,7 @@ export function EmbeddingStatus({ contentType, contentId }) {
                         {status === 'completed' && (
                             <Check className="h-4 w-4 text-green-500" />
                         )}
-                        {(status === 'failed' || status === 'error') && (
+                        {(status === 'failed' || status === 'error' || status === 'not_found') && (
                             <div className="flex items-center gap-1">
                                 <AlertCircle className="h-4 w-4 text-red-500" />
                                 <Button 
@@ -153,6 +150,12 @@ export function EmbeddingStatus({ contentType, contentId }) {
                 <TooltipContent>
                     {status === 'pending' && 'Processing for AI search...'}
                     {status === 'completed' && 'Available for AI search'}
+                    {status === 'not_found' && (
+                        <div className="text-sm">
+                            <p>No embeddings found</p>
+                            <p className="text-xs mt-1">Click the retry button to generate embeddings</p>
+                        </div>
+                    )}
                     {(status === 'failed' || status === 'error') && (
                         <div className="text-sm">
                             <p>Failed to process: {error || 'Unknown error'}</p>

@@ -60,15 +60,20 @@ function createTextChunks(text, maxChunkSize = MAX_CHUNK_SIZE, overlap = CHUNK_O
     return chunks;
 }
 
+// Export the function
+export { createTextChunks };
+
 async function ensureEmbeddingRecord(supabase, contentType, contentId) {
     console.log('Ensuring embedding record exists for:', { contentType, contentId });
     try {
         // First try to get the content details
         let contentText;
+        let campaignId;
+
         if (contentType === 'note') {
             const { data: note, error: noteError } = await supabase
                 .from('notes')
-                .select('title, content')
+                .select('title, content, campaign_id')
                 .eq('id', contentId)
                 .single();
                 
@@ -79,30 +84,31 @@ async function ensureEmbeddingRecord(supabase, contentType, contentId) {
                 
             if (note) {
                 contentText = `${note.title}\n\n${note.content}`;
+                campaignId = note.campaign_id;
                 console.log('Retrieved note content for embedding');
             }
+        } else if (contentType === 'asset') {
+            const { data: asset, error: assetError } = await supabase
+                .from('assets')
+                .select('title, description, content, campaign_id')
+                .eq('id', contentId)
+                .single();
+                
+            if (assetError) {
+                console.error('Error fetching asset:', assetError);
+                return false;
+            }
+                
+            if (asset) {
+                contentText = `${asset.title}\n\n${asset.description || ''}\n\n${asset.content}`;
+                campaignId = asset.campaign_id;
+                console.log('Retrieved asset content for embedding');
+            }
         }
-        // Add other content types here as needed
 
         if (!contentText) {
             console.error('Could not find content for', { contentType, contentId });
             return false;
-        }
-
-        // Get the campaign ID for the content
-        let campaignId;
-        if (contentType === 'note') {
-            const { data: note, error: noteError } = await supabase
-                .from('notes')
-                .select('campaign_id')
-                .eq('id', contentId)
-                .single();
-
-            if (noteError) {
-                console.error('Error fetching campaign ID:', noteError);
-                return false;
-            }
-            campaignId = note.campaign_id;
         }
 
         if (!campaignId) {

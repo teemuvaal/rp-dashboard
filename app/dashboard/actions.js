@@ -5,6 +5,9 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import Ajv from 'ajv'
 import addFormats from 'ajv-formats'
+import { createTextChunks } from '@/utils/embeddings-client'
+import { openai } from '@ai-sdk/openai';
+import { embed } from 'ai';
 
 const ajv = new Ajv({ allErrors: true })
 addFormats(ajv)
@@ -669,26 +672,63 @@ async function queueEmbedding(supabase, contentType, contentId, campaignId, cont
     console.log('Queueing embedding for:', { contentType, contentId, campaignId });
     
     try {
-        // First, queue the embedding
-        const { data, error } = await supabase
+        // First, delete any existing embeddings for this content
+        const { error: deleteError } = await supabase
             .from('content_embeddings')
-            .upsert({
-                content_type: contentType,
-                content_id: contentId,
-                campaign_id: campaignId,
-                content_text: contentText,
-                status: 'pending',
-                last_processed_at: new Date().toISOString(),
-            }, {
-                onConflict: 'content_type,content_id',
-            });
+            .delete()
+            .match({ content_type: contentType, content_id: contentId });
             
-        console.log('Embedding queue result:', { data, error });
-        
-        if (error) {
-            console.error('Error queueing embedding:', error);
-            return { success: false, error };
+        if (deleteError) {
+            console.error('Error deleting existing embeddings:', deleteError);
+            return { success: false, error: deleteError };
         }
+
+        // Create chunks from the content
+        const chunks = createTextChunks(contentText);
+        console.log(`Created ${chunks.length} chunks for content`);
+
+        // Insert new embedding records for each chunk
+        for (const chunk of chunks) {
+            const { error: insertError } = await supabase
+                .from('content_embeddings')
+                .insert({
+                    content_type: contentType,
+                    content_id: contentId,
+                    campaign_id: campaignId,
+                    content_text: chunk.text,
+                    chunk_index: chunk.index,
+                    total_chunks: chunks.length,
+                    status: 'pending',
+                    last_processed_at: new Date().toISOString()
+                });
+
+            if (insertError) {
+                console.error('Error inserting embedding record:', insertError);
+                return { success: false, error: insertError };
+            }
+        }
+
+        // Verify records were created
+        const { data: verifyRecords, error: verifyError } = await supabase
+            .from('content_embeddings')
+            .select('id')
+            .match({ 
+                content_type: contentType, 
+                content_id: contentId,
+                status: 'pending'
+            });
+
+        if (verifyError) {
+            console.error('Error verifying embedding records:', verifyError);
+            return { success: false, error: verifyError };
+        }
+
+        if (!verifyRecords || verifyRecords.length === 0) {
+            console.error('No embedding records found after creation');
+            return { success: false, error: 'Failed to create embedding records' };
+        }
+
+        console.log(`Verified ${verifyRecords.length} embedding records created`);
 
         // Then, trigger immediate processing
         try {
@@ -697,12 +737,19 @@ async function queueEmbedding(supabase, contentType, contentId, campaignId, cont
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                body: JSON.stringify({
+                    contentType,
+                    contentId,
+                    campaignId
+                })
             });
 
             if (!response.ok) {
-                console.error('Error triggering embedding process:', await response.text());
+                const errorText = await response.text();
+                console.error('Error triggering embedding process:', errorText);
             } else {
-                console.log('Embedding process triggered successfully');
+                const result = await response.json();
+                console.log('Embedding process triggered successfully:', result);
             }
         } catch (processError) {
             console.error('Error triggering embedding process:', processError);
@@ -2511,4 +2558,125 @@ export async function deleteHotspot(formData) {
     }
 
     return { success: true };
+}
+
+export async function processEmbeddings() {
+    const supabase = createClient();
+    console.log('Processing embeddings...');
+
+    try {
+        // Fetch pending embeddings
+        const { data: pendingEmbeddings, error: fetchError } = await supabase
+            .from('content_embeddings')
+            .select(`
+                *,
+                campaigns:campaign_id (owner_id)
+            `)
+            .eq('status', 'pending')
+            .order('content_type, content_id, chunk_index')
+            .limit(20);
+
+        if (fetchError) {
+            console.error('Error fetching pending embeddings:', fetchError);
+            throw fetchError;
+        }
+
+        console.log(`Found ${pendingEmbeddings?.length || 0} pending embeddings`);
+
+        if (!pendingEmbeddings || pendingEmbeddings.length === 0) {
+            return { message: 'No pending embeddings to process' };
+        }
+
+        // Group embeddings by content to process chunks together
+        const groupedEmbeddings = pendingEmbeddings.reduce((groups, item) => {
+            const key = `${item.content_type}:${item.content_id}`;
+            if (!groups[key]) {
+                groups[key] = [];
+            }
+            groups[key].push(item);
+            return groups;
+        }, {});
+
+        // Process each group of chunks
+        const results = [];
+        for (const [contentKey, chunks] of Object.entries(groupedEmbeddings)) {
+            console.log(`Processing chunks for ${contentKey}`);
+            
+            // Process chunks in sequence to maintain order
+            for (const item of chunks) {
+                try {
+                    console.log(`Processing chunk ${item.chunk_index + 1}/${item.total_chunks} for ${contentKey}`);
+                    
+                    const { embedding } = await embed({
+                        model: openai.embedding('text-embedding-3-small'),
+                        value: item.content_text,
+                    });
+
+                    console.log(`Generated embedding for chunk ${item.chunk_index + 1}`);
+
+                    const { error: updateError } = await supabase
+                        .from('content_embeddings')
+                        .update({
+                            embedding,
+                            status: 'completed',
+                            last_processed_at: new Date().toISOString(),
+                        })
+                        .eq('id', item.id);
+
+                    if (updateError) {
+                        console.error(`Error updating embedding ${item.id}:`, updateError);
+                        throw updateError;
+                    }
+
+                    console.log(`Successfully updated chunk ${item.chunk_index + 1}`);
+                    results.push({ 
+                        id: item.id, 
+                        content_key: contentKey,
+                        chunk_index: item.chunk_index,
+                        status: 'success' 
+                    });
+                } catch (error) {
+                    console.error(`Error processing chunk ${item.chunk_index + 1} for ${contentKey}:`, error);
+                    
+                    try {
+                        const { error: statusError } = await supabase
+                            .from('content_embeddings')
+                            .update({
+                                status: 'failed',
+                                error_message: error.message,
+                                last_processed_at: new Date().toISOString(),
+                            })
+                            .eq('id', item.id);
+
+                        if (statusError) {
+                            console.error(`Error updating failure status for ${item.id}:`, statusError);
+                        }
+                    } catch (updateError) {
+                        console.error(`Critical error updating failure status for ${item.id}:`, updateError);
+                    }
+
+                    results.push({ 
+                        id: item.id, 
+                        content_key: contentKey,
+                        chunk_index: item.chunk_index,
+                        status: 'error', 
+                        error: error.message 
+                    });
+                }
+            }
+        }
+
+        const summary = {
+            total: results.length,
+            successful: results.filter(r => r.status === 'success').length,
+            failed: results.filter(r => r.status === 'error').length,
+            results
+        };
+
+        console.log('Processing summary:', summary);
+        return summary;
+    } catch (error) {
+        console.error('Error in processEmbeddings:', error);
+        throw error;
+    }
 }
