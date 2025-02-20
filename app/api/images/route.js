@@ -16,7 +16,7 @@ export async function POST(request) {
 
     console.log('Attempting to generate image...');
     const output = await replicate.run(
-      "black-forest-labs/flux-schnell",
+      "black-forest-labs/flux-pro",
       {
         input: {
           aspect_ratio: "16:9",
