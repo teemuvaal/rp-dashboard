@@ -28,9 +28,9 @@ const artStyles = [
     { value: "80s fantasy book cover", label: "80s Fantasy Book Cover" },
     { value: "realistic", label: "Realistic" },
     { value: "watercolor", label: "Watercolor" },
-    { value: "oil-painting", label: "Oil Painting" },
+    { value: "oil-painting in the renaissance style", label: "Oil Painting" },
     { value: "digital-art", label: "Digital Art" },
-    { value: "pixel-art", label: "Pixel Art" },
+    { value: "high detail 64bit pixel-art", label: "Pixel Art" },
 ];
 
 export default function VisualSummary({ session, sessionSummary, hasAudioAccess = false }) {

@@ -97,7 +97,9 @@ export default function StoryViewer({ visualSummary }) {
             <div className="flex flex-col md:flex-row h-[80vh]">
                 {/* Left side - Narration text */}
                 <div className="w-full md:w-1/2 p-6 overflow-y-auto">
-                    <div className="prose prose-invert prose-lg max-w-none">
+                    <div className="prose prose-invert prose-lg max-w-none"
+                    style={{ fontFamily: 'var(--font-departure-mono)' }}
+                    >
                         {displayedText}
                         <span className="animate-pulse ml-1">|</span>
                     </div>
