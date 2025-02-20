@@ -78,15 +78,18 @@ Below is a list of features that are complete or in progress and should be compl
   - [x] Add map
   - [ ] Generate map
   - [x] Add markers to map
-- [ ] Setup app wide RAG for notes and assets
-  - [ ] RAG for notes
-  - [ ] RAG for assets
+- [x] Setup app wide RAG for notes and assets
+  - [x] RAG for notes
+  - [x] RAG for assets
   - [ ] RAG to Chat
   - [ ] RAG to summaries
 - [ ] Proper Roles and Permissions System
 - [ ] Import assets between campaigns
 - [x] Setup proper product analytics
 - [ ] Setup Stripe and payments
+  - [x] Setup subscription tiers
+  - [ ] Setup billing portal
 - [ ] Setup domain
 - [ ] Setup emails
 - [ ] Move images from public to supabase storage
+- [ ] Setup slugs for contents
