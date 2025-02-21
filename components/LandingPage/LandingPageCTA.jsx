@@ -11,7 +11,7 @@ export default function LandingPageCTA() {
             <p
             className="text-sm text-muted-foreground"
             >
-                AdventureHub.ai is currently in development. Sign up to get early access to the beta.
+                AdventureHub.ai is currently in development. Sign up with a free account to get early access to the beta.
             </p>
            <Link href="/login">
            <Button size="lg" className="bg-white text-black">
