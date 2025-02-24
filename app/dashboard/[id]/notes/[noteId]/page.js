@@ -80,7 +80,6 @@ export default function NotePage({ params }) {
     }
 
     return (
-        <Card>
         <div className="space-y-4 p-4">
             {isEditing ? (
                 <CreateNote 
@@ -115,6 +114,5 @@ export default function NotePage({ params }) {
                 </>
             )}
         </div>
-        </Card>
     )
 }
