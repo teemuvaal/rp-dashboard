@@ -65,6 +65,7 @@ Below is a list of features that are complete or in progress and should be compl
   - [ ] Collab editing (might be too difficult to implement)
   - [x] AI Cleanup
   - [x] Link to session
+  - [ ] Add support for tags?
 - [x] Characters
   - [x] Create template
   - [x] Create character from a template
