@@ -195,8 +195,32 @@ export default function CreateNote({ note, onNoteUpdated, campaignId }) {
         }
     }
 
-    const acceptCleanedVersion = () => {
+    const acceptCleanedVersion = async () => {
         setContent(cleanedContent)
+        
+        // Save the cleaned content to the database
+        const formData = new FormData()
+        formData.append('noteId', note.id)
+        formData.append('title', title)
+        formData.append('content', cleanedContent)
+        formData.append('isPublic', isPublic)
+        if (selectedSessionId !== 'none') {
+            formData.append('sessionId', selectedSessionId)
+        }
+
+        try {
+            const result = await updateNote(formData)
+            if (result.success) {
+                if (onNoteUpdated) {
+                    onNoteUpdated(result.note)
+                }
+            } else {
+                setError(result.error || 'Failed to save cleaned note')
+            }
+        } catch (err) {
+            setError('An unexpected error occurred while saving the cleaned note')
+        }
+
         setCleanedContent(null)
         setShowCleanDialog(false)
     }

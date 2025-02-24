@@ -17,7 +17,8 @@ export async function cleanUpNote(note) {
                         `The cleaned up version should be in the same language as the note.` +
                         `Improve the note structure to add a summary, key events, and other important information based on what is available in the note.` +
                         `If note contains unrelated information, profanity, or other inappropriate content, just return unable to clean up note.` +
-                        `If note is empty, just return unable to clean up note.`
+                        `If note is empty, just return unable to clean up note.` +
+                        `Return ONLY the formatted markdown text, without any JSON wrapping or metadata.`
             }),
         });
 
@@ -26,7 +27,15 @@ export async function cleanUpNote(note) {
         }
 
         const data = await response.json();
-        return { success: true, cleanedNote: data.text };
+        
+        // If the response is a string, use it directly
+        // If it's an object with a text property, use that
+        // Otherwise, return an error
+        const cleanedNote = typeof data === 'string' ? data : 
+                          (data.text ? data.text : 
+                          'Unable to clean up note: Invalid response format');
+
+        return { success: true, cleanedNote };
     } catch (error) {
         console.error('Error cleaning up note:', error);
         return { success: false, error: 'Failed to clean up note' };
