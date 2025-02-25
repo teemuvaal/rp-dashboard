@@ -12,6 +12,12 @@ import { embed } from 'ai';
 const ajv = new Ajv({ allErrors: true })
 addFormats(ajv)
 
+// Register custom formats used in our schemas
+ajv.addFormat('textarea', {
+    validate: () => true, // Always valid as this is just a UI hint
+    type: 'string'
+});
+
 export async function createCampaign(formData) {
   const supabase = createClient()
 
@@ -2115,6 +2121,7 @@ export async function createCharacter(formData) {
         const campaignId = formData.get('campaignId');
         const templateId = formData.get('templateId');
         const characterDataStr = formData.get('data');
+        const cleanedSchemaStr = formData.get('cleanedSchema');
         const portrait = formData.get('portrait');
 
         if (!campaignId || !templateId || !characterDataStr) {
@@ -2158,15 +2165,30 @@ export async function createCharacter(formData) {
             return { error: 'Template not found' };
         }
 
-        // Validate character data against template schema
-        const validate = ajv.compile(template.schema);
-        const valid = validate(characterData);
-        
-        if (!valid) {
-            return { 
-                error: 'Invalid character data',
-                details: validate.errors
-            };
+        // Use the cleaned schema if provided, otherwise use the original template schema
+        let schemaToValidate;
+        try {
+            schemaToValidate = cleanedSchemaStr ? JSON.parse(cleanedSchemaStr) : template.schema;
+            console.log('Schema used for validation:', schemaToValidate);
+        } catch (e) {
+            console.error('Error parsing cleaned schema, falling back to original:', e);
+            schemaToValidate = template.schema;
+        }
+
+        // Validate character data against schema
+        try {
+            const validate = ajv.compile(schemaToValidate);
+            const valid = validate(characterData);
+            
+            if (!valid) {
+                return { 
+                    error: 'Invalid character data',
+                    details: validate.errors
+                };
+            }
+        } catch (validationError) {
+            console.error('Validation error:', validationError);
+            return { error: 'Failed to create character: ' + validationError.message };
         }
 
         let portraitUrl = null;
