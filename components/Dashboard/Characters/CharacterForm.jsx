@@ -427,28 +427,35 @@ export default function CharacterForm({ templates, campaignId }) {
 
     // Helper function to add a name field if template doesn't have one
     const ensureNameField = () => {
-        if (!selectedTemplate?.schema?.properties?.name && 
-            !selectedTemplate?.schema?.properties?.characterName) {
-            return (
-                <div className="grid gap-2 mb-4">
-                    <Label htmlFor="name">
-                        Character Name <span className="text-red-500 ml-1">*</span>
-                    </Label>
-                    <Input
-                        id="name"
-                        name="name"
-                        value={formData.name || ''}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        placeholder="Enter character name"
-                        className={errors.name ? 'border-red-500' : ''}
-                    />
-                    {errors.name && (
-                        <p className="text-sm text-red-500">{errors.name}</p>
-                    )}
-                </div>
-            );
+        // If the template has a name field, render it using the template configuration
+        if (selectedTemplate?.schema?.properties?.name) {
+            return renderField('name', selectedTemplate.schema.properties.name);
         }
-        return null;
+        
+        // If the template has a characterName field, render it using the template configuration
+        if (selectedTemplate?.schema?.properties?.characterName) {
+            return renderField('characterName', selectedTemplate.schema.properties.characterName);
+        }
+        
+        // If no name field exists in template, create a default one
+        return (
+            <div className="grid gap-2 mb-4">
+                <Label htmlFor="name">
+                    Character Name <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <Input
+                    id="name"
+                    name="name"
+                    value={formData.name || ''}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    placeholder="Enter character name"
+                    className={errors.name ? 'border-red-500' : ''}
+                />
+                {errors.name && (
+                    <p className="text-sm text-red-500">{errors.name}</p>
+                )}
+            </div>
+        );
     };
 
     return (
@@ -511,10 +518,14 @@ export default function CharacterForm({ templates, campaignId }) {
                     
                     {schemaValidated && (
                         <>
+                            {/* Always render name field first */}
                             {ensureNameField()}
-                            {Object.entries(selectedTemplate.schema.properties).map(([id, field]) => 
-                                renderField(id, field)
-                            )}
+                            
+                            {/* Then render all other fields (excluding name/characterName which we already rendered) */}
+                            {Object.entries(selectedTemplate.schema.properties)
+                                .filter(([id]) => id !== 'name' && id !== 'characterName')
+                                .map(([id, field]) => renderField(id, field))
+                            }
                         </>
                     )}
                 </CardContent>

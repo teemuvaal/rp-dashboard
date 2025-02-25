@@ -4,6 +4,44 @@ import { uploadCampaignImage, createAsset, saveNarrativeContent } from './action
 import { createClient } from '@/utils/supabase/server';
 import { createPost } from './actions';
 
+// Utility function to extract JSON from markdown code blocks or raw JSON strings
+function extractJsonFromMarkdown(text) {
+    if (!text) return null;
+    
+    // First, try parsing the text directly as JSON
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        // Not valid JSON, continue with extraction
+    }
+
+    // Try to extract JSON from markdown code blocks
+    const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)\s*```/;
+    const match = text.match(codeBlockRegex);
+    
+    if (match && match[1]) {
+        try {
+            return JSON.parse(match[1].trim());
+        } catch (e) {
+            console.error("Failed to parse extracted content as JSON:", e);
+        }
+    }
+    
+    // Try to find array or object notation directly
+    const jsonRegex = /(\[[\s\S]*\]|\{[\s\S]*\})/;
+    const jsonMatch = text.match(jsonRegex);
+    
+    if (jsonMatch && jsonMatch[1]) {
+        try {
+            return JSON.parse(jsonMatch[1].trim());
+        } catch (e) {
+            console.error("Failed to parse JSON notation:", e);
+        }
+    }
+    
+    throw new Error("Could not extract valid JSON from the text");
+}
+
 // Cleans up a note and returns a cleaned up version
 export async function cleanUpNote(note) {
     try {
@@ -92,7 +130,7 @@ export async function generateAsset({ campaignId, name, description }) {
 }
 
 
-export async function generateCampaignImage({ campaignId, description }) {
+export async function generateCampaignImage({ campaignId, description, artStyle = '80s fantasy book cover' }) {
     try {
         // Generate the image
         const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/images`, {
@@ -100,7 +138,11 @@ export async function generateCampaignImage({ campaignId, description }) {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ prompt: description }),
+            body: JSON.stringify({ 
+                prompt: description,
+                type: 'campaign',
+                artStyle
+            }),
         });
 
         if (!response.ok) {
@@ -140,39 +182,87 @@ export async function generateCampaignImage({ campaignId, description }) {
 
 export async function extractSummaryHighlights(summary) {
     try {
+        // Make the OpenAI call
         const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/completion`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ 
-                prompt: `Extract exactly 3 key visual highlights from this session summary. Each highlight should be a vivid, descriptive scene that could be turned into an image. Format the response as a JSON array of strings. The scenes should be in chronological order as they appear in the summary.
+            body: JSON.stringify({
+                prompt: `Extract exactly three key visual highlights from this session summary. Each highlight should be a brief but vivid description of a specific, visually interesting moment or scene.
 
-Example format:
-["A massive dragon emerges from storm clouds, its scales glinting with lightning", "Heroes stand before ancient ruins, torches illuminating mysterious symbols", "A magical portal swirls with blue energy as adventurers step through"]
+                Format your response as a JSON array of strings, where each string is a visual highlight.
+                Example format: ["A towering dragon emerges from the mountain, its scales gleaming in the moonlight", "The party stands at the edge of a massive chasm, torches flickering against the darkness below", "The ancient artifact pulses with ethereal blue light as the wizard carefully examines its inscriptions"]
 
-Summary to analyze: ${summary}`
+                Session Summary:
+                ${summary}`
             }),
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`Failed to extract highlights: ${response.statusText}`);
         }
 
         const data = await response.json();
-        // Parse the response text as JSON to get the array
-        const highlights = JSON.parse(data.text);
+        console.log('AI Response for highlights:', data.text);
         
-        return { success: true, highlights };
+        // Try to parse the AI response using our utility function
+        try {
+            const highlights = extractJsonFromMarkdown(data.text);
+            
+            // Validate that we got an array with exactly 3 highlights
+            if (Array.isArray(highlights) && highlights.length > 0) {
+                // Ensure we have exactly 3 highlights
+                return { 
+                    success: true, 
+                    highlights: highlights.slice(0, 3),
+                    error: null
+                };
+            } else {
+                throw new Error('Invalid highlights format returned');
+            }
+        } catch (parseError) {
+            console.error('Failed to parse highlights:', parseError);
+            console.log('Response text:', data.text);
+            
+            // As a fallback, try to manually extract valid content
+            // This handles cases where the AI might return malformed JSON
+            const cleanedText = data.text
+                .replace(/```json|```/g, '') // Remove markdown code block markers
+                .trim();
+                
+            try {
+                // Try parsing the cleaned text
+                const highlights = JSON.parse(cleanedText);
+                if (Array.isArray(highlights) && highlights.length > 0) {
+                    return { 
+                        success: true, 
+                        highlights: highlights.slice(0, 3),
+                        error: null
+                    };
+                }
+            } catch (secondError) {
+                console.error('Second parsing attempt failed:', secondError);
+            }
+            
+            throw new Error('Failed to extract valid highlights from AI response');
+        }
     } catch (error) {
         console.error('Error extracting highlights:', error);
-        return { success: false, error: 'Failed to extract highlights' };
+        return { 
+            success: false, 
+            highlights: null,
+            error: `Error extracting highlights: ${error.message}` 
+        };
     }
 }
 
 export async function generateHighlightImages(highlights, sessionId, artStyle = 'fantasy') {
     try {
         // Convert highlights to image-optimized prompts using OpenAI
+        console.log('Converting highlights to image prompts with art style:', artStyle);
+        console.log('Highlights:', highlights);
+        
         const promptResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/completion`, {
             method: 'POST',
             headers: {
@@ -180,67 +270,115 @@ export async function generateHighlightImages(highlights, sessionId, artStyle = 
             },
             body: JSON.stringify({ 
                 prompt: `Convert these scene descriptions into detailed image generation prompts. Make them more specific and optimized for Flux image model. Art style should be ${artStyle}. Format as JSON array.
-                Example format: ["A majestic dragon emerging from dark storm clouds, scales crackling with electricity, dramatic lighting, ${artStyle} art style, detailed scales, volumetric lighting"]
+                Example format: ["A majestic dragon emerging from dark storm clouds, scales crackling with electricity, dramatic lighting, detailed scales, volumetric lighting"]
                 Scenes to convert: ${JSON.stringify(highlights)}`
             }),
         });
 
         if (!promptResponse.ok) {
-            throw new Error('Failed to optimize image prompts');
+            throw new Error(`Failed to optimize image prompts: ${promptResponse.status} ${promptResponse.statusText}`);
         }
 
         const promptData = await promptResponse.json();
-        const imagePrompts = JSON.parse(promptData.text);
+        console.log('AI response for prompt conversion:', promptData.text);
+        
+        // Parse the response which might contain markdown
+        let imagePrompts;
+        try {
+            imagePrompts = extractJsonFromMarkdown(promptData.text);
+            console.log('Parsed image prompts:', imagePrompts);
+        } catch (parseError) {
+            console.error('Error parsing prompt response:', parseError);
+            throw new Error('Failed to parse image prompts: ' + parseError.message);
+        }
 
+        if (!Array.isArray(imagePrompts) || imagePrompts.length === 0) {
+            throw new Error('Invalid image prompts format: expected non-empty array');
+        }
+
+        console.log(`Generating ${imagePrompts.length} images with ${artStyle} style...`);
+        
         // Generate and upload images in parallel
         const imagePromises = imagePrompts.map(async (prompt, index) => {
-            // Generate the image
-            const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/images`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ prompt }),
-            });
+            console.log(`Generating image ${index + 1} with prompt:`, prompt);
+            
+            try {
+                // Generate the image
+                const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/images`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        prompt, 
+                        type: 'highlight',
+                        artStyle
+                    }),
+                });
 
-            if (!response.ok) {
-                throw new Error(`Failed to generate image ${index + 1}`);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(`Failed to generate image ${index + 1}: ${errorData.error || response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log(`Image ${index + 1} generated successfully`);
+                
+                if (!data.imageUrl) {
+                    throw new Error(`No image URL received for image ${index + 1}`);
+                }
+                
+                // Fetch the image data
+                const imageResponse = await fetch(data.imageUrl);
+                if (!imageResponse.ok) {
+                    throw new Error(`Failed to fetch generated image ${index + 1}: ${imageResponse.status} ${imageResponse.statusText}`);
+                }
+                
+                const imageBlob = await imageResponse.blob();
+                console.log(`Image ${index + 1} fetched successfully, size: ${imageBlob.size} bytes`);
+                
+                if (imageBlob.size === 0) {
+                    throw new Error(`Empty image blob received for image ${index + 1}`);
+                }
+                
+                // Create a File object
+                const file = new File([imageBlob], `session-highlight-${index + 1}.png`, { type: 'image/png' });
+                
+                // Upload to storage using uploadAsset
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('sessionId', sessionId);
+                formData.append('type', 'visual_summary');
+                formData.append('index', index.toString());
+
+                console.log(`Uploading image ${index + 1} to storage...`);
+                const uploadResult = await uploadSessionImage(formData);
+                if (uploadResult.error) {
+                    throw new Error(`Failed to upload image ${index + 1}: ${uploadResult.error}`);
+                }
+
+                console.log(`Image ${index + 1} uploaded successfully:`, uploadResult.imageUrl);
+                return uploadResult.imageUrl;
+            } catch (error) {
+                console.error(`Error processing image ${index + 1}:`, error);
+                throw error; // Re-throw to be caught by the Promise.all
             }
-
-            const data = await response.json();
-            
-            // Fetch the PNG
-            const imageResponse = await fetch(data.imageUrl);
-            if (!imageResponse.ok) throw new Error(`Failed to fetch generated image ${index + 1}`);
-            
-            const imageBlob = await imageResponse.blob();
-            
-            // Create a File object
-            const file = new File([imageBlob], `session-highlight-${index + 1}.png`, { type: 'image/png' });
-            
-            // Upload to storage using uploadAsset
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('sessionId', sessionId);
-            formData.append('type', 'visual_summary');
-            formData.append('index', index.toString());
-
-            const uploadResult = await uploadSessionImage(formData);
-            if (uploadResult.error) {
-                throw new Error(`Failed to upload image ${index + 1}: ${uploadResult.error}`);
-            }
-
-            return uploadResult.imageUrl;
         });
 
         // Wait for all images to be generated and uploaded
-        const imageUrls = await Promise.all(imagePromises);
-
-        return { 
-            success: true, 
-            imageUrls,
-            prompts: imagePrompts
-        };
+        try {
+            const imageUrls = await Promise.all(imagePromises);
+            console.log('All images generated and uploaded successfully');
+            
+            return { 
+                success: true, 
+                imageUrls,
+                prompts: imagePrompts
+            };
+        } catch (error) {
+            console.error('Failed to process one or more images:', error);
+            throw new Error(`Image generation failed: ${error.message}`);
+        }
     } catch (error) {
         console.error('Error generating highlight images:', error);
         return { 
@@ -537,6 +675,8 @@ export async function handleGenerateVisualSummary(sessionId, summaryId, summaryC
     const supabase = createClient();
 
     try {
+        console.log(`Starting visual summary generation for session ${sessionId}`);
+        
         // First, get the correct summary ID from the database
         const { data: summary, error: summaryError } = await supabase
             .from('session_summaries')
@@ -553,20 +693,27 @@ export async function handleGenerateVisualSummary(sessionId, summaryId, summaryC
         }
 
         console.log('Step 1: Extracting highlights...');
-        const { success: highlightSuccess, highlights, error: highlightError } = 
-            await extractSummaryHighlights(summaryContent);
+        const highlightResult = await extractSummaryHighlights(summaryContent);
+        console.log('Highlight extraction result:', JSON.stringify(highlightResult));
         
-        if (!highlightSuccess || !highlights) {
-            throw new Error(highlightError || 'Failed to extract highlights');
+        if (!highlightResult.success || !highlightResult.highlights) {
+            console.error('Failed to extract highlights:', highlightResult.error);
+            throw new Error(highlightResult.error || 'Failed to extract highlights');
         }
+        
+        const highlights = highlightResult.highlights;
+        console.log('Extracted highlights:', highlights);
 
         console.log('Step 2: Generating images...');
         const { success: imageSuccess, imageUrls, prompts, error: imageError } = 
             await generateHighlightImages(highlights, sessionId, selectedStyle);
         
         if (!imageSuccess) {
+            console.error('Failed to generate images:', imageError);
             throw new Error(imageError || 'Failed to generate images');
         }
+        
+        console.log('Generated image URLs:', imageUrls);
 
         console.log('Step 3: Generating narrative...');
         const { success: narrativeSuccess, text: narrativeContent, error: narrativeError } = 
@@ -582,6 +729,7 @@ export async function handleGenerateVisualSummary(sessionId, summaryId, summaryC
             await generateNarrationAudio(narrativeContent);
         
         if (!audioSuccess) {
+            console.error('Audio generation failed:', audioError);
             throw new Error(audioError || 'Failed to generate audio');
         }
 
@@ -597,6 +745,7 @@ export async function handleGenerateVisualSummary(sessionId, summaryId, summaryC
         });
 
         if (!saveSuccess) {
+            console.error('Failed to save visual summary:', saveError);
             throw new Error(saveError || 'Failed to save visual summary');
         }
 
@@ -631,6 +780,8 @@ export async function handleGenerateBasicVisualSummary(sessionId, summaryId, sum
     const supabase = createClient();
 
     try {
+        console.log(`Starting basic visual summary generation for session ${sessionId}`);
+        
         // First, get the correct summary ID from the database
         const { data: summary, error: summaryError } = await supabase
             .from('session_summaries')
@@ -647,40 +798,49 @@ export async function handleGenerateBasicVisualSummary(sessionId, summaryId, sum
         }
 
         console.log('Step 1: Extracting highlights...');
-        const { success: highlightSuccess, highlights, error: highlightError } = 
-            await extractSummaryHighlights(summaryContent);
+        const highlightResult = await extractSummaryHighlights(summaryContent);
+        console.log('Highlight extraction result:', JSON.stringify(highlightResult));
         
-        if (!highlightSuccess || !highlights) {
+        if (!highlightResult.success || !highlightResult.highlights) {
+            console.error('Failed to extract highlights:', highlightResult.error);
             return {
                 success: false,
-                error: highlightError || 'Failed to extract highlights'
+                error: highlightResult.error || 'Failed to extract highlights'
             };
         }
+        
+        const highlights = highlightResult.highlights;
+        console.log('Extracted highlights:', highlights);
 
         console.log('Step 2: Generating images...');
-        const { success: imageSuccess, imageUrls, imagePrompts, error: imageError } = 
+        const { success: imageSuccess, imageUrls, prompts: imagePrompts, error: imageError } = 
             await generateHighlightImages(highlights, sessionId, selectedStyle);
 
         if (!imageSuccess) {
+            console.error('Failed to generate images:', imageError);
             return {
                 success: false,
                 error: imageError || 'Failed to generate images'
             };
         }
+        
+        console.log('Generated image URLs:', imageUrls);
 
         console.log('Step 3: Generating narrative...');
-        const { success: narrativeSuccess, content: narrativeContent, error: narrativeError } = 
+        const { success: narrativeSuccess, text: narrativeContent, error: narrativeError } = 
             await generateNarrativeSummary(summaryContent, sessionId);
 
         if (!narrativeSuccess) {
+            console.error('Narrative generation failed:', narrativeError);
             return {
                 success: false,
                 error: narrativeError || 'Failed to generate narrative'
             };
         }
 
+        console.log('Step 4: Saving visual summary (without audio)...');
         // Save the visual summary without audio
-        const { success: saveSuccess, error: saveError } = await saveVisualSummary({
+        const { success: saveSuccess, error: saveError, data: savedData } = await saveVisualSummary({
             sessionId,
             summaryId: summary.id,
             highlights,
@@ -691,15 +851,17 @@ export async function handleGenerateBasicVisualSummary(sessionId, summaryId, sum
         });
 
         if (!saveSuccess) {
+            console.error('Failed to save visual summary:', saveError);
             return {
                 success: false,
                 error: saveError || 'Failed to save visual summary'
             };
         }
 
+        console.log('Basic visual summary generation completed successfully');
         return {
             success: true,
-            data: {
+            data: savedData || {
                 highlights,
                 imageUrls,
                 imagePrompts,
