@@ -1068,10 +1068,9 @@ export async function updateNote(formData) {
             return { success: true, note: { id: noteId } };
         }
 
-        console.log('Note updated successfully, embedding disabled temporarily');
+        console.log('Note updated successfully, queueing for embedding');
         
-        /* 
-        // TEMPORARILY DISABLED: Queue the updated note for embedding
+        // Queue the updated note for embedding
         try {
             await queueEmbedding(
                 supabase,
@@ -1085,7 +1084,6 @@ export async function updateNote(formData) {
             console.error('Error queueing embedding but note was updated:', embedError);
             // Don't fail the operation if embedding fails
         }
-        */
 
         return { success: true, note: updatedNote };
     } catch (error) {
