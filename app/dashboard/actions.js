@@ -679,6 +679,7 @@ async function queueEmbedding(supabase, contentType, contentId, campaignId, cont
     
     try {
         // First, delete any existing embeddings for this content
+        console.log('Deleting existing embeddings before inserting new ones');
         const { error: deleteError } = await supabase
             .from('content_embeddings')
             .delete()
@@ -688,6 +689,8 @@ async function queueEmbedding(supabase, contentType, contentId, campaignId, cont
             console.error('Error deleting existing embeddings:', deleteError);
             return { success: false, error: deleteError };
         }
+        
+        console.log('Successfully deleted existing embeddings');
 
         // Create chunks from the content
         const chunks = createTextChunks(contentText);
@@ -695,23 +698,38 @@ async function queueEmbedding(supabase, contentType, contentId, campaignId, cont
 
         // Insert new embedding records for each chunk
         for (const chunk of chunks) {
+            console.log(`Inserting chunk ${chunk.index + 1}/${chunks.length}`);
+            
+            const record = {
+                content_type: contentType,
+                content_id: contentId,
+                campaign_id: campaignId,
+                content_text: chunk.text,
+                chunk_index: chunk.index,
+                total_chunks: chunks.length,
+                status: 'pending',
+                last_processed_at: new Date().toISOString()
+            };
+            
+            console.log('Preparing to insert embedding record:', {
+                contentType,
+                contentId,
+                chunkIndex: chunk.index,
+                textLength: chunk.text.length
+            });
+            
+            // Use regular insert instead of upsert since we've already deleted existing records
             const { error: insertError } = await supabase
                 .from('content_embeddings')
-                .insert({
-                    content_type: contentType,
-                    content_id: contentId,
-                    campaign_id: campaignId,
-                    content_text: chunk.text,
-                    chunk_index: chunk.index,
-                    total_chunks: chunks.length,
-                    status: 'pending',
-                    last_processed_at: new Date().toISOString()
-                });
+                .insert(record);
 
             if (insertError) {
                 console.error('Error inserting embedding record:', insertError);
+                console.error('Record that failed:', record);
                 return { success: false, error: insertError };
             }
+            
+            console.log(`Successfully inserted chunk ${chunk.index + 1}`);
         }
 
         // Verify records were created
@@ -811,7 +829,8 @@ export async function createNote(formData) {
             }
         }
 
-        const { data, error } = await supabase
+        // Step 1: Insert the note without returning data
+        const { data: insertData, error } = await supabase
             .from('notes')
             .insert({
                 campaign_id: campaignId,
@@ -823,6 +842,18 @@ export async function createNote(formData) {
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             })
+            .select('id'); // Only get the ID for reference
+
+        if (error) {
+            console.error('Error creating note:', error);
+            return { error: error.message };
+        }
+
+        const noteId = insertData[0].id;
+
+        // Step 2: Fetch the complete note data separately
+        const { data: noteData, error: fetchError } = await supabase
+            .from('notes')
             .select(`
                 *,
                 users (
@@ -830,18 +861,31 @@ export async function createNote(formData) {
                     profile_picture
                 )
             `)
+            .eq('id', noteId)
             .single();
 
-        if (error) {
-            console.error('Error creating note:', error);
-            return { error: error.message };
+        if (fetchError) {
+            console.error('Error fetching new note:', fetchError);
+            // Return success with minimal data since the note was created
+            return { 
+                success: true, 
+                note: {
+                    id: noteId,
+                    title,
+                    content,
+                    is_public: isPublic,
+                    campaign_id: campaignId,
+                    session_id: sessionId,
+                    user_id: user.id
+                }
+            };
         }
 
         // Queue the note for embedding
         await queueEmbedding(
             supabase,
             'note',
-            data.id,
+            noteId,
             campaignId,
             `${title}\n\n${content}`
         );
@@ -849,8 +893,8 @@ export async function createNote(formData) {
         return { 
             success: true, 
             note: {
-                ...data,
-                author: data.users?.username || 'Unknown'
+                ...noteData,
+                author: noteData.users?.username || 'Unknown'
             }
         };
     } catch (error) {
@@ -922,6 +966,7 @@ export async function fetchSessionNotes(sessionId) {
 
 export async function updateNote(formData) {
     const supabase = createClient();
+    console.log('Starting updateNote function');
 
     try {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -933,6 +978,8 @@ export async function updateNote(formData) {
 
         const noteId = formData.get('noteId');
         const sessionId = formData.get('sessionId');
+        
+        console.log('updateNote params:', { noteId, sessionId });
 
         // Get the campaign ID for the note
         const { data: existingNote, error: noteError } = await supabase
@@ -945,30 +992,53 @@ export async function updateNote(formData) {
             console.error('Error fetching note:', noteError);
             return { error: noteError.message };
         }
+        
+        console.log('Existing note found:', existingNote);
 
         // If we're just updating the session link, we don't need the other fields
         if (sessionId !== null && !formData.get('title')) {
-            const { data, error } = await supabase
+            console.log('Updating only session_id for note');
+            
+            // Step 1: Update without returning data
+            const { error } = await supabase
                 .from('notes')
-                .update({ session_id: sessionId || null })
+                .update({ 
+                    session_id: sessionId || null,
+                    updated_at: new Date().toISOString()
+                })
                 .eq('id', noteId)
-                .eq('user_id', user.id)
-                .select();
-
+                .eq('user_id', user.id);
+                
             if (error) {
-                console.error('Error updating note:', error);
+                console.error('Error updating note session:', error);
                 return { error: error.message };
             }
+            
+            // Step 2: Fetch the updated note separately
+            const { data: updatedNote, error: fetchError } = await supabase
+                .from('notes')
+                .select('*')
+                .eq('id', noteId)
+                .single();
+                
+            if (fetchError) {
+                console.error('Error fetching updated note:', fetchError);
+                // Still return success since the update succeeded
+                return { success: true, note: { id: noteId, session_id: sessionId } };
+            }
 
-            return { success: true, note: data[0] };
+            return { success: true, note: updatedNote };
         }
 
         // Otherwise, update all fields
         const title = formData.get('title');
         const content = formData.get('content');
         const isPublic = formData.get('isPublic') === 'true';
+        
+        console.log('Updating all fields for note:', { title, isPublic, sessionId, contentLength: content?.length });
 
-        const { data, error } = await supabase
+        // Step 1: Update without returning data
+        const { error } = await supabase
             .from('notes')
             .update({
                 title,
@@ -978,24 +1048,46 @@ export async function updateNote(formData) {
                 updated_at: new Date().toISOString()
             })
             .eq('id', noteId)
-            .eq('user_id', user.id)
-            .select();
-
+            .eq('user_id', user.id);
+            
         if (error) {
             console.error('Error updating note:', error);
             return { error: error.message };
         }
+        
+        // Step 2: Fetch the updated note separately
+        const { data: updatedNote, error: fetchError } = await supabase
+            .from('notes')
+            .select('*')
+            .eq('id', noteId)
+            .single();
+            
+        if (fetchError) {
+            console.error('Error fetching updated note:', fetchError);
+            // Still return success since the update succeeded
+            return { success: true, note: { id: noteId } };
+        }
 
-        // Queue the updated note for embedding
-        await queueEmbedding(
-            supabase,
-            'note',
-            noteId,
-            existingNote.campaign_id,
-            `${title}\n\n${content}`
-        );
+        console.log('Note updated successfully, embedding disabled temporarily');
+        
+        /* 
+        // TEMPORARILY DISABLED: Queue the updated note for embedding
+        try {
+            await queueEmbedding(
+                supabase,
+                'note',
+                noteId,
+                existingNote.campaign_id,
+                `${title}\n\n${content}`
+            );
+            console.log('Successfully queued note for embedding');
+        } catch (embedError) {
+            console.error('Error queueing embedding but note was updated:', embedError);
+            // Don't fail the operation if embedding fails
+        }
+        */
 
-        return { success: true, note: data[0] };
+        return { success: true, note: updatedNote };
     } catch (error) {
         console.error('Unexpected error in updateNote:', error);
         return { error: 'An unexpected error occurred' };
@@ -1408,21 +1500,64 @@ export async function saveSummary({ sessionId, content }) {
     const supabase = createClient();
     
     try {
-        const { data, error } = await supabase
+        // Step 1: Check if a summary already exists
+        const { data: existingSummary, error: checkError } = await supabase
             .from('session_summaries')
-            .upsert({
-                session_id: sessionId,
-                content,
-                updated_at: new Date().toISOString()
-            }, {
-                onConflict: 'session_id'
-            })
+            .select('id')
+            .eq('session_id', sessionId)
+            .maybeSingle();
+            
+        if (checkError) {
+            console.error('Error checking existing summary:', checkError);
+            return { success: false, error: checkError.message };
+        }
+        
+        // Step 2: Insert or update based on existence
+        let operation;
+        if (existingSummary) {
+            // Update existing summary
+            operation = supabase
+                .from('session_summaries')
+                .update({
+                    content,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('session_id', sessionId);
+        } else {
+            // Insert new summary
+            operation = supabase
+                .from('session_summaries')
+                .insert({
+                    session_id: sessionId,
+                    content,
+                    updated_at: new Date().toISOString()
+                });
+        }
+        
+        const { error: operationError } = await operation;
+        
+        if (operationError) {
+            console.error('Error saving summary:', operationError);
+            return { success: false, error: operationError.message };
+        }
+        
+        // Step 3: Fetch the updated summary
+        const { data, error: fetchError } = await supabase
+            .from('session_summaries')
             .select()
+            .eq('session_id', sessionId)
             .single();
-
-        if (error) {
-            console.error('Error saving summary:', error);
-            return { success: false, error: error.message };
+            
+        if (fetchError) {
+            console.error('Error fetching updated summary:', fetchError);
+            // Return success with minimal data
+            return { 
+                success: true, 
+                data: { 
+                    session_id: sessionId, 
+                    content
+                } 
+            };
         }
 
         return { success: true, data };
@@ -1450,7 +1585,8 @@ export async function createAsset(formData) {
         return { error: 'Missing required fields' }
     }
 
-    const { data, error } = await supabase
+    // Step 1: Insert the asset and get only the ID
+    const { data: insertData, error } = await supabase
         .from('assets')
         .insert({
             campaign_id: campaignId,
@@ -1461,12 +1597,38 @@ export async function createAsset(formData) {
             type,
             is_public: isPublic
         })
-        .select()
-        .single()
+        .select('id')
 
     if (error) {
         console.error('Error creating asset:', error)
         return { error: 'Failed to create asset' }
+    }
+
+    const assetId = insertData[0].id;
+    
+    // Step 2: Fetch the complete asset data
+    const { data: assetData, error: fetchError } = await supabase
+        .from('assets')
+        .select('*')
+        .eq('id', assetId)
+        .single()
+        
+    if (fetchError) {
+        console.error('Error fetching created asset:', fetchError)
+        // Return success with minimal data since the asset was created
+        return { 
+            success: true, 
+            data: {
+                id: assetId,
+                title,
+                description,
+                content,
+                type,
+                is_public: isPublic,
+                campaign_id: campaignId,
+                user_id: user.id
+            }
+        }
     }
 
     // Queue the asset for embedding
@@ -1475,7 +1637,7 @@ export async function createAsset(formData) {
         await queueEmbedding(
             supabase,
             'asset',
-            data.id,
+            assetId,
             campaignId,
             assetText
         );
@@ -1484,7 +1646,7 @@ export async function createAsset(formData) {
         // Don't fail the asset creation if embedding fails
     }
 
-    return { success: true, data }
+    return { success: true, data: assetData }
 }
 
 export async function updateAsset(formData) {
@@ -1516,7 +1678,8 @@ export async function updateAsset(formData) {
         return { error: 'Failed to update asset' };
     }
 
-    const { data, error } = await supabase
+    // Step 1: Update without returning data
+    const { error } = await supabase
         .from('assets')
         .update({
             title,
@@ -1526,13 +1689,35 @@ export async function updateAsset(formData) {
             is_public: isPublic,
             updated_at: new Date().toISOString()
         })
-        .eq('id', assetId)
-        .select()
-        .single()
+        .eq('id', assetId);
 
     if (error) {
         console.error('Error updating asset:', error)
         return { error: 'Failed to update asset' }
+    }
+
+    // Step 2: Fetch the updated asset separately
+    const { data, error: fetchDataError } = await supabase
+        .from('assets')
+        .select()
+        .eq('id', assetId)
+        .single();
+        
+    if (fetchDataError) {
+        console.error('Error fetching updated asset:', fetchDataError);
+        // Return success with minimal data since the update succeeded
+        return { 
+            success: true, 
+            data: {
+                id: assetId,
+                title,
+                description,
+                content,
+                type,
+                is_public: isPublic,
+                campaign_id: existingAsset.campaign_id
+            }
+        };
     }
 
     // Queue the updated asset for embedding
@@ -1820,18 +2005,68 @@ export async function saveNarrativeSummary({ sessionId, summaryId, content }) {
     const supabase = createClient();
     
     try {
-        const { data, error } = await supabase
+        // Step 1: Check if a narrative summary already exists
+        const { data: existingSummary, error: checkError } = await supabase
             .from('narrative_summaries')
-            .upsert({
-                session_id: sessionId,
-                summary_id: summaryId,
-                content: content,
-                updated_at: new Date().toISOString(),
-            })
-            .select()
+            .select('id')
+            .eq('session_id', sessionId)
+            .maybeSingle();
+            
+        if (checkError) {
+            console.error('Error checking existing narrative summary:', checkError);
+            return { success: false, error: checkError.message };
+        }
+        
+        // Step 2: Insert or update based on existence
+        let operation;
+        if (existingSummary) {
+            // Update existing summary
+            operation = supabase
+                .from('narrative_summaries')
+                .update({
+                    summary_id: summaryId,
+                    content: content,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('session_id', sessionId);
+        } else {
+            // Insert new summary
+            operation = supabase
+                .from('narrative_summaries')
+                .insert({
+                    session_id: sessionId,
+                    summary_id: summaryId,
+                    content: content,
+                    updated_at: new Date().toISOString()
+                });
+        }
+        
+        const { error: operationError } = await operation;
+        
+        if (operationError) {
+            console.error('Error saving narrative summary:', operationError);
+            return { success: false, error: operationError.message };
+        }
+        
+        // Step 3: Fetch the updated summary
+        const { data, error: fetchError } = await supabase
+            .from('narrative_summaries')
+            .select('*')
+            .eq('session_id', sessionId)
             .single();
-
-        if (error) throw error;
+            
+        if (fetchError) {
+            console.error('Error fetching updated narrative summary:', fetchError);
+            // Return success with minimal data
+            return { 
+                success: true, 
+                data: { 
+                    session_id: sessionId, 
+                    summary_id: summaryId,
+                    content
+                } 
+            };
+        }
 
         return { success: true, data };
     } catch (error) {
