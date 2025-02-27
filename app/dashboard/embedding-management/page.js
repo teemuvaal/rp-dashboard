@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import EmbeddingDebugDashboard from '../embedding-debug-dashboard';
+import { redirect } from 'next/navigation';
 
 export const metadata = {
   title: 'Embedding Management - RP Dashboard',
@@ -26,17 +27,29 @@ export default async function EmbeddingManagementPage() {
     );
   }
 
+  console.log('User ID:', user.id);
+
   // Check if user is admin
   const { data: userRoles, error: rolesError } = await supabase
     .from('user_roles')
-    .select('role')
-    .eq('user_id', user.id)
-    .single();
+    .select('*')
+    .eq('user_id', user.id);
 
-  const isAdmin = userRoles?.role === 'admin';
-  console.log(user.id,userRoles?.role,isAdmin);
+  console.log('User Roles Query Result:', userRoles);
+  console.log('Roles Error:', rolesError);
 
-  
+  // Try a broader query to see if the table has any records
+  const { data: allRoles, error: allRolesError } = await supabase
+    .from('user_roles')
+    .select('*')
+    .limit(5);
+    
+  console.log('All roles sample:', allRoles);
+  console.log('All roles error:', allRolesError);
+
+  // Fallback for debugging - try forcing admin access temporarily
+  // const isAdmin = true; // TEMPORARY FOR TESTING
+  const isAdmin = userRoles && userRoles.length > 0 && userRoles[0].role === 'admin';
 
   if (!isAdmin) {
     return (
@@ -44,6 +57,7 @@ export default async function EmbeddingManagementPage() {
         <div className="rounded-lg bg-yellow-50 p-4 text-yellow-800">
           <h2 className="text-lg font-semibold">Access Restricted</h2>
           <p className="mt-2">This page is only accessible to administrators.</p>
+          <p className="mt-2 text-xs">(User ID: {user.id}, Role Query Result: {JSON.stringify(userRoles)})</p>
           <a href="/dashboard" className="mt-4 inline-block rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
             Back to Dashboard
           </a>
