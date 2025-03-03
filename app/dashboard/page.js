@@ -44,14 +44,8 @@ export default async function Dashboard() {
         .select('*')
         .eq('user_id', data.user.id);
     
-    // const isAdmin = userRole && userRole.length > 0 && userRole[0].role === 'admin';
+    const isAdmin = userRole && userRole.length > 0 && userRole[0].role === 'admin';
     
-    console.log('User ID:', data.user.id);
-    console.log('User Role Data:', userRole);
-    console.log('Role Error:', roleError);
-    console.log('Is Admin:', isAdmin);
-
-    const isAdmin = true;
     const { campaigns, error: campaignsError } = await fetchUserCampaigns();
 
     return (
