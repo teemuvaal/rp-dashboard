@@ -27,7 +27,6 @@ export default async function EmbeddingManagementPage() {
     );
   }
 
-  console.log('User ID:', user.id);
 
   // Check if user is admin
   const { data: userRoles, error: rolesError } = await supabase
@@ -44,11 +43,7 @@ export default async function EmbeddingManagementPage() {
     .select('*')
     .limit(5);
     
-  console.log('All roles sample:', allRoles);
-  console.log('All roles error:', allRolesError);
 
-  // Fallback for debugging - try forcing admin access temporarily
-  // const isAdmin = true; // TEMPORARY FOR TESTING
   const isAdmin = userRoles && userRoles.length > 0 && userRoles[0].role === 'admin';
 
   if (!isAdmin) {

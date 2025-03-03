@@ -16,6 +16,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import SubscriptionStatus from "@/components/Dashboard/SubscriptionStatus";
+import { checkIsAdmin } from '@/utils/supabase/admin';
 
 export default async function Dashboard() {
     const supabase = createClient();
@@ -39,13 +40,13 @@ export default async function Dashboard() {
     }
 
     // Check if user is an admin
-    const { data: userRole, error: roleError } = await supabase
-        .from('user_roles')
-        .select('*')
-        .eq('user_id', data.user.id);
+    const isAdmin = await checkIsAdmin(data.user.id);
     
-    const isAdmin = userRole && userRole.length > 0 && userRole[0].role === 'admin';
-    
+    console.log('Admin Check:', {
+        userId: data.user.id,
+        isAdmin: isAdmin
+    });
+
     const { campaigns, error: campaignsError } = await fetchUserCampaigns();
 
     return (
