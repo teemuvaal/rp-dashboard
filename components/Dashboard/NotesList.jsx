@@ -83,7 +83,7 @@ export default function NotesList({ notes = [], campaignId, error: listError }) 
                     onClick={() => router.push(`/dashboard/${campaignId}/notes/${note.id}`)}
                 >
                     <div className="flex items-center gap-4 min-w-0">
-                        <div className="flex items-center w-8 h-8 rounded-full bg-primary/10 text-primary">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary">
                             <NotepadText className="h-4 w-4" />
                         </div>
                         <div className="min-w-0">
