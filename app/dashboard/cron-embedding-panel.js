@@ -65,7 +65,7 @@ export default function CronEmbeddingPanel() {
     };
 
     return (
-        <div className="my-4 p-4 border rounded-lg bg-white shadow-sm">
+        <div className="my-4 p-4 border rounded-lg bg-background shadow-sm">
             <h3 className="text-lg font-semibold mb-2">Embedding Processing Scheduler</h3>
             
             <div className="flex flex-col md:flex-row gap-2 mb-4">
@@ -100,7 +100,7 @@ export default function CronEmbeddingPanel() {
             )}
             
             <div className="border rounded-lg overflow-hidden">
-                <div className="bg-gray-100 px-3 py-2 border-b font-medium">Process Log</div>
+                <div className="bg-background px-3 py-2 border-b font-medium">Process Log</div>
                 <div className="p-2 bg-black text-white font-mono text-sm h-48 overflow-y-auto">
                     {logMessages.length === 0 ? (
                         <div className="text-gray-500 italic">No log messages yet...</div>

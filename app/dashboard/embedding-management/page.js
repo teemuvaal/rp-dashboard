@@ -48,7 +48,7 @@ export default async function EmbeddingManagementPage() {
 
   if (!isAdmin) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-4">
+      <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
         <div className="rounded-lg bg-yellow-50 p-4 text-yellow-800">
           <h2 className="text-lg font-semibold">Access Restricted</h2>
           <p className="mt-2">This page is only accessible to administrators.</p>
@@ -62,7 +62,7 @@ export default async function EmbeddingManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="container mx-auto px-4">
         <h1 className="mb-8 text-3xl font-bold">Embedding Management</h1>
         <EmbeddingDebugDashboard />
