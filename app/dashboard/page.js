@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { fetchUserCampaigns } from './actions';
 import CampaignList from "@/components/Dashboard/CampaignList";
 import CreateCampaignForm from "@/components/Dashboard/CreateCampaignForm";
+import AdminNav from "@/components/Dashboard/AdminNav";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Settings, CreditCard } from "lucide-react";
 import Link from "next/link";
@@ -15,6 +16,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import SubscriptionStatus from "@/components/Dashboard/SubscriptionStatus";
+import { checkIsAdmin } from '@/utils/supabase/admin';
 
 export default async function Dashboard() {
     const supabase = createClient();
@@ -36,6 +38,14 @@ export default async function Dashboard() {
     } else if (!userData?.username) {
         redirect('/dashboard/profile');
     }
+
+    // Check if user is an admin
+    const isAdmin = await checkIsAdmin(data.user.id);
+    
+    console.log('Admin Check:', {
+        userId: data.user.id,
+        isAdmin: isAdmin
+    });
 
     const { campaigns, error: campaignsError } = await fetchUserCampaigns();
 
@@ -156,6 +166,9 @@ export default async function Dashboard() {
                                 </Button>
                             </CardContent>
                         </Card>
+                        
+                        {/* Admin Navigation - Only shown to admins */}
+                        {isAdmin && <AdminNav />}
                     </div>
                 </div>
             </main>

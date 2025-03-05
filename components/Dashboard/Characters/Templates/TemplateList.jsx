@@ -38,7 +38,7 @@ export default function TemplateList({ templates, campaignId }) {
                     <TableRow key={template.id}>
                         <TableCell className="font-medium">
                             <Link 
-                                href={`/dashboard/${campaignId}/characters/templates/${template.id}`}
+                                href={`/dashboard/${campaignId}/characters/templates/${template.id}/edit`}
                                 className="hover:underline"
                             >
                                 {template.name}

@@ -29,19 +29,25 @@ export default function DashboardBreadcrumb({ campaign }) {
 
     // Map segments to readable names
     const getSegmentName = (segment) => {
-        if (segment === campaign.id) return campaign.name;
+        if (segment === campaign.id) return 'Dashboard';
+        if (segment === 'dashboard') return null; // Skip the dashboard segment
         return segment.charAt(0).toUpperCase() + segment.slice(1);
     };
 
+    // Filter out the 'dashboard' segment and create breadcrumb items
     const breadcrumbItems = segments
         .map((segment, index) => {
-            if (segment === campaign.id) return null;
+            if (segment === 'dashboard') return null;
             
             const path = `/${segments.slice(0, index + 1).join('/')}`;
+            const name = getSegmentName(segment);
             const isLast = index === segments.length - 1;
             
+            // Skip if no name (happens for 'dashboard' segment)
+            if (!name) return null;
+            
             return {
-                segment,
+                name,
                 path,
                 isLast
             };
@@ -54,10 +60,10 @@ export default function DashboardBreadcrumb({ campaign }) {
                 {breadcrumbItems.map((item, index) => (
                     <BreadcrumbItem key={item.path}>
                         {item.isLast ? (
-                            <BreadcrumbPage>{getSegmentName(item.segment)}</BreadcrumbPage>
+                            <BreadcrumbPage>{item.name}</BreadcrumbPage>
                         ) : (
                             <BreadcrumbLink asChild>
-                                <Link href={item.path}>{getSegmentName(item.segment)}</Link>
+                                <Link href={item.path}>{item.name}</Link>
                             </BreadcrumbLink>
                         )}
                         {!item.isLast && <BreadcrumbSeparator />}

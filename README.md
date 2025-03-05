@@ -65,6 +65,7 @@ Below is a list of features that are complete or in progress and should be compl
   - [ ] Collab editing (might be too difficult to implement)
   - [x] AI Cleanup
   - [x] Link to session
+  - [ ] Add support for tags?
 - [x] Characters
   - [x] Create template
   - [x] Create character from a template
@@ -74,19 +75,22 @@ Below is a list of features that are complete or in progress and should be compl
   - [x] Asset types
   - [x] Asset management
   - [x] Asset library
-- [ ] Maps
-  - [ ] Add map
+- [x] Maps
+  - [x] Add map
   - [ ] Generate map
-  - [ ] Add markers to map
-- [ ] Setup app wide RAG for notes and assets
-  - [ ] RAG for notes
-  - [ ] RAG for assets
+  - [x] Add markers to map
+- [x] Setup app wide RAG for notes and assets
+  - [x] RAG for notes
+  - [x] RAG for assets
   - [ ] RAG to Chat
   - [ ] RAG to summaries
 - [ ] Proper Roles and Permissions System
 - [ ] Import assets between campaigns
-- [ ] Setup proper product analytics
+- [x] Setup proper product analytics
 - [ ] Setup Stripe and payments
+  - [x] Setup subscription tiers
+  - [ ] Setup billing portal
 - [ ] Setup domain
 - [ ] Setup emails
 - [ ] Move images from public to supabase storage
+- [ ] Setup slugs for contents

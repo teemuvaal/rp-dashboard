@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { deleteAsset, updateAsset } from "@/app/dashboard/actions";
 import { useRouter } from 'next/navigation';
 import { Trash2, Link, FileText, Image as ImageIcon, File, Globe, Lock, ChevronRight } from "lucide-react";
+import { EmbeddingStatus } from "@/components/ui/embedding-status";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -90,11 +91,16 @@ export default function AssetsList({ assets, campaignId, error: listError }) {
                     onClick={() => router.push(`/dashboard/${campaignId}/assets/${asset.id}/edit`)}
                 >
                     <div className="flex items-center gap-4 min-w-0">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary">
+                        <div className="flex items-center w-8 h-8 rounded-full bg-primary/10 text-primary">
                             {typeIcons[asset.type]}
                         </div>
                         <div className="min-w-0">
-                            <h3 className="font-medium truncate">{asset.title}</h3>
+                            <div className="flex items-center gap-2">
+                                <h3 className="font-medium truncate">{asset.title}</h3>
+                                <div className="flex-shrink-0">
+                                    <EmbeddingStatus contentType="asset" contentId={asset.id} />
+                                </div>
+                            </div>
                             {asset.description && (
                                 <p className="text-sm text-muted-foreground truncate">
                                     {asset.description}

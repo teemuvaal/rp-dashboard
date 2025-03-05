@@ -60,27 +60,22 @@ create index IF not exists idx_campaign_tags on public.campaigns using gin (tags
 create index IF not exists idx_campaigns_owner_id on public.campaigns using btree (owner_id) TABLESPACE pg_default;
 
 -- Notes
-create table public.notes (
-  id uuid not null default extensions.uuid_generate_v4 (),
-  campaign_id uuid not null,
-  session_id uuid null,
-  user_id uuid not null,
-  title text not null,
-  content text not null,
-  is_public boolean not null default false,
-  created_at timestamp with time zone null default CURRENT_TIMESTAMP,
-  updated_at timestamp with time zone null default CURRENT_TIMESTAMP,
-  constraint notes_pkey primary key (id),
-  constraint notes_campaign_id_fkey foreign KEY (campaign_id) references campaigns (id),
-  constraint notes_session_id_fkey foreign KEY (session_id) references sessions (id),
-  constraint notes_user_id_fkey1 foreign KEY (user_id) references users (id)
-) TABLESPACE pg_default;
-
-create index IF not exists idx_notes_campaign_id on public.notes using btree (campaign_id) TABLESPACE pg_default;
-
-create index IF not exists idx_notes_session_id on public.notes using btree (session_id) TABLESPACE pg_default;
-
-create index IF not exists idx_notes_user_id on public.notes using btree (user_id) TABLESPACE pg_default;
+CREATE TABLE public.notes (
+  id uuid NOT NULL DEFAULT extensions.uuid_generate_v4(),
+  campaign_id uuid NOT NULL,
+  session_id uuid NULL,
+  user_id uuid NOT NULL,
+  title text NOT NULL,
+  content text NOT NULL,
+  is_public boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT notes_pkey PRIMARY KEY (id),
+  CONSTRAINT notes_id_key UNIQUE (id),
+  CONSTRAINT notes_campaign_id_fkey FOREIGN KEY (campaign_id) REFERENCES campaigns(id),
+  CONSTRAINT notes_session_id_fkey FOREIGN KEY (session_id) REFERENCES sessions(id),
+  CONSTRAINT notes_user_id_fkey1 FOREIGN KEY (user_id) REFERENCES users(id)
+);
 
 -- Poll Options
 create table public.poll_options (
@@ -220,6 +215,8 @@ create table public.users (
   constraint users_username_check check ((length(username) < 20))
 ) TABLESPACE pg_default;
 
+
+-- Characters
 create table public.characters (
   id uuid not null default gen_random_uuid (),
   campaign_id uuid not null,
@@ -242,6 +239,22 @@ create index IF not exists idx_characters_campaign_id on public.characters using
 create index IF not exists idx_characters_user_id on public.characters using btree (user_id) TABLESPACE pg_default;
 
 create index IF not exists idx_characters_template_id on public.characters using btree (template_id) TABLESPACE pg_default;
+
+-- Character Templates
+create table public.character_templates (
+  id uuid not null default gen_random_uuid (),
+  campaign_id uuid not null,
+  name text not null,
+  description text null,
+  schema jsonb not null,
+  ui_schema jsonb null,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  constraint character_templates_pkey primary key (id),
+  constraint character_templates_campaign_id_fkey foreign KEY (campaign_id) references campaigns (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_character_templates_campaign_id on public.character_templates using btree (campaign_id) TABLESPACE pg_default;
 
 -- Subscription Plans (Reference table for available plans)
 create table public.subscription_plans (
@@ -346,3 +359,34 @@ begin
     return coalesce(has_access, false);
 end;
 $$;
+
+-- Content Embeddings
+create table public.content_embeddings (
+  id uuid not null default gen_random_uuid (),
+  content_type text not null,
+  content_id uuid not null,
+  campaign_id uuid not null,
+  content_text text not null,
+  embedding extensions.vector null,
+  status public.embedding_status not null default 'pending'::embedding_status,
+  error_message text null,
+  last_processed_at timestamp with time zone null,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  chunk_index integer not null default 0,
+  total_chunks integer null default 1,
+  constraint content_embeddings_pkey primary key (content_type, content_id, chunk_index),
+  constraint content_embeddings_campaign_id_fkey foreign KEY (campaign_id) references campaigns (id) on delete CASCADE
+) TABLESPACE pg_default;
+
+create index IF not exists idx_content_embeddings_campaign_id on public.content_embeddings using btree (campaign_id) TABLESPACE pg_default;
+
+create index IF not exists idx_content_embeddings_status on public.content_embeddings using btree (status) TABLESPACE pg_default;
+
+create index IF not exists idx_content_embeddings_embedding on public.content_embeddings using ivfflat (embedding extensions.vector_cosine_ops)
+with
+  (lists = '100') TABLESPACE pg_default;
+
+create trigger update_content_embeddings_updated_at BEFORE
+update on content_embeddings for EACH row
+execute FUNCTION update_updated_at_column ();

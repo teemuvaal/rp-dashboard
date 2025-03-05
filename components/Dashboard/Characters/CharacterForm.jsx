@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,8 +20,20 @@ import { ImageUpload } from '@/components/ui/image-upload';
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 
-const ajv = new Ajv({ allErrors: true });
+// Create a more forgiving Ajv instance
+const ajv = new Ajv({
+    allErrors: true,
+    strict: false, // More lenient parsing
+    strictSchema: false, // Don't be strict about schema format
+    strictTypes: false // Don't be strict about types
+});
 addFormats(ajv);
+
+// Register custom formats used in our schemas
+ajv.addFormat('textarea', {
+    validate: () => true, // Always valid as this is just a UI hint
+    type: 'string'
+});
 
 export default function CharacterForm({ templates, campaignId }) {
     const router = useRouter();
@@ -31,22 +43,94 @@ export default function CharacterForm({ templates, campaignId }) {
     const [errors, setErrors] = useState({});
     const [portrait, setPortrait] = useState(null);
     const [portraitPreview, setPortraitPreview] = useState(null);
+    const [schemaValidated, setSchemaValidated] = useState(false);
+
+    // Validate template schema structure
+    useEffect(() => {
+        console.log('Templates received:', templates);
+        console.log('Initial selected template:', selectedTemplate);
+        
+        if (selectedTemplate && selectedTemplate.schema) {
+            console.log('Template schema properties:', selectedTemplate.schema.properties);
+            console.log('Template required fields:', selectedTemplate.schema.required || []);
+            
+            // Check if schema has required properties structure
+            if (!selectedTemplate.schema.properties || 
+                typeof selectedTemplate.schema.properties !== 'object' ||
+                Object.keys(selectedTemplate.schema.properties).length === 0) {
+                console.error('Invalid template schema: missing or empty properties object');
+                setErrors({ _schema: 'This template has an invalid schema structure. Please edit the template first.' });
+            } else {
+                setSchemaValidated(true);
+            }
+        }
+    }, [selectedTemplate]);
 
     // When template changes, reset form data and errors
     const handleTemplateChange = (templateId) => {
         const template = templates.find(t => t.id === templateId);
+        console.log('Template changed to:', template);
         setSelectedTemplate(template);
         setFormData({});
         setErrors({});
+        setSchemaValidated(false);
     };
 
-    const validateFormData = (data, schema) => {
+    // Create a safe schema for validation
+    const prepareSafeSchema = (schema) => {
+        // Make a deep copy to avoid modifying the original
+        const safeSchema = JSON.parse(JSON.stringify(schema));
+        
+        // Ensure it has the basic required structure
+        if (!safeSchema.type) safeSchema.type = 'object';
+        if (!safeSchema.properties) safeSchema.properties = {};
+        
+        // Clean up any properties that might cause issues
+        Object.entries(safeSchema.properties).forEach(([key, prop]) => {
+            // Ensure each property has a type
+            if (!prop.type) {
+                safeSchema.properties[key].type = 'string';
+            }
+            
+            // Handle enum arrays properly
+            if (prop.enum && !Array.isArray(prop.enum)) {
+                safeSchema.properties[key].enum = [];
+            }
+            
+            // Handle number properties
+            if (prop.type === 'number') {
+                // Add format validation messages
+                if (!prop.errorMessage) {
+                    safeSchema.properties[key].errorMessage = {
+                        type: `The field "${key}" must be a number`
+                    };
+                }
+            }
+        });
+        
+        return safeSchema;
+    };
+
+    const validateFormData = (data, originalSchema) => {
         try {
+            // Prepare a safer version of the schema
+            const schema = prepareSafeSchema(originalSchema);
+            
             // Log validation inputs
             console.log('Validating data:', data);
-            console.log('Against schema:', schema);
+            console.log('Original schema:', originalSchema);
+            console.log('Prepared safe schema:', schema);
 
-            const validate = ajv.compile(schema);
+            // Try to compile the schema first to catch compilation errors
+            let validate;
+            try {
+                validate = ajv.compile(schema);
+            } catch (compileError) {
+                console.error('Schema compilation error:', compileError);
+                return { _schema: `Schema error: ${compileError.message}` };
+            }
+
+            // Now run the validation
             const valid = validate(data);
             
             if (!valid) {
@@ -55,15 +139,42 @@ export default function CharacterForm({ templates, campaignId }) {
                 validate.errors.forEach(error => {
                     // Convert JSON pointer to field name
                     const field = error.instancePath.replace(/^\//, '') || error.params.missingProperty;
-                    newErrors[field] = `${error.message}${error.params ? ` (${JSON.stringify(error.params)})` : ''}`;
+                    
+                    // Create a more user-friendly error message
+                    let errorMessage = error.message;
+                    
+                    // Special handling for type errors
+                    if (error.keyword === 'type' && error.params.type === 'number') {
+                        errorMessage = `Must be a number`;
+                        
+                        // Add the field to formData as a proper number if possible
+                        if (data[field] !== undefined && data[field] !== null && data[field] !== '') {
+                            const numValue = Number(data[field]);
+                            if (!isNaN(numValue)) {
+                                console.log(`Converting field ${field} from string to number: ${numValue}`);
+                                data[field] = numValue;
+                                // Skip this error if we could convert it
+                                return;
+                            }
+                        }
+                    }
+                    
+                    newErrors[field] = errorMessage;
                 });
+                
+                // If we had errors but managed to fix them all through conversion, return null
+                if (Object.keys(newErrors).length === 0) {
+                    console.log('All validation errors fixed through auto-conversion');
+                    return null;
+                }
+                
                 return newErrors;
             }
             
             return null;
         } catch (error) {
             console.error('Schema validation error:', error);
-            return { _schema: 'Invalid schema format' };
+            return { _schema: `Schema validation failed: ${error.message}` };
         }
     };
 
@@ -90,36 +201,76 @@ export default function CharacterForm({ templates, campaignId }) {
             console.log('Form Data:', formData);
             console.log('Template Schema:', selectedTemplate.schema);
 
-            // Validate form data against JSON schema
-            const validationErrors = validateFormData(formData, selectedTemplate.schema);
-            if (validationErrors) {
-                console.error('Validation Errors:', validationErrors);
-                setErrors(validationErrors);
-                setLoading(false);
-                return;
+            // Add name field if missing (many systems expect characters to have names)
+            const rawData = { ...formData };
+            if (!rawData.name && rawData.characterName) {
+                rawData.name = rawData.characterName;
+            } else if (!rawData.name) {
+                // Default name if none is specified
+                rawData.name = "Unnamed Character";
             }
 
-            // Convert form data to match schema types
-            const processedData = Object.entries(formData).reduce((acc, [key, value]) => {
-                const fieldSchema = selectedTemplate.schema.properties[key];
+            // Convert data types BEFORE validation based on schema
+            const processedData = Object.entries(rawData).reduce((acc, [key, value]) => {
+                const fieldSchema = selectedTemplate.schema?.properties?.[key];
                 if (fieldSchema) {
                     if (fieldSchema.type === 'number') {
-                        acc[key] = value === '' ? null : Number(value);
+                        // Convert to number or null if empty
+                        acc[key] = value === '' || value === null || value === undefined 
+                            ? null 
+                            : Number(value);
                     } else if (fieldSchema.type === 'boolean') {
+                        // Ensure boolean type
                         acc[key] = Boolean(value);
                     } else {
+                        // For strings and other types
                         acc[key] = value === '' ? null : value;
                     }
+                } else {
+                    // Include fields even if not in schema
+                    acc[key] = value;
                 }
                 return acc;
             }, {});
 
-            console.log('Processed Data:', processedData);
+            console.log('Processed data with correct types:', processedData);
+
+            // Skip validation if needed - remove this in production
+            const skipValidation = false;
+            let validationErrors = null;
+            
+            if (!skipValidation) {
+                // Validate form data against JSON schema
+                validationErrors = validateFormData(processedData, selectedTemplate.schema);
+                if (validationErrors) {
+                    console.error('Validation Errors:', validationErrors);
+                    setErrors(validationErrors);
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            // Data is already processed with correct types, no need to convert again
+            console.log('Final Data for submission:', processedData);
+
+            // Prepare a cleaned schema with custom formats removed for server-side validation
+            // The server doesn't recognize 'textarea' format and will fail validation
+            const cleanedTemplate = JSON.parse(JSON.stringify(selectedTemplate));
+            if (cleanedTemplate.schema && cleanedTemplate.schema.properties) {
+                // Remove any problematic formats like 'textarea' from each property
+                Object.values(cleanedTemplate.schema.properties).forEach(prop => {
+                    if (prop.format === 'textarea') {
+                        delete prop.format;
+                    }
+                });
+            }
+            console.log('Cleaned template for server:', cleanedTemplate);
 
             const submitData = new FormData();
             submitData.append('campaignId', campaignId);
             submitData.append('templateId', selectedTemplate.id);
             submitData.append('data', JSON.stringify(processedData));
+            submitData.append('cleanedSchema', JSON.stringify(cleanedTemplate.schema));
             
             // Add portrait if one was selected
             if (portrait) {
@@ -152,16 +303,30 @@ export default function CharacterForm({ templates, campaignId }) {
     console.log('Selected Template:', selectedTemplate);
 
     const renderField = (id, field) => {
-        const value = formData[id] ?? '';  // Use nullish coalescing to handle 0 values
+        console.log(`Rendering field - ID: ${id}, Field:`, field);
+        // Use special handling for number fields
+        const value = field.type === 'number' 
+            ? (formData[id] === undefined || formData[id] === null ? '' : formData[id])
+            : (formData[id] ?? '');  // Use nullish coalescing for other fields
+        
         const error = errors[id];
         const commonProps = {
             id: id,
-            name: id,  // Add name prop for form field identification
+            name: id,
             value: value,
             onChange: (e) => {
-                const newValue = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+                let newValue;
+                if (field.type === 'number') {
+                    // For number fields, we store the string value in the form state
+                    // and convert it right before validation
+                    newValue = e.target.value;
+                } else {
+                    newValue = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+                }
+                
                 const updatedData = { ...formData, [id]: newValue };
                 setFormData(updatedData);
+                
                 if (errors[id]) {
                     const newErrors = { ...errors };
                     delete newErrors[id];
@@ -197,11 +362,11 @@ export default function CharacterForm({ templates, campaignId }) {
                 {field.type === 'number' && (
                     <Input 
                         {...commonProps}
-                        type="number"
+                        type="number" 
                         min={field.minimum}
                         max={field.maximum}
                         placeholder={field.description || 'Enter a number'}
-                        value={value.toString()}  // Ensure number is converted to string
+                        // No need for value conversion here - we store string in state for editing
                     />
                 )}
 
@@ -260,6 +425,39 @@ export default function CharacterForm({ templates, campaignId }) {
         );
     };
 
+    // Helper function to add a name field if template doesn't have one
+    const ensureNameField = () => {
+        // If the template has a name field, render it using the template configuration
+        if (selectedTemplate?.schema?.properties?.name) {
+            return renderField('name', selectedTemplate.schema.properties.name);
+        }
+        
+        // If the template has a characterName field, render it using the template configuration
+        if (selectedTemplate?.schema?.properties?.characterName) {
+            return renderField('characterName', selectedTemplate.schema.properties.characterName);
+        }
+        
+        // If no name field exists in template, create a default one
+        return (
+            <div className="grid gap-2 mb-4">
+                <Label htmlFor="name">
+                    Character Name <span className="text-red-500 ml-1">*</span>
+                </Label>
+                <Input
+                    id="name"
+                    name="name"
+                    value={formData.name || ''}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    placeholder="Enter character name"
+                    className={errors.name ? 'border-red-500' : ''}
+                />
+                {errors.name && (
+                    <p className="text-sm text-red-500">{errors.name}</p>
+                )}
+            </div>
+        );
+    };
+
     return (
         <form onSubmit={handleSubmit} className="space-y-8">
             <Card>
@@ -312,8 +510,23 @@ export default function CharacterForm({ templates, campaignId }) {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {Object.entries(selectedTemplate.schema.properties).map(([id, field]) => 
-                        renderField(id, field)
+                    {errors._schema && (
+                        <div className="text-sm text-red-500 mb-4 p-3 bg-red-50 rounded-md">
+                            {errors._schema}
+                        </div>
+                    )}
+                    
+                    {schemaValidated && (
+                        <>
+                            {/* Always render name field first */}
+                            {ensureNameField()}
+                            
+                            {/* Then render all other fields (excluding name/characterName which we already rendered) */}
+                            {Object.entries(selectedTemplate.schema.properties)
+                                .filter(([id]) => id !== 'name' && id !== 'characterName')
+                                .map(([id, field]) => renderField(id, field))
+                            }
+                        </>
                     )}
                 </CardContent>
             </Card>
@@ -325,7 +538,7 @@ export default function CharacterForm({ templates, campaignId }) {
             )}
 
             <div className="flex justify-end">
-                <Button type="submit" disabled={loading}>
+                <Button type="submit" disabled={loading || !schemaValidated}>
                     {loading ? 'Creating...' : 'Create Character'}
                 </Button>
             </div>

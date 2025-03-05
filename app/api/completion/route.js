@@ -10,11 +10,11 @@ export async function POST(req) {
         const { prompt } = await req.json();
 
         const completion = await openai.chat.completions.create({
-            model: "gpt-4",
+            model: "gpt-4o-mini",
             messages: [
                 {
                     role: "system",
-                    content: "You are a helpful assistant that provides clear, concise responses. When asked to format responses as JSON, ensure the output is valid JSON."
+                    content: "You are a helpful tabletop roleplaying campaign assistant that provides clear, concise responses. When asked to format responses as JSON, ensure the output is valid JSON."
                 },
                 {
                     role: "user",
@@ -22,7 +22,7 @@ export async function POST(req) {
                 }
             ],
             temperature: 0.7,
-            max_tokens: 500,
+            max_tokens: 2000,
         });
 
         return NextResponse.json({ text: completion.choices[0].message.content });

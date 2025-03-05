@@ -39,11 +39,16 @@ export default function StoryViewer({ visualSummary }) {
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
     const audioRef = useRef(null);
-    const { displayedText, resetTyping } = useTypingEffect(visualSummary.narrative_content || '');
-    const imageUrls = visualSummary.image_urls || [];
+    
+    // Handle both property naming formats (database vs. frontend transformation)
+    const narrativeContent = visualSummary.narrative_content || visualSummary.narrativeContent || '';
+    const imageUrls = visualSummary.image_urls || visualSummary.imageUrls || [];
+    const audioUrl = visualSummary.audio_url || visualSummary.audioUrl || null;
+    
+    const { displayedText, resetTyping } = useTypingEffect(narrativeContent);
 
     useEffect(() => {
-        if (!audioRef.current) return;
+        if (!audioRef.current || !audioUrl) return;
 
         const handleAudioLoad = () => {
             const duration = audioRef.current.duration;
@@ -70,10 +75,10 @@ export default function StoryViewer({ visualSummary }) {
 
         audioRef.current.addEventListener('loadedmetadata', handleAudioLoad);
         return () => audioRef.current?.removeEventListener('loadedmetadata', handleAudioLoad);
-    }, []);
+    }, [audioUrl]);
 
     const handlePlayPause = () => {
-        if (!audioRef.current) return;
+        if (!audioRef.current || !audioUrl) return;
 
         if (isPlaying) {
             audioRef.current.pause();
@@ -92,12 +97,18 @@ export default function StoryViewer({ visualSummary }) {
         resetTyping();
     };
 
+    // Ensure we have valid images to display
+    const hasValidImages = Array.isArray(imageUrls) && imageUrls.length > 0;
+    const currentImageUrl = hasValidImages ? imageUrls[Math.min(currentSlideIndex, imageUrls.length - 1)] : null;
+
     return (
         <Card className="w-full overflow-hidden bg-black/90 text-white">
             <div className="flex flex-col md:flex-row h-[80vh]">
                 {/* Left side - Narration text */}
                 <div className="w-full md:w-1/2 p-6 overflow-y-auto">
-                    <div className="prose prose-invert prose-lg max-w-none">
+                    <div className="prose prose-invert prose-lg max-w-none"
+                    style={{ fontFamily: 'var(--font-departure-mono)' }}
+                    >
                         {displayedText}
                         <span className="animate-pulse ml-1">|</span>
                     </div>
@@ -105,22 +116,28 @@ export default function StoryViewer({ visualSummary }) {
 
                 {/* Right side - Images */}
                 <div className="w-full md:w-1/2 relative">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={currentSlideIndex}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.5 }}
-                            className="absolute inset-0"
-                        >
-                            <img
-                                src={imageUrls[currentSlideIndex]}
-                                alt={`Scene ${currentSlideIndex + 1}`}
-                                className="w-full h-full object-cover"
-                            />
-                        </motion.div>
-                    </AnimatePresence>
+                    {hasValidImages ? (
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={currentSlideIndex}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.5 }}
+                                className="absolute inset-0"
+                            >
+                                <img
+                                    src={currentImageUrl}
+                                    alt={`Scene ${currentSlideIndex + 1}`}
+                                    className="w-full h-full object-cover"
+                                />
+                            </motion.div>
+                        </AnimatePresence>
+                    ) : (
+                        <div className="flex items-center justify-center h-full">
+                            <p className="text-white/50">No images available</p>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -131,7 +148,8 @@ export default function StoryViewer({ visualSummary }) {
                         variant="ghost"
                         size="icon"
                         onClick={handlePlayPause}
-                        className="text-white hover:text-white/80"
+                        disabled={!audioUrl}
+                        className="text-white hover:text-white/80 disabled:text-white/40"
                     >
                         {isPlaying ? (
                             <Pause className="h-6 w-6" />
@@ -149,12 +167,14 @@ export default function StoryViewer({ visualSummary }) {
                     </Button>
                 </div>
 
-                <audio
-                    ref={audioRef}
-                    src={visualSummary.audio_url}
-                    onEnded={() => setIsPlaying(false)}
-                    className="hidden"
-                />
+                {audioUrl && (
+                    <audio
+                        ref={audioRef}
+                        src={audioUrl}
+                        onEnded={() => setIsPlaying(false)}
+                        className="hidden"
+                    />
+                )}
             </div>
         </Card>
     );

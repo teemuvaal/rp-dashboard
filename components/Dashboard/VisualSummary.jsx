@@ -24,13 +24,51 @@ import {
     HoverCardTrigger,
 } from "@/components/ui/hover-card";
 
+// Utility function to extract JSON from markdown code blocks or raw JSON strings
+function extractJsonFromMarkdown(text) {
+    if (!text) return null;
+    
+    // First, try parsing the text directly as JSON
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        // Not valid JSON, continue with extraction
+    }
+
+    // Try to extract JSON from markdown code blocks
+    const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)\s*```/;
+    const match = text.match(codeBlockRegex);
+    
+    if (match && match[1]) {
+        try {
+            return JSON.parse(match[1].trim());
+        } catch (e) {
+            console.error("Failed to parse extracted content as JSON:", e);
+        }
+    }
+    
+    // Try to find array or object notation directly
+    const jsonRegex = /(\[[\s\S]*\]|\{[\s\S]*\})/;
+    const jsonMatch = text.match(jsonRegex);
+    
+    if (jsonMatch && jsonMatch[1]) {
+        try {
+            return JSON.parse(jsonMatch[1].trim());
+        } catch (e) {
+            console.error("Failed to parse JSON notation:", e);
+        }
+    }
+    
+    throw new Error("Could not extract valid JSON from the text");
+}
+
 const artStyles = [
     { value: "80s fantasy book cover", label: "80s Fantasy Book Cover" },
     { value: "realistic", label: "Realistic" },
     { value: "watercolor", label: "Watercolor" },
-    { value: "oil-painting", label: "Oil Painting" },
+    { value: "oil-painting in the renaissance style", label: "Oil Painting" },
     { value: "digital-art", label: "Digital Art" },
-    { value: "pixel-art", label: "Pixel Art" },
+    { value: "high detail 64bit pixel-art", label: "Pixel Art" },
 ];
 
 export default function VisualSummary({ session, sessionSummary, hasAudioAccess = false }) {
@@ -38,8 +76,18 @@ export default function VisualSummary({ session, sessionSummary, hasAudioAccess 
     const [currentStep, setCurrentStep] = useState('initial');
     const [selectedStyle, setSelectedStyle] = useState("fantasy");
     const [visualSummary, setVisualSummary] = useState(null);
+    const [error, setError] = useState(null);
+    const [highlights, setHighlights] = useState([]);
+    const [images, setImages] = useState([]);
+    const [audioUrl, setAudioUrl] = useState(null);
+    const [visualSummaryId, setVisualSummaryId] = useState(null);
     const { toast } = useToast();
     const router = useRouter();
+
+    // Clear error when starting generation or changing style
+    useEffect(() => {
+        if (error) setError(null);
+    }, [isGenerating, selectedStyle]);
 
     useEffect(() => {
         const loadVisualSummary = async () => {
@@ -64,37 +112,93 @@ export default function VisualSummary({ session, sessionSummary, hasAudioAccess 
 
         setIsGenerating(true);
         setCurrentStep('extracting');
+        setError(null); // Clear any previous errors
         
         try {
+            console.log('Starting visual summary generation...');
+            
+            // Call the appropriate API function based on audio feature access
             const generateFunction = hasAudioAccess ? generateVisualSummaryData : generateBasicVisualSummaryData;
-            const { success, data, error } = await generateFunction(
+            const response = await generateFunction(
                 session.id,
                 sessionSummary.id,
                 sessionSummary.content,
                 selectedStyle
             );
+            
+            console.log('API response:', response);
 
-            if (!success) {
-                throw new Error(error);
+            if (!response.success) {
+                throw new Error(response.error || "Failed to generate visual summary");
             }
-
-            setVisualSummary(data);
+            
+            // Ensure we have a data property
+            let summaryData = response.data;
+            if (!summaryData) {
+                console.warn('No data property in response, using response as data');
+                summaryData = response;
+            }
+            
+            console.log('Processing summary data:', summaryData);
+            
+            // Process highlights if they exist in the response
+            if (summaryData.highlights) {
+                try {
+                    // Check if highlights is a string and needs parsing
+                    let highlightsData = summaryData.highlights;
+                    if (typeof highlightsData === 'string') {
+                        console.log('Parsing highlights string:', highlightsData);
+                        highlightsData = extractJsonFromMarkdown(highlightsData);
+                    }
+                    
+                    console.log('Processed highlights:', highlightsData);
+                    setHighlights(Array.isArray(highlightsData) ? highlightsData : []);
+                } catch (err) {
+                    console.error("Error extracting highlights:", err);
+                    setError(`Error extracting highlights: ${err.message}`);
+                    setHighlights([]);
+                }
+            } else {
+                console.warn('No highlights found in response');
+                setHighlights([]);
+            }
+            
+            // Set images if available
+            if (summaryData.imageUrls) {
+                console.log('Setting image URLs:', summaryData.imageUrls);
+                setImages(summaryData.imageUrls);
+            }
+            
+            // Set audio URL if available
+            if (summaryData.audioUrl) {
+                console.log('Setting audio URL:', summaryData.audioUrl);
+                setAudioUrl(summaryData.audioUrl);
+            }
+            
+            // Update local state to show the visual summary
+            if (summaryData.id) {
+                setVisualSummaryId(summaryData.id);
+            }
+            
+            setVisualSummary(summaryData);
             setCurrentStep('complete');
-
+            
             toast({
                 title: "Success",
                 description: "Your story has been created successfully.",
             });
-
+            
             router.refresh();
-        } catch (error) {
-            console.error('Error generating visual summary:', error);
+        } catch (err) {
+            console.error("Failed to generate visual summary:", err);
+            setError(err.message || "Failed to generate visual summary");
+            setCurrentStep('initial');
+            
             toast({
                 variant: "destructive",
                 title: "Error",
-                description: error.message || "Failed to generate visual summary",
+                description: err.message || "Failed to generate visual summary",
             });
-            setCurrentStep('initial');
         } finally {
             setIsGenerating(false);
         }

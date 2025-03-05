@@ -16,7 +16,7 @@ export default function AiChatOpen({ params }) {
         <Sheet>
             <SheetTrigger asChild>
                 <Button
-                    variant="ghost"
+                    variant="outline"
                     size="lg"
                     className="w-full justify-start"
                 >
