@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-
+import { PlusCircle } from "lucide-react";
 export default function CreateCampaignForm() {
     const [open, setOpen] = useState(false);
     const router = useRouter();
@@ -35,9 +35,10 @@ export default function CreateCampaignForm() {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="font-bold">
-                    Create Campaign
-                </Button>
+            <Button className="w-full justify-start" variant="ghost">
+                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                    New Campaign
+                                </Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>

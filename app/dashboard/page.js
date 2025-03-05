@@ -51,8 +51,6 @@ export default async function Dashboard() {
 
     return (
         <div className="min-h-screen bg-background">
-            <TopNav campaigns={campaigns} user={userData}/>
-            
             <main className="container mx-auto p-6 space-y-8">
                 {/* Header Section */}
                 <div className="flex justify-between items-center">
@@ -90,7 +88,6 @@ export default async function Dashboard() {
                                         Manage and access your active campaigns
                                     </CardDescription>
                                 </div>
-                                <CreateCampaignForm />
                             </CardHeader>
                             <CardContent>
                                 {campaignsError ? (
@@ -154,10 +151,7 @@ export default async function Dashboard() {
                                 <CardTitle>Quick Actions</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-2">
-                                <Button className="w-full justify-start" variant="ghost">
-                                    <PlusCircle className="mr-2 h-4 w-4" />
-                                    New Campaign
-                                </Button>
+                                <CreateCampaignForm />
                                 <Button className="w-full justify-start" variant="ghost" asChild>
                                     <Link href="/dashboard">
                                         <CreditCard className="mr-2 h-4 w-4" />
