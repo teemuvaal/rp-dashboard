@@ -1,5 +1,5 @@
 export default function DashboardHero({ name, description, image }) {
-    const backgroundImage = image || '/LandingPageHero.png';
+    const backgroundImage = image || 'https://qxvovctfjcxifcngajlq.supabase.co/storage/v1/object/public/campaign-images//LandingPageHero.png';
 
     return (
         <div 

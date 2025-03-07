@@ -15,7 +15,7 @@ export default function CampaignTile({name, description, role, id, campaign_imag
         <Card className="group relative overflow-hidden w-full transition-transform hover:scale-[1.02] duration-300">
           <div className="absolute inset-0 z-0">
             <Image
-              src={campaign_image || '/campaign-placeholder.png'}
+              src={campaign_image || 'https://qxvovctfjcxifcngajlq.supabase.co/storage/v1/object/public/campaign-images//LandingPageHero.png'}
               alt={name}
               fill
               style={{objectFit: 'cover'}}
