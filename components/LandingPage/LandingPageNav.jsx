@@ -6,7 +6,8 @@ import Image from "next/image";
 import config from "@/config";
 import DarkModeToggle from "@/components/Dashboard/DarkModeToggle"
 import { motion } from "framer-motion";
-  
+import { getUserDetails } from "@/app/dashboard/actions";
+import { useState, useEffect } from "react";
 const links = [
     {
         label: "Home",
@@ -23,6 +24,17 @@ const links = [
 ]
 
 export default function LandingPageNav() {
+    const [userDetails, setUserDetails] = useState(null);
+
+    useEffect(() => {
+        const fetchUserDetails = async () => {
+            const userDetails = await getUserDetails();
+            setUserDetails(userDetails);
+        };
+        fetchUserDetails();
+    }, []);
+    console.log(userDetails);
+
     return (
         <motion.div 
             initial={{ y: -100 }}
@@ -59,8 +71,16 @@ export default function LandingPageNav() {
                     {/* Right Side Actions */}
                     <div className="flex items-center space-x-4">
                         <DarkModeToggle />
-                        <Link href="/login">
-                            <Button
+                        
+                        {userDetails ? (
+                            <Link href="/dashboard">
+                                <Button variant="default" className="rounded-full" size="sm">
+                                    Dashboard
+                                </Button>
+                            </Link>
+                        ) : (
+                            <Link href="/login">
+                                <Button
                                 variant="default"
                                 className="rounded-full"
                                 size="sm"
@@ -68,6 +88,7 @@ export default function LandingPageNav() {
                                 Sign In
                             </Button>
                         </Link>
+                        )}
                     </div>
                 </div>
             </div>
