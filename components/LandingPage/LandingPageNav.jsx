@@ -82,7 +82,7 @@ export default function LandingPageNav() {
                             <Link href="/login">
                                 <Button
                                 variant="default"
-                                className="rounded-full"
+                                className=""
                                 size="sm"
                             >
                                 Sign In
