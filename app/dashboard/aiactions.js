@@ -448,7 +448,7 @@ export async function generateNarrativeSummary(summaryContent, sessionId) {
                 Focus on creating a seamless narrative that maintains dramatic tension and emphasizes the emotional weight of key moments.
                 Write in a style similar to how a professional game master would recount the tale to an audience.
                 The story should flow naturally from beginning to end, maintaining continuity throughout.
-                Do not break it into separate scenes or sections - create one cohesive narrative.
+                Do not break it into separate scenes or sections - create one cohesive narrative. Try make the summary always less than 1000 words.
                 
                 Here's the session summary to transform:
                 ${summaryContent}`
