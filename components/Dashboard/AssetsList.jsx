@@ -91,7 +91,7 @@ export default function AssetsList({ assets, campaignId, error: listError }) {
                     onClick={() => router.push(`/dashboard/${campaignId}/assets/${asset.id}/edit`)}
                 >
                     <div className="flex items-center gap-4 min-w-0">
-                        <div className="flex items-center w-8 h-8 rounded-full bg-primary/10 text-primary">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary">
                             {typeIcons[asset.type]}
                         </div>
                         <div className="min-w-0">
