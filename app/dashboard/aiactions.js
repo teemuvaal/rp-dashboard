@@ -194,6 +194,8 @@ export async function extractSummaryHighlights(summary) {
                 Format your response as a JSON array of strings, where each string is a visual highlight.
                 Example format: ["A towering dragon emerges from the mountain, its scales gleaming in the moonlight", "The party stands at the edge of a massive chasm, torches flickering against the darkness below", "The ancient artifact pulses with ethereal blue light as the wizard carefully examines its inscriptions"]
 
+                DO NOT INCLUDE SCENARIOS THAT ARE POTENTIALLY NSFW OR OTHERWISE INAPPROPRIATE AND WOULD PREVENT CREATING AN IMAGE FROM THE DECIPTED SCENARIO. THIS INCLUDES GORE AND VIOLENCE.
+
                 Session Summary:
                 ${summary}`
             }),
@@ -269,7 +271,7 @@ export async function generateHighlightImages(highlights, sessionId, artStyle = 
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ 
-                prompt: `Convert these scene descriptions into detailed image generation prompts. Make them more specific and optimized for Flux image model. Art style should be ${artStyle}. Format as JSON array.
+                prompt: `Convert these scene descriptions into detailed image generation prompts. Make them more specific and optimized for Flux image model with a very high definition and details like a professional artist would do. Art style should be ${artStyle}. Format as JSON array.
                 Example format: ["A majestic dragon emerging from dark storm clouds, scales crackling with electricity, dramatic lighting, detailed scales, volumetric lighting"]
                 Scenes to convert: ${JSON.stringify(highlights)}`
             }),
