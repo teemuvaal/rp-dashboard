@@ -51,11 +51,13 @@ export default function StoryViewer({ visualSummary }) {
         if (!audioRef.current || !audioUrl) return;
 
         const handleAudioLoad = () => {
+            if (!audioRef.current || !imageUrls.length) return;
+            
             const duration = audioRef.current.duration;
             if (!duration) return;
 
-            // Set up image transitions at 1/3 intervals of the audio duration
-            const interval = duration / 3;
+            // Calculate interval based on number of images
+            const interval = duration / imageUrls.length;
             let currentInterval = 0;
 
             const checkTime = () => {
@@ -63,7 +65,8 @@ export default function StoryViewer({ visualSummary }) {
                 const currentTime = audioRef.current.currentTime;
                 const newInterval = Math.floor(currentTime / interval);
                 
-                if (newInterval !== currentInterval && newInterval < 3) {
+                // Update slide index based on actual number of images
+                if (newInterval !== currentInterval && newInterval < imageUrls.length) {
                     currentInterval = newInterval;
                     setCurrentSlideIndex(newInterval);
                 }
@@ -75,7 +78,7 @@ export default function StoryViewer({ visualSummary }) {
 
         audioRef.current.addEventListener('loadedmetadata', handleAudioLoad);
         return () => audioRef.current?.removeEventListener('loadedmetadata', handleAudioLoad);
-    }, [audioUrl]);
+    }, [audioUrl, imageUrls]);
 
     const handlePlayPause = () => {
         if (!audioRef.current || !audioUrl) return;
