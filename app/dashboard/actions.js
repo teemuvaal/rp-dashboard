@@ -18,6 +18,17 @@ ajv.addFormat('textarea', {
     type: 'string'
 });
 
+
+export async function getUserDetails() {
+    const supabase = createClient()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError) {
+        return { error: 'Authentication error' }
+    }
+
+    return user;
+}
+
 export async function createCampaign(formData) {
   const supabase = createClient()
 

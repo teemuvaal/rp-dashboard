@@ -162,6 +162,7 @@ export default async function SessionPage({ params }) {
             <SessionSummary session={session} hasAudioAccess={hasAudioAccess} isOwner={isOwner} />
 
             {/* Notes Section */}
+            {isOwner && (
             <Card>
                 <CardHeader>
                     <div className="flex justify-between items-center">
@@ -199,7 +200,8 @@ export default async function SessionPage({ params }) {
                     )}
 
                     {/* Linked Notes */}
-                    {linkedNotes?.length > 0 && (
+                    
+                    {linkedNotes?.length > 0 && isOwner && (
                         <div>
                             <h3 className="text-lg font-semibold mb-4">Linked Notes</h3>
                             <div className="space-y-4">
@@ -228,6 +230,7 @@ export default async function SessionPage({ params }) {
                     )}
                 </CardContent>
             </Card>
+            )}
         </div>
     );
 }
