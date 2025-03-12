@@ -8,12 +8,19 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const TYPING_SPEED = 30; // Adjust typing speed as needed
 
-function useTypingEffect(text, speed = TYPING_SPEED) {
+function useTypingEffect(text, speed = TYPING_SPEED, shouldType = false) {
     const [displayedText, setDisplayedText] = useState("");
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isTypingComplete, setIsTypingComplete] = useState(false);
 
     useEffect(() => {
+        if (!shouldType) {
+            setDisplayedText("");
+            setCurrentIndex(0);
+            setIsTypingComplete(false);
+            return;
+        }
+
         if (currentIndex < text.length) {
             const timeout = setTimeout(() => {
                 setDisplayedText(prev => prev + text[currentIndex]);
@@ -24,7 +31,7 @@ function useTypingEffect(text, speed = TYPING_SPEED) {
         } else {
             setIsTypingComplete(true);
         }
-    }, [currentIndex, text, speed]);
+    }, [currentIndex, text, speed, shouldType]);
 
     const resetTyping = useCallback(() => {
         setDisplayedText("");
@@ -45,7 +52,7 @@ export default function StoryViewer({ visualSummary }) {
     const imageUrls = visualSummary.image_urls || visualSummary.imageUrls || [];
     const audioUrl = visualSummary.audio_url || visualSummary.audioUrl || null;
     
-    const { displayedText, resetTyping } = useTypingEffect(narrativeContent);
+    const { displayedText, resetTyping } = useTypingEffect(narrativeContent, TYPING_SPEED, isPlaying);
 
     useEffect(() => {
         if (!audioRef.current || !audioUrl) return;
