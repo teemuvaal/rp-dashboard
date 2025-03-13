@@ -324,6 +324,7 @@ export default function SessionSummary({ session, hasAudioAccess = false, isOwne
                             session={session}
                             sessionSummary={{ id: session.id, content: summary }}
                             hasAudioAccess={hasAudioAccess}
+                            isOwner={isOwner}
                         />
                     </CardContent>
                 </Card>

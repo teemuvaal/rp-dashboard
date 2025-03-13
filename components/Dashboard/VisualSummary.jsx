@@ -71,7 +71,7 @@ const artStyles = [
     { value: "high detail 64bit pixel-art", label: "Pixel Art" },
 ];
 
-export default function VisualSummary({ session, sessionSummary, hasAudioAccess = false }) {
+export default function VisualSummary({ session, sessionSummary, hasAudioAccess = false, isOwner }) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [currentStep, setCurrentStep] = useState('initial');
     const [selectedStyle, setSelectedStyle] = useState("fantasy");
@@ -206,9 +206,10 @@ export default function VisualSummary({ session, sessionSummary, hasAudioAccess 
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-start">
-                <div className="flex items-center gap-4">
-                    <Select
+            {isOwner && (
+                <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-4">
+                        <Select
                         value={selectedStyle}
                         onValueChange={setSelectedStyle}
                         disabled={isGenerating}
@@ -259,7 +260,8 @@ export default function VisualSummary({ session, sessionSummary, hasAudioAccess 
                         'Processing...'
                     ) : visualSummary ? 'Regenerate Story' : 'Generate Story'}
                 </Button>
-            </div>
+                </div>
+            )}
 
             {visualSummary && currentStep === 'complete' && (
                 <StoryViewer visualSummary={visualSummary} />
