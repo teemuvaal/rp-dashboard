@@ -26,16 +26,26 @@ export default async function Dashboard() {
         redirect('/login');
     }
 
-    // Check if the user has a username set
+    // Check if the user has a profile and username set
     const { data: userData, error: userError } = await supabase
         .from('users')
         .select('username, profile_picture')
         .eq('id', data.user.id)
         .single();
 
-    if (userError) {
-        console.error('Error fetching user data:', userError);
-    } else if (!userData?.username) {
+    // Log the profile check results
+    console.log('Profile Check:', {
+        userData,
+        error: userError,
+        userId: data.user.id,
+        email: data.user.email
+    });
+
+    // Only redirect if:
+    // 1. There's no profile at all (userError)
+    // 2. Username is null or empty
+    if (userError?.code === 'PGRST116' || !userData?.username) {
+        console.log('Redirecting to profile setup - No profile or empty username');
         redirect('/dashboard/profile');
     }
 
