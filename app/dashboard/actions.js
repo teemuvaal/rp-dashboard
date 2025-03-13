@@ -640,7 +640,8 @@ export async function updateProfile(formData) {
   const { data: { user }, error: userError } = await supabase.auth.getUser()
 
   if (userError) {
-    return { error: 'Authentication error' }
+    console.error('Auth error:', userError);
+    return { error: 'Authentication error', details: userError };
   }
 
   const username = formData.get('username')
@@ -657,7 +658,8 @@ export async function updateProfile(formData) {
       .upload(fileName, profilePicture)
 
     if (uploadError) {
-      return { error: 'Error uploading profile picture' }
+      console.error('Upload error:', uploadError);
+      return { error: 'Error uploading profile picture', details: uploadError };
     }
 
     const { data: { publicUrl }, error: urlError } = supabase.storage
@@ -665,20 +667,31 @@ export async function updateProfile(formData) {
       .getPublicUrl(fileName)
 
     if (urlError) {
-      return { error: 'Error getting public URL for profile picture' }
+      console.error('URL error:', urlError);
+      return { error: 'Error getting public URL for profile picture', details: urlError };
     }
 
     updates.profile_picture = publicUrl
   }
 
-  const { error: updateError } = await supabase
+  console.log('Attempting to update user profile:', {
+    userId: user.id,
+    updates
+  });
+
+  const { data: updateData, error: updateError } = await supabase
     .from('users')
     .update(updates)
     .eq('id', user.id)
+    .select()
+    .single();
 
   if (updateError) {
-    return { error: 'Error updating profile' }
+    console.error('Profile update error:', updateError);
+    return { error: 'Error updating profile', details: updateError };
   }
+
+  console.log('Profile updated successfully:', updateData);
 
   revalidatePath('/dashboard/profile')
   redirect('/dashboard')
