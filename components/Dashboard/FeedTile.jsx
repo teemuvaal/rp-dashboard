@@ -11,6 +11,9 @@ import {
   
 
 export default function FeedTile({ title, content, author, authorUsername, authorProfilePicture, createdAt }) {
+    // Use author as fallback if authorUsername is not provided
+    const displayName = authorUsername || author || 'Unknown';
+    
     const formatDate = (dateString) => {
         if (!dateString) return 'Unknown date';
         
@@ -50,14 +53,14 @@ export default function FeedTile({ title, content, author, authorUsername, autho
                             {authorProfilePicture ? (
                                 <Image
                                     src={authorProfilePicture}
-                                    alt={`${authorUsername}'s profile picture`}
+                                    alt={`${displayName}'s profile picture`}
                                     width={32}
                                     height={32}
                                     className="object-cover w-full h-full"
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-gray-500">
-                                    {authorUsername.charAt(0).toUpperCase()}
+                                    {displayName.charAt(0).toUpperCase()}
                                 </div>
                             )}
                         </div>
@@ -77,7 +80,7 @@ export default function FeedTile({ title, content, author, authorUsername, autho
             <p className="text-sm font-light mb-1">{content || 'No content'}</p>
             </CardContent>  
             <CardFooter>
-                <p className="text-xs text-gray-500">Posted by: {authorUsername || author || 'Unknown'}</p>
+                <p className="text-xs text-gray-500">Posted by: {displayName}</p>
             </CardFooter>
         </Card>
     )
