@@ -1360,14 +1360,14 @@ export async function votePoll(formData) {
             .from('poll_votes')
             .delete()
             .eq('poll_id', pollId)
-            .eq('user_id', session.user.id);
+            .eq('user_id', user.id);
     }
 
     // Insert new votes
     const votesToInsert = selectedOptions.map(optionId => ({
         poll_id: pollId,
         option_id: optionId,
-        user_id: session.user.id
+        user_id: user.id
     }));
 
     const { error: votesError } = await supabase
